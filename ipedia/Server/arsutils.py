@@ -3,7 +3,7 @@
 #
 # Collect routines frequently used in other places
 
-import os,sys,time, traceback
+import os,sys,time,string,traceback
 try:
     import process
 except:
@@ -378,11 +378,14 @@ def extractHotSyncName(deviceInfo):
         return di["HS"]
     return None
     
+def exceptionAsStr(e):
+    tbList = traceback.format_tb(sys.exc_info()[2])
+    tbStr = string.join(tbList,"")
+    res = "%s\n%s\n%s\n%s" % (str(e), str(sys.exc_info()[0]), str(sys.exc_info()[1]), tbStr)
+    return res
+    
 def dumpException(e):
-    print str(e)
-    print sys.exc_info()[0]
-    print sys.exc_info()[1]
-    print traceback.print_tb(sys.exc_info()[2])
+    print exceptionAsStr(e)
 
 from httplib import HTTPConnection, HTTPException
 

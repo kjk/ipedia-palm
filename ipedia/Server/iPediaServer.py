@@ -569,6 +569,10 @@ class iPediaFactory(protocol.ServerFactory):
         return MySQLdb.Connect(host=iPediaDatabase.DB_HOST, user=iPediaDatabase.DB_USER, passwd=iPediaDatabase.DB_PWD, db=iPediaDatabase.MANAGEMENT_DB)
 
     def __init__(self, dbName):
+        self.changeDatabase(dbName)
+
+    def changeDatabase(self, dbName):
+        print "Switching to database %s" % dbName
         self.dbName=dbName
         self.dbTime = dbName[7:]
         db=self.createArticlesConnection()
@@ -586,9 +590,6 @@ class iPediaFactory(protocol.ServerFactory):
         cursor.close()
         db.close()
 
-    def changeDatabase(self, newDb):
-        self.dbName=newDb
-        
     protocol = iPediaProtocol
 
 ipediaRe = re.compile("ipedia_[0-9]{8}", re.I)
@@ -599,25 +600,23 @@ def fIpediaDb(dbName):
         return True
     return False
 
-# returns a list of tuples describing all iPedia databases. First element
-# is database name, second - the number of articles in a database
+# returns a dictionary describing all iPedia databases
+# dictionary key is database name, the value is number of articles in that database
 def getIpediaDbList():
     conn = MySQLdb.Connect(host=iPediaDatabase.DB_HOST, user=iPediaDatabase.DB_USER, passwd=iPediaDatabase.DB_PWD, db='')
     cur = conn.cursor()
     cur.execute("SHOW DATABASES;")
-    dbs = []
+    dbsInfo = {}
     for row in cur.fetchall():
         dbName = row[0]
         if fIpediaDb(dbName):
             cur.execute("""SELECT COUNT(*) FROM %s.articles""" % dbName)
             row=cur.fetchone()
             articleCount=row[0]
-            #print "db '%s' has '%d' articles" % (dbName, articleCount)
-            dbInfo = (dbName, articleCount)
-            dbs.append(dbInfo)
+            dbsInfo[dbName] = articleCount
     cur.close()
     conn.close()
-    return dbs    
+    return dbsInfo
 
 class iPediaTelnetProtocol(basic.LineReceiver):
 
@@ -628,29 +627,63 @@ class iPediaTelnetProtocol(basic.LineReceiver):
         self.delimiter='\n'
     
     def listDatabases(self):
-        dbs = None
+        dbsInfo = None
         try:
-            dbs = getIpediaDbList()
-            for dbInfo in dbs:
-                self.transport.write( "%s %d\r\n" % dbInfo)
+            dbsInfo = getIpediaDbList()
+            dbNames = dbsInfo.keys()
+            dbNames.sort()
+            for name in dbNames:
+                articleCount = dbsInfo[name]
+                self.transport.write( "%s (%d articles)\r\n" % (name,articleCount))
             self.transport.write("currently using: %s\r\n" % self.factory.iPediaFactory.dbName)
         except _mysql_exceptions.Error, ex:
             dumpException(ex)
-            self.transport.write("exception\r\n")
+            txt = arsutils.exceptionAsStr(ex)
+            self.transport.write("exception: %s \r\n" % txt)
 
     def useDatabase(self, dbName):
+        if dbName == self.factory.iPediaFactory.dbName:
+            self.transport.write("already using %s database\r\n" % dbName)
+            return
+        self.transport.write("currently using: %s\r\n" % self.factory.iPediaFactory.dbName)
+        dbsInfo = None
+        try:
+            dbsInfo = getIpediaDbList()
+        except _mysql_exceptions.Error, ex:
+            dumpException(ex)
+            txt = arsutils.exceptionAsStr(ex)
+            self.transport.write("exception: %s \r\n" % txt)
+            return
+        if not dbsInfo.has_key(dbName):
+            self.transport.write("Database '%s' doesn't exist\r\n" % dbName)
+            self.transport.write("Available databases:\r\n")
+            dbNames = dbsInfo.keys()
+            dbNames.sort()
+            for name in dbNames:
+                articleCount = dbsInfo[name]
+                self.transport.write( "%s (%d articles)\r\n" % (name,articleCount))
+            return
+        articleCount = dbsInfo[dbName]
+        # don't switch if articleCount is smaller than 100.000 - such database
+        # can't be good
+        if articleCount < 100000:
+            self.transport.write("Database '%s' doesn't have enough articles ('%d', at least 100.000 required)\r\n" % (dbName, articleCount))
+            return
         self.factory.iPediaFactory.changeDatabase(dbName)
-                    
+        self.transport.write("Switched to database '%s'\r\n" % dbName)
+
     def lineReceived(self, request):
         # print "telnet: '%s'" % request
         if iPediaTelnetProtocol.listRe.match(request):
             self.listDatabases()
-        else:
-            match=iPediaTelnetProtocol.useDbRe.match(request)
-            if match:
-                self.useDatabase(match.group(1))
-            else:
-                self.transport.loseConnection()
+            return
+
+        match=iPediaTelnetProtocol.useDbRe.match(request)
+        if match:
+            self.useDatabase(match.group(1))
+            return
+
+        self.transport.loseConnection()
                 
     
 class iPediaTelnetFactory(protocol.ServerFactory):
@@ -680,12 +713,12 @@ def main():
         print "using psyco"
         psyco.full()
 
-    dbs = getIpediaDbList()
-    if 0==len(dbs):
+    dbsInfo = getIpediaDbList()
+    dbNames = dbsInfo.keys()
+    if 0==len(dbNames):
         print "No databases available"
         sys.exit(0)
 
-    dbNames = [dbInfo[0] for dbInfo in dbs]
     dbNames.sort()
 
     fListDbs = arsutils.fDetectRemoveCmdFlag("-listdbs")
