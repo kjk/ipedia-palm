@@ -1,6 +1,6 @@
-#include "LookupManager.hpp"
+#include <LookupManager.hpp>
 #include "LookupHistory.hpp"
-#include "iPediaConnection.hpp"
+#include <iPediaConnection.hpp>
 #include "DefinitionElement.hpp"
 #include <Text.hpp>
 #include "ipedia_Rsc.h"

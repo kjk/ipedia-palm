@@ -19,6 +19,7 @@ using ArsLexis::status_t;
 namespace {
     typedef std::auto_ptr<ParagraphElement> ParagraphPtr;
     typedef std::auto_ptr<GenericTextElement> TextPtr;
+    typedef std::auto_ptr<FormattedTextElement> FormattedTextPtr;
     typedef std::auto_ptr<DefinitionElement> ElementPtr;
 }
 
@@ -462,14 +463,15 @@ GenericTextElement* DefinitionParser::createTextElement(const String& text, Stri
     {   
         std::auto_ptr<FormattedTextElement> element(new FormattedTextElement(copy));
         applyCurrentFormatting(element.get());
-        textElement=element;
+        textElement=TextPtr(element.release());
     } 
     appendElement(textElement.get());
     textElement->setStyle(currentStyle_);
     if (insideHyperlink_)
         textElement->setHyperlink(hyperlinkTarget_, hyperlinkType_);
-    return textElement.release();    
+    return textElement.release();
 }
+
 
 GenericTextElement* DefinitionParser::createTextElement()
 {
@@ -555,13 +557,13 @@ void DefinitionParser::manageListNesting(const String& requestedNesting)
                         assert(!currentNumberedList_.empty());
                         std::auto_ptr<ListNumberElement> listElement(new ListNumberElement(currentNumberedList_.back()->number()+1));
                         currentNumberedList_.push_back(listElement.get());
-                        element=listElement;
+                        element=ElementPtr(listElement.release());
                     }
                     else
                     {
                         std::auto_ptr<ListNumberElement> listElement(new ListNumberElement(1));
                         startNewNumberedList(listElement.get());
-                        element=listElement;
+                        element=ElementPtr(listElement.release());
                     }                    
                 }
                 else if (bulletChar==elementType)
