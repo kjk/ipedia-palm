@@ -112,8 +112,9 @@ trRe=re.compile("<tr.*?</tr>", re.I+re.S)
 tdRe=re.compile("<td.*?</td>", re.I+re.S)
 scriptRe=re.compile("<script.*?</script>", re.I+re.S)
 badLinkRe=re.compile(r"\[\[((\w\w\w?(-\w\w)?)|(simple)|(image)|(media)):.*?\]\]", re.I+re.S)
+# most links to other-language version are caught by badLinkRe, but not "tokipona"
+tokiponaRe=re.compile(r"\[\[tokipona:.*?\]\]", re.I+re.S)
 #numEntityRe=re.compile(r'&#(\d+);')
-
 
 multipleLinesRe=re.compile("\n{3,100}")
 # replace multiple (1+) empty lines with just one empty line.
@@ -184,6 +185,7 @@ def convertArticle(term, text):
         text=replaceTagList(text, ['p'], '<br>')
         text=replaceTagList(text, ['dfn', 'code', 'samp', 'kbd', 'var', 'abbr', 'acronym', 'blockquote', 'q', 'pre', 'ins', 'del', 'dir', 'menu', 'img', 'object', 'big', 'span', 'applet', 'font', 'basefont', 'tr', 'td', 'table', 'center', 'div'], '')
         text=replaceRegExp(text, badLinkRe, '')
+        text=replaceRegExp(text, tokiponaRe, '')
         text=entities.convertNamedEntities(term, text)
         text=entities.convertNumberedEntities(term, text)
         text=stripMultipleNewLines(text)

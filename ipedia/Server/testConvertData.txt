@@ -121,3 +121,5 @@ René-Lévesque (far right).]]
 @s32 Mot&#322;awa*Motlawa
 @s33 Wybrze&#380;e*Wybrzeze
 @s34 T&#333;ky&#333;*Tokyo
+@s35 [[cy:Tocio]]*
+@s36 [[tokipona:ma tomo Tokijo]]*
