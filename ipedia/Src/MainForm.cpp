@@ -158,7 +158,7 @@ void MainForm::draw(UInt16 updateCode)
     {
         enableInputFieldAfterUpdate_ = false;
         termInputField_.show();
-        termInputField_.focus();
+        //termInputField_.focus();
     }
 }
 
@@ -409,14 +409,12 @@ void MainForm::updateNavigationButtons()
     const LookupHistory& history=getHistory();
 
     bool enabled = history.hasPrevious();
-    backButton_.setEnabled(enabled);
     if (enabled)
         backButton_.setGraphics(backBitmap);
     else
         backButton_.setGraphics(backDisabledBitmap);
         
     enabled = history.hasNext();
-    forwardButton_.setEnabled(enabled);
     if (enabled)
         forwardButton_.setGraphics(forwardBitmap);
     else
@@ -435,10 +433,10 @@ void MainForm::updateAfterLookup()
         if (history.hasCurrentTerm())
             setTitle(history.currentTerm());
         
-        update();
-        
         termInputField_.replace(lookupManager->lastSearchTerm());
         termInputField_.select();                    
+        articleRenderer_.focus();
+        update();
     }
     updateNavigationButtons();
 }

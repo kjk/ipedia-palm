@@ -1,3 +1,8 @@
+## pressing "center" in text field should launch the search
+
+## Huayan_Jing (linked from Huayan as "scripture of the same name) doesn't
+exist. English encyclopedia.
+
 ## 1. fix converting/displaying for french and german
 
 ## 2. add spanish (?)
