@@ -128,7 +128,7 @@ private:
     
     friend class iPediaConnection;
 
-    HistoryChange historyChange_; // I don't remember how many bits it needs. I assume 7 will do.
+    HistoryChange historyChange_;
     
 };
 
