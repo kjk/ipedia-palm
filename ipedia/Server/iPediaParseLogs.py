@@ -5,10 +5,14 @@ import MySQLdb, _mysql_exceptions
 
 import arsutils
 #import ServerErrors, Fields
-import db
 
 # TODO:
 # - add per-user stats (how many requests a given user did)
+
+DB_HOST    = 'localhost'
+DB_PWD     = "ipedia"
+DB_USER    = 'ipedia'
+DB_NAME    = 'ipedia_manage'
 
 # this is the request_id column from request_log table of the last request_id
 # processed in previous run
@@ -46,8 +50,48 @@ def unpickleState():
     g_dailyStats = pickle.load(fo)
     fo.close()
 
+g_conn = None
 def getConnection():
-    return MySQLdb.Connect(host=db.DB_HOST, user=db.DB_USER, passwd=db.DB_PWD, db=db.DB_NAME)
+    global g_conn
+    if None == g_conn:
+        g_conn = MySQLdb.Connect(host=DB_HOST, user=DB_USER, passwd=DB_PWD, db=DB_NAME)
+    return g_conn
+
+def deinitDatabase():
+    global g_conn
+    #print "deinitDatabase()"
+    closeAllNamedCursors()
+    if g_conn:
+        g_conn.close()
+        g_conn = None
+
+g_namedCursors = {}
+def getNamedCursor(conn,curName):
+    global g_namedCursors
+    # a little pooling of cursors based on their names
+    # the idea is to save time by not calling conn.cursor()/conn.close()
+    if not g_namedCursors.has_key(curName):
+        g_namedCursors[curName] = conn.cursor()
+    return g_namedCursors[curName]
+
+def closeNamedCursor(curName):
+    global g_namedCursors
+    if g_namedCursors.has_key(curName):
+        cur = g_namedCursors[curName]
+        cur.close()
+        del g_namedCursors[curName]
+
+def closeAllNamedCursors():
+    global g_namedCursors
+    for cur in g_namedCursors.values():
+        cur.close()
+    g_namedCursors.clear()
+
+def dbEscape(txt):
+    # it's silly that we need connection just for escaping strings
+    global g_conn
+    return g_conn.escape_string(txt)
+
 
 # A format of a request accepted by a server is very strict:
 # validClientRequest = validClientField ":" fieldValue? "\n"
@@ -208,6 +252,10 @@ def mailTxt(txt):
     if None == MAILHOST:
         print "Didn't send because MAILHOST empty"
         return
+
+    # TODO: debugging only
+    return
+
     curDate = time.strftime( "%Y-%m-%d", time.localtime() )
     SUBJECT = "InfoMan log parsing results on %s" % (curDate)
     body = string.join((
@@ -242,6 +290,11 @@ class UserData:
         self.disabled_p = None
         self.new_user_p = None
 
+    def isRegistered(self):
+        if self.reg_code != None:
+            return True
+        return False
+
 g_userStats = []
 
 # Retrieve all unprocessed data from users table and cache them in memory
@@ -269,6 +322,10 @@ def retrieveUsers():
             userData.reg_code = row[3]
             userData.registration_date = row[4]
             userData.disabled_p = row[5]
+            if None == userData.registration_date:
+                userData.fRegistered = False
+            else:
+                userData.fRegistered = True
 
             if userData.user_id > g_lastUserId:
                 userData.new_user_p = True
@@ -423,16 +480,15 @@ def processUsers():
 
     for userData in g_userStats:
         totalUsers += 1
-        fRegistered = False
-        if userData.reg_code != None:
-            fRegistered = True
 
-        if fRegistered:
+        fReg = userData.isRegistered()
+
+        if userData.isRegistered():
             registeredUsers += 1
 
         if userData.new_user_p == True:
             newTotalUsers += 1
-            if fRegistered:
+            if userData.isRegistered():
                 newRegisteredUsers += 1
 
     result  = "Total users:            %d\n" % totalUsers
@@ -443,7 +499,10 @@ def processUsers():
     for userData in g_userStats:
         if userData.new_user_p == True:
             deviceInfoTxt = deviceInfoAsTxt(userData.device_info)
-            result += "  %s\n" % deviceInfoTxt          
+            if userData.isRegistered():
+                result += " * %s\n" % deviceInfoTxt
+            else:
+                result += "   %s\n" % deviceInfoTxt
     return result
 
 # process request data retrieved via retrieveRequests()
@@ -471,24 +530,21 @@ def processRequests():
     return result
 
 def main():
-    fDbExists = False
     toMail = ""
     try:
-        fDbExists = db.FDbExists()
         unpickleState()
-        retrieveRequests()
+        #retrieveRequests()
         retrieveUsers()
         txt = processUsers()
         toMail += txt
-        txt = processRequests()
-        toMail += "\n"
-        toMail += txt
+        #txt = processRequests()
+        #toMail += "\n"
+        #toMail += txt
     finally:
-        db.deinitDatabase()
+        deinitDatabase()
         pickleState()
-    if not fDbExists:
-        mailTxt("infoman database doesn't exist. Something's rotten in Denmark.");
-        sys.exit(0)
+    #if not fDbExists:
+    #    toMail = "ipedia_manage database doesn't exist. Something's rotten in Denmark.";
     mailTxt(toMail)
 
 if __name__ == "__main__":
