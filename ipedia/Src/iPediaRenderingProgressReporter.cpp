@@ -17,11 +17,11 @@ iPediaRenderingProgressReporter::iPediaRenderingProgressReporter(Form& form):
 
 void iPediaRenderingProgressReporter::reportProgress(uint_t percent) 
 {
-    if (percent==lastPercent_)
+    if (percent == lastPercent_)
         return;
 
     lastPercent_ = percent;
-    if (0==percent)
+    if (0 == percent)
     {
         ticksAtStart_ = TimGetTicks();
         showProgress_ = false;
@@ -66,7 +66,7 @@ void iPediaRenderingProgressReporter::reportProgress(uint_t percent)
     Rectangle rect(bounds.x()+16, bounds.y()+(bounds.height()-height)/2, bounds.width()-22, height);
     PatternType oldPattern = WinGetPatternType();
     WinSetPatternType(blackPattern);
-    RectangleType nativeRec=toNative(rect);
+    RectangleType nativeRec = toNative(rect);
     nativeRec.extent.x *= percent;
     nativeRec.extent.x /= 100;
     WinPaintRectangle(&nativeRec, 0);

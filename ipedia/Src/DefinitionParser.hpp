@@ -16,8 +16,6 @@ class DefinitionElement;
 
 class GenericTextElement;
 
-class FormattedTextElement;
-
 class ListNumberElement;
 
 /**
@@ -37,7 +35,7 @@ class DefinitionParser: public FieldPayloadProtocolConnection::PayloadHandler
      * @internal
      * Transforms current settings in open* variables into settings of @c FormattedTextElement.
      */
-    void applyCurrentFormatting(FormattedTextElement* element);
+    void applyCurrentFormatting(GenericTextElement* element);
     
     typedef std::list<DefinitionElement*> ParentsStack_t;
     ParentsStack_t parentsStack_;
@@ -153,7 +151,7 @@ class DefinitionParser: public FieldPayloadProtocolConnection::PayloadHandler
     
     static bool lineAllowsContinuation(LineType lineType)
     {
-        return textLine==lineType;
+        return textLine == lineType;
     }
 
     void parseHeaderLine();
@@ -175,13 +173,13 @@ class DefinitionParser: public FieldPayloadProtocolConnection::PayloadHandler
     bool detectHyperlink(uint_t textEnd);
     
     GenericTextElement* createTextElement();
-    GenericTextElement* createTextElement(const ArsLexis::String& text, ArsLexis::String::size_type start=0, ArsLexis::String::size_type length=ArsLexis::String::npos);
+    GenericTextElement* createTextElement(const ArsLexis::String& text, ArsLexis::String::size_type start = 0, ArsLexis::String::size_type length = ArsLexis::String::npos);
     
 public:
 
     DefinitionParser();
     
-    ArsLexis::status_t handleIncrement(const ArsLexis::char_t * text, ulong_t& length, bool finish=0);
+    ArsLexis::status_t handleIncrement(const ArsLexis::char_t * text, ulong_t& length, bool finish = 0);
 
     Definition::Elements_t& elements()
     {return elements_;}    
