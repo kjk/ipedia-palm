@@ -12,7 +12,9 @@
 #include <PalmOS_Headers_Debug>
 #endif
 
+#if __ide_target("Debug")
 #define INTERNAL_BUILD 1
+#endif
 
 // define DETAILED_CONNECTION_STATUS to get more detailed info about the stages
 // of retrieving data from the server

@@ -16,7 +16,7 @@ enum iPediaServerError
     serverErrorFailure=1,
     serverErrorFirst=serverErrorFailure,
     serverErrorUnsupportedDevice=2,
-    serverErrorInvalidAuthorization=3,
+    serverErrorInvalidRegCode=3,
     serverErrorMalformedRequest=4,    
     serverErrorLookupLimitReached=5,
     serverErrorInvalidRequest=6,
@@ -24,6 +24,7 @@ enum iPediaServerError
     serverErrorRequestArgumentMissing=8,
     serverErrorInvalidProtocolVersion=9,
     serverErrorInvalidCookie=10,
+    serverErrorUserDisabled=11,
     serverErrorLast=serverErrorInvalidCookie
 };
 

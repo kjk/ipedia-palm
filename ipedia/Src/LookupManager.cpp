@@ -16,24 +16,22 @@ namespace {
 #pragma pcrelconstdata on
 #endif
 
-/*
-    serverErrorUnexpectedRequestArgument=7,
-    serverErrorRequestArgumentMissing=8,
-    serverErrorInvalidProtocolVersion=9,
-    serverErrorInvalidCookie=10,
-*/
-    // TODO: add alerts for the above
-    static const uint_t serverErrorToAlertMap[][2]=
-    {
-        { serverErrorFailure, serverFailureAlert},
-        { serverErrorUnsupportedDevice, unsupportedDeviceAlert},
-        { serverErrorInvalidAuthorization, invalidAuthorizationAlert},
-        { serverErrorMalformedRequest, malformedRequestAlert },
-        { serverErrorLookupLimitReached, trialExpiredAlert},
-        { serverErrorInvalidCookie, invalidAuthorizationAlert},
-        { serverErrorInvalidRequest, invalidRequestAlert}
-    };
-}
+static const uint_t serverErrorToAlertMap[][2]=
+{
+    { serverErrorFailure, serverFailureAlert},
+    { serverErrorUnsupportedDevice, unsupportedDeviceAlert},
+    { serverErrorInvalidRegCode, invalidRegCodeAlert},
+    { serverErrorMalformedRequest, malformedRequestAlert },
+    { serverErrorLookupLimitReached, lookupLimitReachedAlert},
+    { serverErrorInvalidRequest, invalidRequestAlert},
+    { serverErrorInvalidCookie, invalidCookieAlert},
+    { serverErrorUnexpectedRequestArgument, unexpectedRequestArgumentAlert},
+    { serverErrorRequestArgumentMissing, requestArgumentMissingAlert},
+    { serverErrorInvalidProtocolVersion, invalidProtocolVersionAlert},
+    { serverErrorUserDisabled, userDisabledAlert}
+};
+
+} // namespace
 
 using ArsLexis::status_t;
 
@@ -45,7 +43,6 @@ static uint_t getAlertFromServerError(iPediaServerError serverError)
     
     uint_t error = (uint_t)serverError;
     int arrSize = sizeof(serverErrorToAlertMap)/sizeof(serverErrorToAlertMap[0]);
-    assert( 7 == arrSize );
     for (int i=0; i<arrSize; i++)
     {
         if (error==serverErrorToAlertMap[i][0])
@@ -61,6 +58,8 @@ void LookupManager::handleServerError(iPediaServerError serverError)
         iPediaApplication::sendDisplayAlertEvent(serverFailureAlert);
     else
         iPediaApplication::sendDisplayAlertEvent(alertId);
+    lastInputTerm_ = "";
+    lastSearchExpression_ = "";
 }
 
 void LookupManager::handleConnectionError(status_t error)
@@ -96,6 +95,10 @@ void LookupManager::handleConnectionError(status_t error)
             break;            
 
     }
+
+    lastInputTerm_ = "";
+    lastSearchExpression_ = "";
+
     iPediaApplication::sendDisplayAlertEvent(alertId);
 }
 
@@ -148,16 +151,18 @@ void LookupManager::handleLookupFinished(const LookupFinishedEventData& data)
         handleDefinition();
 }
 
+// if search term is different than the last one, initiate lookup and return true.
+// otherwise return false.
 bool LookupManager::lookupIfDifferent(const ArsLexis::String& term)
 {
     using ArsLexis::equalsIgnoreCase;
-    bool result=false;
     if (lastInputTerm().empty() || !equalsIgnoreCase(lastInputTerm(), term))
     {
-        lookupTerm(lastInputTerm_=term);
-        result=true;
+        lastInputTerm_ = term;
+        lookupTerm(term);
+        return true;
     }
-    return result;
+    return false;
 }
 
 void LookupManager::lookupTerm(const ArsLexis::String& term)

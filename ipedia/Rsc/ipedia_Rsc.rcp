@@ -106,12 +106,21 @@ BEGIN
     BUTTONS "OK"
 END
 
-ALERT ID invalidAuthorizationAlert
+ALERT ID invalidRegCodeAlert
     DEFAULTBUTTON 0
     ERROR
 BEGIN
-    TITLE "Invalid Authorization"
-    MESSAGE "Unable to complete request due to invalid authorization data. Please check if you entered serial number correctly (using menu 'Options/Register')."
+    TITLE "Invalid registration code"
+    MESSAGE "Invalid registration code sent. Please check registration code (using menu 'Options/Register'). Please contact support@arslexis.com if the problem persists."
+    BUTTONS "OK"
+END
+
+ALERT ID invalidCookieAlert
+    DEFAULTBUTTON 0
+    ERROR
+BEGIN
+    TITLE "Invalid cookie"
+    MESSAGE "Invalid cookie sent. Please contact support@arslexis.com if the problem persists."
     BUTTONS "OK"
 END
 
@@ -131,12 +140,12 @@ BEGIN
     BUTTONS "OK"
 END
 
-ALERT ID trialExpiredAlert
+ALERT ID lookupLimitReachedAlert
     DEFAULTBUTTON 0
     ERROR
 BEGIN
-    TITLE "Expired"
-    MESSAGE "Your unregistered trial version expired. Please register to remove daily requests limit."
+    TITLE "Trial expired"
+    MESSAGE "Your unregistered version expired. Please register."
     BUTTONS "OK"
 END
 
@@ -146,6 +155,44 @@ ALERT ID unsupportedDeviceAlert
 BEGIN
     TITLE "Unsupported device"
     MESSAGE "Your hardware configuration is unsupported. Please contact support@arslexis.com if the problem persists."
+    BUTTONS "OK"
+END
+
+// this shouldn't really happen, means bug on the client
+ALERT ID unexpectedRequestArgumentAlert
+    DEFAULTBUTTON 0
+    ERROR
+BEGIN
+    TITLE "Unexpected request argument"
+    MESSAGE "Unexpected request argument. Please contact support@arslexis.com if the problem persists."
+    BUTTONS "OK"
+END
+
+
+ALERT ID requestArgumentMissingAlert
+    DEFAULTBUTTON 0
+    ERROR
+BEGIN
+    TITLE "Request argument missing"
+    MESSAGE "Request argument missing. Please contact support@arslexis.com if the problem persists."
+    BUTTONS "OK"
+END
+
+ALERT ID invalidProtocolVersionAlert
+    DEFAULTBUTTON 0
+    ERROR
+BEGIN
+    TITLE "Invalid protocol version"
+    MESSAGE "Invalid protocol version. Please contact support@arslexis.com if the problem persists."
+    BUTTONS "OK"
+END
+
+ALERT ID userDisabledAlert
+    DEFAULTBUTTON 0
+    ERROR
+BEGIN
+    TITLE "User disabled"
+    MESSAGE "This user has been disabled. Please contact support@arslexis.com if the problem persists."
     BUTTONS "OK"
 END
 
