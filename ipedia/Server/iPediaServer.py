@@ -617,6 +617,9 @@ class iPediaTelnetProtocol(basic.LineReceiver):
     listRe=re.compile(r'\s*list\s*', re.I)
     useDbRe=re.compile(r'\s*use\s+(\w+)\s*', re.I)
     
+    def __init__(self):
+        self.delimiter='\n'
+    
     def listDatabases(self):
         dbs = None
         try:

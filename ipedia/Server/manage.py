@@ -23,6 +23,7 @@ def getReqResponse(req):
     print "Connected to server"
     print "Sending: '%s'" % req
     sock.sendall(req)
+    sock.shutdown(1)
     print "Sent all"
     response = socket_readAll(sock)    
     print "Received:", response
@@ -40,5 +41,5 @@ def socket_readAll(sock):
     return result
 
 if __name__=="__main__":
-    resp = getReqResponse("list\n\n")
+    resp = getReqResponse("list\n")
     print "resp: '%s'" % resp
