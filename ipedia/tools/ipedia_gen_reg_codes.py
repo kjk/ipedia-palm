@@ -317,7 +317,7 @@ def main():
             usageAndExit()
         purpose = sys.argv[1]
         if purpose not in ["pg", "h", "es", "sn"]:
-            print 'purpose cannot be %s. Must be "pg", "h" or "es"' % purpose
+            print 'purpose cannot be %s. Must be "pg", "h", "es" or "sn"' % purpose
             usageAndExit()
         regCodesCount = int(sys.argv[2])
 
