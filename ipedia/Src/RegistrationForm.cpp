@@ -94,10 +94,10 @@ void RegistrationForm::handleLookupFinished(const EventType& event)
     {
         assert(!newRegCode_.empty());
         // TODO: assert that it consists of numbers only
-        if (newRegCode_!=prefs.regCode)
+        if (newRegCode_ != prefs.regCode)
         {
             assert(newRegCode_.length()<=prefs.regCodeLength);
-            prefs.regCode=newRegCode_;
+            prefs.regCode = newRegCode_;
             app.savePreferences();
         }
 
@@ -119,17 +119,18 @@ void RegistrationForm::handleLookupFinished(const EventType& event)
         }
         // this must be "Re-enter registration code" button
         assert(1==buttonId);
+        Field field(*this, regCodeFormField);
+        field.focus();
     }
     else
     {
         assert((data.outcomeServerError==data.outcome) || (data.outcomeError==data.outcome));
         // an alert will be shown for server errors
         update();
+        LookupManager* lookupManager=app.getLookupManager();
+        assert(lookupManager);
+        lookupManager->handleLookupFinishedInForm(data);
     }
-
-    LookupManager* lookupManager=app.getLookupManager();
-    assert(lookupManager);
-    lookupManager->handleLookupFinishedInForm(data);
 }
 
 bool RegistrationForm::handleEvent(EventType& event)

@@ -458,7 +458,6 @@ GenericTextElement* DefinitionParser::createTextElement(const String& text, Stri
             copy.erase(0, colonPos+1);
         String langCode(hyperlinkTarget_, 0, colonPos);
         const char_t* langName = GetLangNameByLangCode(langCode);
-        //const char_t* langName = langCode.c_str();
         if (NULL != langName)
             copy.append(_T(" (")).append(langName).append(1, _T(')'));
     }

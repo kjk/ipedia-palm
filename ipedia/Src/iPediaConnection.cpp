@@ -401,8 +401,8 @@ ArsLexis::status_t iPediaConnection::notifyFinished()
     LookupFinishedEventData data;
     if (serverError_)
     {
-        data.outcome=data.outcomeServerError;
-        data.serverError=serverError_;
+        data.outcome = data.outcomeServerError;
+        data.serverError = serverError_;
         ArsLexis::sendEvent(LookupManager::lookupFinishedEvent, data);
         assert(errNone==error);
         return errNone;
