@@ -501,7 +501,7 @@ requestLogSql = """CREATE TABLE request_log (
     search_result VARCHAR(255) NULL,
     -- if not NULL, there was an error processing the request and this is the 
     -- error number
-    error            INT(10) NULL,
+    error            INT(10) NULL
 ) TYPE=MyISAM;"""
 
 getCookieLogSql = """CREATE TABLE get_cookie_log (
@@ -509,7 +509,7 @@ getCookieLogSql = """CREATE TABLE get_cookie_log (
     client_ip       VARCHAR(24) NOT NULL,
     log_date        TIMESTAMP(14) NOT NULL,
     device_info     VARCHAR(255) NOT NULL,
-    cookie          VARCHAR(64) NOT NULL,
+    cookie          VARCHAR(64) NOT NULL
 ) TYPE=MyISAM;"""
 
 verifyRegCodeLogSql = """CREATE TABLE verify_reg_code_log (
