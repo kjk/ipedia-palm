@@ -25,6 +25,12 @@ Release 1.3
 
 Release 1.4
 
+## add rendering display align on both left and right sides
+
+## would be nice to show status display during registration. Currently it's
+slightly confusing (no immediate feedback to the user after pressing "Register"
+button)
+
 ## create and send via e-mail every day access stats. Similar to what InfoMan
 does. Total number of requests (random/search/extended search), how many
 unique users did queries, terms searched for (can be long)
