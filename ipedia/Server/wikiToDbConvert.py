@@ -45,7 +45,7 @@ g_dbName = None
 MANAGEMENT_DB = 'ipedia_manage'
 
 def usageAndExit():
-    print "newConvert.py [-verbose] [-limit n] [-showdups] [-nopsyco] sqlDumpName"
+    print "wikiToDbConvert.py [-verbose] [-limit n] [-showdups] [-nopsyco] [-recreatedb] [-recreatedatadb] sqlDumpName"
     sys.exit(0)
 
 def getOneResult(conn,query):

@@ -14,8 +14,8 @@ except:
 # diffs, not only line-level)
 (DIFF_WINDIFF,DIFF_ARAXIS, DIFF_WINMERGE) = range(3)
 
-#g_DiffTool = DIFF_WINDIFF
-g_DiffTool = DIFF_ARAXIS
+g_DiffTool = DIFF_WINDIFF
+#g_DiffTool = DIFF_ARAXIS
 #g_DiffTool = DIFF_WINMERGE
 
 # windiff doesn't do that well with long lines so I break long lines into

@@ -51,8 +51,9 @@ protocolVersionField =  "Protocol-Version"
 clientVersionField =    "Client-Version"
 searchField =           "Search"
 searchResultsField =    "Search-Results"
-getArticleCountField=   "Get-Article-Count"
-articleCountField=      "Article-Count"
+getArticleCountField =  "Get-Article-Count"
+articleCountField =     "Article-Count"
+pingField =             "Ping"
 
 definitionFormatVersion = 1
 protocolVersion = 1
@@ -171,6 +172,7 @@ class iPediaProtocol(basic.LineReceiver):
         self.linesCount=0
         self.getArticleCount=False
         self.searchExpression=None
+        self.ping=False
 
     def getManagementDatabase(self):
         if not self.dbManagement:
@@ -250,9 +252,7 @@ class iPediaProtocol(basic.LineReceiver):
             self.dbArticles=None
 
         if g_fVerbose:
-            print ""
             print "--------------------------------------------------------------------------------"
-            print ""
             
     def validateDeviceInfo(self):
         return True
@@ -384,6 +384,17 @@ class iPediaProtocol(basic.LineReceiver):
         
     def preprocessDefinition(self, db, cursor, definition):
 #        definition=iPediaDatabase.validateInternalLinks(db, cursor, definition)
+        # TODO: move this code somewhere else
+        # TODO: perf: we could improve this by marking articles that need this conversion
+        # in the database and only do this if it's marked as such. but maybe
+        # the overhead of storing/retrieving this info will be bigger than code
+
+        # TODO: maybe we should ignore {{NUMBEROFARTICLES}} or replace it during
+        # conversion
+        definition=definition.replace("{{NUMBEROFARTICLES}}", str(self.factory.articleCount))
+        # speed up trick: don't do the conversion if there can't possibly anything to convert
+        if -1 == definition.find("{{CURRENT"):
+            return definition
         definition=definition.replace("{{CURRENTMONTH}}", str(int(time.strftime('%m'))));
         definition=definition.replace("{{CURRENTMONTHNAME}}", time.strftime('%B'))
         definition=definition.replace("{{CURRENTMONTHNAMEGEN}}", time.strftime("%B"))
@@ -391,7 +402,6 @@ class iPediaProtocol(basic.LineReceiver):
         definition=definition.replace("{{CURRENTDAYNAME}}", time.strftime("%A"))
         definition=definition.replace("{{CURRENTYEAR}}", time.strftime("%Y"))
         definition=definition.replace("{{CURRENTTIME}}", time.strftime("%X"))
-        definition=definition.replace("{{NUMBEROFARTICLES}}", str(self.factory.articleCount))
         return definition
 
     def handleDefinitionRequest(self):
@@ -508,10 +518,12 @@ class iPediaProtocol(basic.LineReceiver):
         global g_fVerbose
         try:
             if g_fVerbose:
-                print ""
                 print "--------------------------------------------------------------------------------"
-                print ""
-        
+
+            if self.ping:
+                self.outputField("PONG")
+                return self.finish()
+
             if self.transactionId:
                 self.outputField(transactionIdField, self.transactionId)
             else:
@@ -600,8 +612,17 @@ class iPediaProtocol(basic.LineReceiver):
                     
                 elif request.startswith(getArticleCountField):
                     self.getArticleCount=True
+
+                elif request.startswith(pingField):
+                    self.ping = True
+                    #print "lines: %d" % self.linesCount
+                    if self.linesCount != 0:
+                        self.error = iPediaServerError.malformedRequest
+                    self.answer()
+
                 else:
                     self.error=iPediaServerError.malformedRequest
+                    self.answer()
         except Exception, ex:
             dumpException(ex)
             self.error=iPediaServerError.serverFailure

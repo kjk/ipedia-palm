@@ -76,18 +76,18 @@ def showDiffRandom(fileName):
         converted = arsutils.normalizeNewlines(converted)
         arsutils.showTxtDiff(origTxt,converted)
 
-def findOrigArticleNoRedirect(fileName,title):
-    titleLower = title.lower()
-    print "looking for article with title %s" % titleLower
+def findOrigArticleNoRedirect(fileName,titleToFind):
+    titleToFind = titleToFind.lower()
+    titleToFind = titleToFind.replace(" ", "_")
+    print "looking for article with title %s" % titleToFind
     count = 0
     for article in wikipediasql.iterWikipediaArticles(fileName,None,fUseCache=True,fRecreateCache=False):
         #if article.getTitle().lower() == titleLower:
         title = article.getTitle().lower()
-        title = title.replace("_", " ")
-        if 0 == title.find(titleLower):
+        if 0 == title.find(titleToFind):
             return article
-        if count % 50000 == 0:
-            print "processed %d articles, last title %s" % (count,title)
+        #if count % 50000 == 0:
+        #    print "processed %d articles, last title %s" % (count,title)
         count += 1
     return None
 
@@ -101,16 +101,18 @@ def findOrigArticle(fileName, title):
         print "resolving redirect from %s to %s" % (title, article.getRedirect())
         title = article.getRedirect()
 
-def findConvertedArticle(fileName,title):
-    titleLower = title.lower()
-    print "looking for converted article with title '%s'" % titleLower
+def findConvertedArticle(fileName,titleToFind):
+    titleToFind = titleToFind.lower()
+    titleToFind = titleToFind.replace(" ", "_")
+    print "looking for converted article with title '%s'" % titleToFind
     count = 0
     for article in wikipediasql.iterConvertedArticles(fileName):
         title = article.getTitle().lower()
-        if 0 == title.find(titleLower):
+        if 0 == title.find(titleToFind):
+            print "found converted article with title '%s'" % title
             return article
-        if count % 2000 == 0:
-            print "processed %d articles, last title %s" % (count,title)
+        #if count % 50000 == 0:
+        #    print "processed %d articles, last title %s" % (count,title)
         count += 1
     return None
 
@@ -138,9 +140,12 @@ def showDiffTitle(fileName,title):
     convertedArticle = None
     if wikipediasql.fConvertedCacheExists(fileName):
         convertedArticle = findConvertedArticle(fileName,title)
-
-    if not convertedArticle:
+    else:
+        print "Converted cache for '%s' doesn't exist" % fileName
+        sys.exit(0)
+    if None == convertedArticle:
         print "didn't find article '%s' in the converted cache" % title
+        sys.exit(0)
     origTxt = article.getText()
     origTxt = arsutils.normalizeNewlines(origTxt)
     if convertedArticle:

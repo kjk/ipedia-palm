@@ -19,18 +19,19 @@ g_defaultServerNo = 0 # index within g_serverList
 g_cookie = None
 g_exampleDeviceInfo = "HS50616C6D204F5320456D756C61746F72:OC70616C6D:OD00000000"
 
-TRANSACTION_ID  = "Transaction-ID:"
-GET_COOKIE      = "Get-Cookie:"
-COOKIE          = "Cookie:"
-FORMAT_VER      = "Format-Version:"
-RESULTS_FOR     = "Results-For:"
-DEFINITION      = "Definition:"
-PROTOCOL_VER    = "Protocol-Version:"
-CLIENT_VER      = "Client-Version:"
-GET_DEF         = "Get-Definition:"
-GET_RANDOM      = "Get-Random-Definition:"
-GET_ARTICLE_COUNT=   "Get-Article-Count"
-ARTICLE_COUNT=      "Article-Count:"
+TRANSACTION_ID    = "Transaction-ID:"
+GET_COOKIE        = "Get-Cookie:"
+COOKIE            = "Cookie:"
+FORMAT_VER        = "Format-Version:"
+RESULTS_FOR       = "Results-For:"
+DEFINITION        = "Definition:"
+PROTOCOL_VER      = "Protocol-Version:"
+CLIENT_VER        = "Client-Version:"
+GET_DEF           = "Get-Definition:"
+GET_RANDOM        = "Get-Random-Definition:"
+GET_ARTICLE_COUNT = "Get-Article-Count"
+ARTICLE_COUNT     = "Article-Count:"
+PING              = "Ping:"
 
 g_fShowTiming = None
 
@@ -60,6 +61,7 @@ def getGlobalCookie():
 
 def getServerNamePort():
     srv = g_serverList[g_defaultServerNo]
+    print "using server %s" % srv
     (name,port) = srv.split(":")
     port = int(port)
     return (name,port)
@@ -79,7 +81,7 @@ def buildLine( field, value):
 def buildCommonRequestPart():
     protocolVer = "1"
     clientVer = "0.5"
-    transactionId = "%x" % random.randint( 0, 2**32-1)
+    transactionId = "%x" % random.randint( 0, 2**16-1)
 
     req  = buildLine(PROTOCOL_VER, protocolVer)
     req += buildLine(CLIENT_VER, clientVer)
@@ -115,7 +117,6 @@ def buildGetArticleCountRequest():
     req += GET_ARTICLE_COUNT
     req += "\n\n"
     return req
-    
 
 # parser server response. Returns a dictionary where keys are the
 # names of fields e.g. like FORMAT_VER, COOKIE and values their values
@@ -158,51 +159,30 @@ def parseServerResponse(response):
             result[key] = value
     return result
 
-def getDef(term):
+def getReqResponse(req):
     sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     (serverName, serverPort) = getServerNamePort()
     sock.connect((serverName,serverPort))
     #print "Connected to server"
-
-    req = buildGetDefinitionRequest(term)
-    #print "Sening:", req
+    #print "Sending:", req
     sock.sendall(req)
     #print "Sent all"
-    response = socket_readAll(sock)
+    response = socket_readAll(sock)    
     #print "Received:", response
     sock.close()
     return response
+
+def getDef(term):
+    req = buildGetDefinitionRequest(term)
+    return getReqResponse(req)
 
 def getRandomDef():
-    sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-    (serverName, serverPort) = getServerNamePort()
-    sock.connect((serverName,serverPort))
-    #print "Connected to server"
-
     req = buildGetRandomDefinitionRequest()
-    #print "Sening:", req
-    sock.sendall(req)
-    #print "Sent all"
-    response = socket_readAll(sock)
-    #print "Received:", response
-    sock.close()
-    return response
+    return getReqResponse(req)
     
 def getArticleCount():
-    sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-    (serverName, serverPort) = getServerNamePort()
-    sock.connect((serverName,serverPort))
-    #print "Connected to server"
-
     req = buildGetArticleCountRequest()
-    #print "Sening:", req
-    sock.sendall(req)
-    #print "Sent all"
-    response = socket_readAll(sock)
-    #print "Received:", response
-    sock.close()
-    return response
-    
+    return getReqResponse(req)
 
 def doGetDef(term):
     global g_cookie
@@ -246,7 +226,7 @@ def doGetRandomDefNoTiming():
     if not getGlobalCookie() and parsedResponse.has_key(COOKIE):
         print "Found cookie: %s" % parsedResponse[COOKIE]
         g_cookie = parsedResponse[COOKIE]
-        
+
 def doGetArticleCount():
     global g_cookie
     defResponse = getArticleCount()
@@ -271,13 +251,22 @@ def doRandomPerf(count):
     timer.dumpInfo()
     print "Number of runs: %d" % count
 
+def doPing():
+    print "sending PING to the server"
+    pingResponse = getReqResponse("%s\n" % PING)
+    print "got '%s' from the server" % pingResponse.strip()
+    assert pingResponse.strip() == "PONG"
+
 def usageAndExit():
-    print "client.py [-showtiming] [-perfrandom N] [-getrandom] [-get term] [-articlecount]"
+    print "client.py [-showtiming] [-perfrandom N] [-getrandom] [-get term] [-articlecount] [-ping]"
 
 if __name__=="__main__":
     g_fShowTiming = arsutils.fDetectRemoveCmdFlag("-showtiming")
     try:
         unpickleState()
+        if arsutils.fDetectRemoveCmdFlag("-ping"):
+            doPing()
+            sys.exit(0)
         randomCount = arsutils.getRemoveCmdArgInt("-perfrandom")
         if randomCount != None:
             doRandomPerf(randomCount)
