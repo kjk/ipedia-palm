@@ -41,8 +41,6 @@ g_connRoot       = None
 g_connIpedia     = None
 g_connIpediaDbName = None
 
-g_dbName = None
-
 DB_HOST        = 'localhost'
 DB_USER        = 'ipedia'
 DB_PWD         = 'ipedia'
@@ -214,10 +212,12 @@ class ConvertedArticleRedirect:
 
 def getDbNameFromFileName(sqlFileName):
     base = os.path.basename(sqlFileName)
+    lang = base[0:2]
     txt = wikipediasql.getBaseFileName(base)
     pos = txt.find("_cur_table")
     date = txt[:pos]
-    dbName = "ipedia_%s" % date
+    assert lang in ["en", "fr", "de"]
+    dbName = "ipedia_%s_%s" % (lang, date)
     return dbName
 
 # First pass: go over all articles, either directly from

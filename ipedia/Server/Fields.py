@@ -115,6 +115,30 @@ verifyRegCode =    "Verify-Registration-Code"
 # Value: 1 - reg code was valid, 0 - reg code was not valid
 regCodeValid =     "Registration-Code-Valid"
 
+# Below are multi-lingual (ml) versions of requests. They support wikipedias
+# in multiple languages (and not only english, with which we started).
+# They all provide the language (e.g. "en", "fr", "de") as the first parameter,
+# then space and the rest is the same.
+#
+# We don't just re-define requests to have additional argument because of 
+# backward-compatibility (new server will work just fine with old clients)
+getArticleMl       = "Get-Article-Ml"
+getRandomMl        = "Get-Random-Article-Ml"
+searchMl           = "Search-Ml"
+getArticleCountMl  = "Get-Article-Count-Ml"
+getDatabaseTimeMl  = "Get-Database-Time-Ml"
+
+# Client sends Get-Available-Langs to find out what are the languages we have
+# wikipedia databases for on our server.
+# Value: none
+# Response: Available-Langs
+getAvailableLangs = "Get-Available-Langs"
+
+# Server sends Available-Langs in response Get-Available-Langs.
+# Value: space-separated list of languages that a client can use in *-Ml
+# requests as first parameter
+availableLangs = "Available-Langs"
+
 (fieldTypeClient, fieldTypeServer, fieldTypeBoth) = range(3)
 (valueNone, valueInline, valuePayload) = range(3)
 
@@ -124,8 +148,6 @@ fieldsInfo = {
     transactionId   : (fieldTypeBoth,   valueInline),
     cookie          : (fieldTypeBoth,   valueInline),
     getCookie       : (fieldTypeClient, valueInline),
-    getArticle      : (fieldTypeClient, valueInline),
-    getRandom       : (fieldTypeClient, valueNone),
     formatVersion   : (fieldTypeServer, valueInline),
     articleBody     : (fieldTypeServer, valuePayload),
     articleTitle    : (fieldTypeServer, valueInline),
@@ -133,14 +155,26 @@ fieldsInfo = {
     notFound        : (fieldTypeServer, valueNone),
     error           : (fieldTypeServer, valueInline),
     regCode         : (fieldTypeBoth,   valueInline),
-    search          : (fieldTypeClient, valueInline),
     searchResults   : (fieldTypeServer, valuePayload),
-    getArticleCount : (fieldTypeClient, valueNone),
     articleCount    : (fieldTypeServer, valueInline),
-    getDatabaseTime : (fieldTypeClient, valueNone),
     databaseTime    : (fieldTypeServer, valueInline),
     verifyRegCode   : (fieldTypeClient, valueInline),
     regCodeValid    : (fieldTypeServer, valueInline)
+
+    getArticle      : (fieldTypeClient, valueInline),
+    getRandom       : (fieldTypeClient, valueNone),
+    search          : (fieldTypeClient, valueInline),
+    getDatabaseTime : (fieldTypeClient, valueNone),
+    getArticleCount : (fieldTypeClient, valueNone),
+
+    getArticleMl      : (fieldTypeClient, valueInline),
+    getRandomMl       : (fieldTypeClient, valueInline),
+    searchMl          : (fieldTypeClient, valueInline),
+    getDatabaseTimeMl : (fieldTypeClient, valueInline),
+    getArticleCountMl : (fieldTypeClient, valueInline),
+
+    getAvailableLangs : (fieldTypeClient, valueNone),
+    availableLangs    : (fieldTypeServer, valueInline),
 }
 
 # return True if this is a valid field

@@ -930,13 +930,21 @@ clientFieldsHandlers = {
     Fields.transactionId     : None,
     Fields.cookie            : None,
     Fields.getCookie         : None,
+    Fields.regCode           : None,
+    Fields.verifyRegCode     : iPediaProtocol.handleVerifyRegistrationCodeRequest
+
     Fields.getArticle        : iPediaProtocol.handleGetArticleRequest,
     Fields.getRandom         : iPediaProtocol.handleGetRandomRequest,
-    Fields.regCode           : None,
     Fields.search            : iPediaProtocol.handleSearchRequest,
     Fields.getArticleCount   : None,
     Fields.getDatabaseTime   : None,
-    Fields.verifyRegCode     : iPediaProtocol.handleVerifyRegistrationCodeRequest
+
+    Fields.getArticleMl      : iPediaProtocol.handleGetArticleRequestMl,
+    Fields.getRandomMl       : iPediaProtocol.handleGetRandomRequestMl,
+    Fields.searchMl          : iPediaProtocol.handleSearchRequesMlt,
+    Fields.getArticleCountMl : iPediaProtocol.hanldeGetArticleCountMl,
+    Fields.getDatabaseTimeMl : iPediaProtocol.handleGetDatabaseTimeMl,
+    Fields.getAvailableLangs : iPediaProtocol.handleGetAvailableLangs,
 }
 
 def getFieldHandler(fieldName):
@@ -956,18 +964,18 @@ class iPediaFactory(protocol.ServerFactory):
 
     def changeDatabase(self, dbName):
         print "Switching to database %s" % dbName
-        self.dbName=dbName
+        self.dbName = dbName
         self.dbTime = dbName[7:]
-        db=self.createArticlesConnection()
-        cursor=db.cursor()
+        db = self.createArticlesConnection()
+        cursor = db.cursor()
         cursor.execute("""SELECT COUNT(*), min(id), max(id) FROM articles""")
-        row=cursor.fetchone()
-        self.articleCount=row[0]-ARTICLE_COUNT_DELTA
-        self.minDefinitionId=row[1]
-        self.maxDefinitionId=row[2]
+        row = cursor.fetchone()
+        self.articleCount = row[0]-ARTICLE_COUNT_DELTA
+        self.minDefinitionId = row[1]
+        self.maxDefinitionId = row[2]
         cursor.execute("""SELECT COUNT(*) FROM redirects""")
-        row=cursor.fetchone()
-        self.redirectsCount=row[0]
+        row = cursor.fetchone()
+        self.redirectsCount = row[0]
         print "Number of Wikipedia articles: %d" % self.articleCount
         print "Number of redirects: %d" % self.redirectsCount
         cursor.close()
