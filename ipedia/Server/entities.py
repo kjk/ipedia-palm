@@ -483,7 +483,7 @@ def convertNumberedEntities(term, text):
         matches.append(iter)
     matches.reverse()
     for match in matches:
-        num=int(text[match.start(1):match.end(1)])
+        num=int(match.group(1))
         if num>255:
             if approx_refs.has_key(num):
                 text=text[:match.start()]+approx_refs[num]+text[match.end():]

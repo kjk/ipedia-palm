@@ -65,30 +65,36 @@ def fInvalidRedirect(row):
             return True
     return False
     
-import codecs
+def unicodeToLatin1(text):
+    start = 0
+    pos = 0
+    length = len(text)
+    result = ''
+    while pos < length:
+        i = ord(text[pos])
+        if i > 255:
+            if pos != start:
+                result += text[start:pos].encode("latin_1")
+            start = pos + 1
+            result += "&#%d;" % i
+        pos += 1
+    if pos != start:
+        result += text[start:pos].encode("latin_1")
+    return result
     
 def utf8ToLatin1(text):
-    isShort = False # (30 >= len(text))
     decoded = text
     try:
-        if isShort:
-            sys.stderr.write("decoding: %s\n" % text)
         decoded = text.decode("utf_8")
-        if isShort:
-            sys.stderr.write("decoded:  %s\n" % text)
-
     except ValueError, ex:
-        sys.stderr.write("exception while decoding utf-8\n")
-        sys.stderr.write("%s\n" % arsutils.exceptionAsStr(ex))
-    
-    try:
-        encoded = decoded.encode("latin_1", 'xmlcharrefreplace')
-    except ValueError, ex:
-        sys.stderr.write("exception while encoding latin-1\n")
-        sys.stderr.write("%s\n" % arsutils.exceptionAsStr(ex))
-
-    if isShort:
-        sys.stderr.write("encoded:  %s\n" % text)
+        sys.stdout.write("exception while decoding utf-8\n")
+        sys.stdout.write("%s\n" % arsutils.exceptionAsStr(ex))
+        sys.stdout.write('\n')
+        sys.stdout.write(text[:240])
+        sys.stdout.write('\n')
+        return text
+ 
+    encoded = unicodeToLatin1(decoded)
     return encoded
 
 class WikipediaArticleFromSql:
