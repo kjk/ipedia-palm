@@ -401,6 +401,10 @@ class iPediaProtocol(basic.LineReceiver):
     def logRandomSearchRequest(self,userId,articleTitle,error):
         self.logRequestGeneric(userId,SEARCH_TYPE_RANDOM,None,articleTitle,error)
 
+    # TODO: in order to improve performance, we should do buffered logging i.e.
+    # we just cache N requests to log in memory. When we reach N (and/or some time
+    # has passed), we INSERT them in one go. This should be faster.
+    # Ideally we would also be able to flush cached logs via remote interface
     def logRequest(self, error):
         # sometimes we have errors before we can establish userId
         if None == self.userId:

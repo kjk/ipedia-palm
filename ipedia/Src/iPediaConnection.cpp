@@ -74,7 +74,7 @@ void iPediaConnection::prepareRequest()
     appendField(request, clientInfoField, _T("PocketPC 1.0"));
 #endif
 #if defined(WIN32_PLATFORM_WFSP)
-    appendField(request, clientInfoField, _T("Smartphone 1.0"));
+    appendField(request, clientInfoField, _T("Smartphone 1.01"));
 #endif
 
     char_t buffer[16];
@@ -112,12 +112,33 @@ void iPediaConnection::prepareRequest()
         appendField(request, getRandomField);
     }
 
-    // get number of articles and database update time in the first request to
-    // the server. do it only once per application launch
+    // get article count from the server when during first request or after a day
+    // (because on smartphone applications rarely quit)
+    bool fNeedsToGetArticleCount = false;
+
     if (!app.fArticleCountChecked)
+    {
+        fNeedsToGetArticleCount = true;
+    }
+
+#ifndef _PALM_OS
+    // wince only code
+    SYSTEMTIME currTime;
+    GetSystemTime(&currTime);
+    if (currTime.wDay != app.lastArticleCountCheckTime.wDay)
+    {
+        fNeedsToGetArticleCount = true;
+    }
+#endif
+
+    if (fNeedsToGetArticleCount)
     {
         appendField(request, getArticleCountField);
         appendField(request, getDatabaseTimeField);
+#ifndef _PALM_OS
+        // wince only code
+        GetSystemTime(&app.lastArticleCountCheckTime);
+#endif
         app.fArticleCountChecked = true; // or do it later, when we process the response
     }
 
