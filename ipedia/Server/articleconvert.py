@@ -6,6 +6,7 @@
 #  format to our format
 
 import sys,traceback,re,unicodedata,entities, string
+import arsutils
 
 def stripBlocks(text, startPattern, endPattern):
     opened=0
@@ -200,11 +201,11 @@ def replaceWikiMacros(text):
     text=replaceRegExp(text, wikiMacroRe, "")
     return text
 
-def dumpException(e):
-    print str(e)
-    print sys.exc_info()[0]
-    print sys.exc_info()[1]
-    print traceback.print_tb(sys.exc_info()[2])
+#def dumpException(e):
+#    print str(e)
+#    print sys.exc_info()[0]
+#    print sys.exc_info()[1]
+#    print traceback.print_tb(sys.exc_info()[2])
 
 # main function: given the text of wikipedia article in original wikipedia
 # format, return the article in our own format
@@ -246,7 +247,7 @@ def convertArticle(term, text):
         return text
     except Exception, ex:
         print "Exception while converting term: ", term
-        dumpException(ex)
+        print arsutils.exceptionAsStr(ex)
         return ''
 
 class WikipediaLink:

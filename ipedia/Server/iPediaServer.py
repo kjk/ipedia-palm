@@ -37,8 +37,6 @@ g_fDisableRegistrationCheck     = False
 g_unregisteredLookupsLimit      = 30
 g_unregisteredLookupsDailyLimit = 2   
 
-# if True we'll print debugging info
-g_fVerbose = None
 g_fDumpPayload = False
 
 # Protocol-Version is sent by a client with every request. It future-proofs our
@@ -193,6 +191,32 @@ class iPediaServerError:
     # return userDisabled if user is marked as disabled (based on cookie or
     # regCode client sends)
     userDisabled = 11
+    # return forceUpgrade if we want to force user to upgrade the software.
+    # Client will display apropriate dialog notyfing about the need to upgrade
+    # This is to make our life easier e.g. if we discover a fatal flaw in the
+    # software or if we don't want to support multiple versions
+    # of the protocol/data formats we can use this
+    forceUpgrade = 12
+
+# testing only
+g_fForceUpgrade = False
+
+# severity of the log message
+# SEV_NONE is used to indicate that we don't do any logging at all
+# SEV_HI is for messages of high severity (e.g. exception) that usually should always be logged
+# SEV_MED is for messages of medium severity, use for debugging info that is often of interest
+# SEV_LOW is for messages of low severity, use for extra debugging info that is only rarely of interest
+(SEV_NONE, SEV_HI,SEV_MED,SEV_LOW) = (0,1,2,3)
+
+# what is the highest severity that we'll log. if SEV_NONE => nothing,
+# if SEV_HI => only SEV_HI messages, if SEV_MED => SEV_HI and SEV_MED messages etc.
+g_acceptedLogSeverity = SEV_NONE
+
+def log(sev,txt):
+    global g_acceptedLogSeverity
+    assert sev in [SEV_HI,SEV_MED,SEV_LOW] # client isn't supposed to pass SEV_NONE
+    if sev <= g_acceptedLogSeverity:
+        sys.stdout.write(txt)
 
 lineSeparator =     "\n"
 
@@ -264,12 +288,12 @@ validTags = ["PL", "PN", "SN", "HN", "OC", "OD", "HS", "IM"]
 def fValidDeviceInfo(deviceInfo):
     deviceInfoDecoded = decodeDeviceInfo(deviceInfo)
     if None == deviceInfoDecoded:
-        print "couldn't decode device info"
+        log(SEV_HI,"couldn't decode device info '%s'\n" % deviceInfo)
         return False
     tagsPresent = deviceInfoDecoded.keys()
     for tag in tagsPresent:
         if tag not in validTags:
-            print "tag '%s' is not valid" % tag
+            log(SEV_HI,"tag '%s' is not valid\n" % tag)
             return False
     # "PL" (Platform) is a required tag - must be sent by all clients
     if "PL" not in tagsPresent:
@@ -370,14 +394,12 @@ def findFullTextMatches(db, cursor, searchTerm):
     queryStr = string.join(words, " +")
     queryStrEscaped = db.escape_string(queryStr)
     searchTermEscaped = db.escape_string(searchTerm)
-    if g_fVerbose:
-        print "Performing full text search for '%s'" % queryStr
+    log(SEV_LOW,"Performing full text search for '%s'\n" % queryStr)
     query = """SELECT id, title, match(title, body) AGAINST('%s') AS relevance FROM articles WHERE match(title, body) against('%s' in boolean mode) ORDER BY relevance DESC limit %d""" % (searchTermEscaped, queryStrEscaped, listLengthLimit)
     cursor.execute(query)
     row = cursor.fetchone()
     if not row:
-        if g_fVerbose:
-            print "Performing non-boolean mode search for '%s'" % queryStr
+        log (SEV_LOW,"Performing non-boolean mode search for '%s'" % queryStr)
         query = """SELECT id, title, match(title, body) AGAINST('%s') AS relevance FROM articles WHERE match(title, body) against('%s') ORDER BY relevance DESC limit %d""" % (searchTermEscaped, queryStrEscaped, listLengthLimit)
         cursor.execute(query)
 
@@ -442,14 +464,12 @@ class iPediaProtocol(basic.LineReceiver):
         return self.dbArticles
 
     def outputField(self, name, value=None):
-        global g_fVerbose
         if value:
             field = "%s: %s%s" % (name, value, lineSeparator)
         else:
             field = "%s:%s" % (name, lineSeparator)
         self.transport.write(field)
-        if g_fVerbose:
-            sys.stdout.write(field)
+        log(SEV_MED,field)
 
     def outputPayloadField(self, name, payload):
         global g_fDumpPayload
@@ -457,7 +477,7 @@ class iPediaProtocol(basic.LineReceiver):
         self.transport.write(payload)
         self.transport.write(lineSeparator)
         if g_fDumpPayload:
-            print payload
+            log(SEV_HI,payload)
 
     # return client's (peer connection's) ip address as a string
     def getClientIp(self):
@@ -509,11 +529,10 @@ class iPediaProtocol(basic.LineReceiver):
             cursor.execute(sql)
             cursor.close()
         except _mysql_exceptions.Error, ex:
-            arsutils.dumpException(ex)
             if cursor:
                 cursor.close()
+            log(SEV_HI, arsutils.exceptionAsStr(ex))
 
-        return
 
     def logSearchRequest(self,userId,searchTerm,articleTitle,error):
         self.logRequestGeneric(userId,SEARCH_TYPE_STANDARD,searchTerm,articleTitle,error)
@@ -540,8 +559,6 @@ class iPediaProtocol(basic.LineReceiver):
     # errorField to the response, send the response to the client and
     # log the request
     def finish(self, error):
-        global g_fVerbose
-
         if None != error:
             self.outputField(errorField, str(error))
         self.transport.loseConnection()
@@ -555,8 +572,7 @@ class iPediaProtocol(basic.LineReceiver):
             self.dbArticles.close()
             self.dbArticles=None
 
-        if g_fVerbose:
-            print "--------------------------------------------------------------------------------"
+        log(SEV_MED, "--------------------------------------------------------------------------------\n")
 
     # return True if regCode exists in a list of valid registration codes
     def fRegCodeExists(self,regCode):
@@ -590,7 +606,7 @@ class iPediaProtocol(basic.LineReceiver):
         except _mysql_exceptions.Error, ex:
             if cursor:
                 cursor.close()        
-            arsutils.dumpException(ex)
+            log(SEV_HI, arsutils.exceptionAsStr(ex))
         
     # Log all attempts to verify registration code. We ignore all errors from here
     def logRegCodeToVerify(self,userId,regCode,fRegCodeValid):
@@ -609,7 +625,7 @@ class iPediaProtocol(basic.LineReceiver):
         except _mysql_exceptions.Error, ex:
             if cursor:
                 cursor.close()        
-            arsutils.dumpException(ex)
+            log(SEV_HI, arsutils.exceptionAsStr(ex))
 
     def outputArticle(self, title, body, reverseLinks):
         self.outputField(formatVersionField, DEFINITION_FORMAT_VERSION)
@@ -653,7 +669,6 @@ class iPediaProtocol(basic.LineReceiver):
                 return iPediaServerError.lookupLimitReached
 
         title = self.getFieldValue(getArticleField)
-        #print "handleGetArticleRequest for '%s'" % title
         cursor = None
         try:
             db = self.getArticlesDatabase()
@@ -738,7 +753,6 @@ class iPediaProtocol(basic.LineReceiver):
             row=cursor.fetchone()
             assert None!=row
             totalLookups = row[0]
-            # print "userId=%d, totalLookups=%d" % (userId,totalLookups)
             if totalLookups >= g_unregisteredLookupsLimit:
                 query="SELECT COUNT(*) FROM request_log WHERE user_id=%d AND NOT (request_type='r') AND log_date>DATE_SUB(CURDATE(), INTERVAL 1 DAY)" % self.userId
                 cursor.execute(query)
@@ -862,7 +876,6 @@ class iPediaProtocol(basic.LineReceiver):
                 return iPediaServerError.userDisabled
 
             self.userId = int(row[0])
-            # print "userdId %d for cookie %s" % (self.userId,cookie)
         except _mysql_exceptions.Error, ex:
             if cursor:
                 cursor.close()
@@ -957,11 +970,10 @@ class iPediaProtocol(basic.LineReceiver):
     # apropriate response to the client.
     # If error is != None, this is the server errro code to return to the client
     def answer(self,error):
-        global g_fVerbose, validClientFields
+        global validClientFields, g_fForceUpgrade
 
         try:
-            if g_fVerbose:
-                print "--------------------------------------------------------------------------------"
+            log(SEV_MED, "--------------------------------------------------------------------------------\n")
 
             # try to return transactionIdField at all costs
             if self.fHasField(transactionIdField):
@@ -970,6 +982,9 @@ class iPediaProtocol(basic.LineReceiver):
             # exit if there was an error during request parsing
             if None != error:
                 return self.finish(error)
+
+            if g_fForceUpgrade:
+                return self.finish(iPediaServerError.forceUpgrade)
 
             if not self.fHasField(transactionIdField):
                 return self.finish(iPediaServerError.malformedRequest)
@@ -1007,7 +1022,7 @@ class iPediaProtocol(basic.LineReceiver):
                 self.outputField(databaseTimeField, self.factory.dbTime)
 
         except Exception, ex:
-            arsutils.dumpException(ex)
+            log(SEV_HI, arsutils.exceptionAsStr(ex))
             return self.finish(iPediaServerError.serverFailure)
  
         self.finish(None)
@@ -1018,8 +1033,7 @@ class iPediaProtocol(basic.LineReceiver):
             if request == "":
                 return self.answer(None)
 
-            if g_fVerbose:
-                print request
+            log(SEV_MED, "%s\n" % request)
 
             (fieldName,value) = parseRequestLine(request)
             if None == fieldName:
@@ -1046,8 +1060,8 @@ class iPediaProtocol(basic.LineReceiver):
             self.setFieldValue(fieldName,value)
 
         except Exception, ex:
-            arsutils.dumpException(ex)
-            self.answer(iPediaServerError.serverFailure)
+            log(SEV_HI, arsutils.exceptionAsStr(ex))
+            return self.answer(iPediaServerError.serverFailure)
 
 # a dict of valid client requests. The value is a tuple.
 # The first element is a boolean saying if a given
@@ -1078,11 +1092,13 @@ def fValidClientField(fieldName):
 class iPediaFactory(protocol.ServerFactory):
 
     def createArticlesConnection(self):
-        #print "creating articles connection"
+        #log(SEV_LOW,"creating articles connection\n")
+        # TODO: should we try to re-use connections (e.g. from a pool)
+        # in order to improve performance ?
         return MySQLdb.Connect(host=DB_HOST, user=DB_USER, passwd=DB_PWD, db=self.dbName)
 
     def createManagementConnection(self):
-        #print "creating management connection"
+        #log(SEV_LOW,"creating management connection\n")
         return MySQLdb.Connect(host=DB_HOST, user=DB_USER, passwd=DB_PWD, db=MANAGEMENT_DB)
 
     def __init__(self, dbName):
@@ -1102,8 +1118,8 @@ class iPediaFactory(protocol.ServerFactory):
         cursor.execute("""SELECT COUNT(*) FROM redirects""")
         row=cursor.fetchone()
         self.redirectsCount=row[0]
-        print "Number of Wikipedia articles: ", self.articleCount
-        print "Number of redirects: ", self.redirectsCount
+        print "Number of Wikipedia articles: %d" % self.articleCount
+        print "Number of redirects: %d" % self.redirectsCount
         cursor.close()
         db.close()
 
@@ -1154,8 +1170,7 @@ class iPediaTelnetProtocol(basic.LineReceiver):
                 self.transport.write( "%s (%d articles)\r\n" % (name,articleCount))
             self.transport.write("currently using: %s\r\n" % self.factory.iPediaFactory.dbName)
         except _mysql_exceptions.Error, ex:
-            arsutils.dumpException(ex)
-            txt = arsutils.exceptionAsStr(ex)
+            log(SEV_HI, txt)
             self.transport.write("exception: %s \r\n" % txt)
 
     def useDatabase(self, dbName):
@@ -1167,8 +1182,8 @@ class iPediaTelnetProtocol(basic.LineReceiver):
         try:
             dbsInfo = getIpediaDbs()
         except _mysql_exceptions.Error, ex:
-            arsutils.dumpException(ex)
             txt = arsutils.exceptionAsStr(ex)
+            log(SEV_HI, txt)
             self.transport.write("exception: %s \r\n" % txt)
             return
         if not dbsInfo.has_key(dbName):
@@ -1215,13 +1230,15 @@ def usageAndExit():
     sys.exit(0)        
 
 def main():
-    global g_fVerbose, g_fPsycoAvailable
+    global g_fPsycoAvailable, g_acceptedLogSeverity
 
     fDemon = arsutils.fDetectRemoveCmdFlag("-demon")
     if not fDemon:
         fDemon = arsutils.fDetectRemoveCmdFlag("-daemon")
 
-    g_fVerbose = arsutils.fDetectRemoveCmdFlag( "-verbose" )
+    g_acceptedLogSeverity = SEV_NONE
+    if None != arsutils.fDetectRemoveCmdFlag( "-verbose" ):
+        g_acceptedLogSeverity = SEV_MED
 
     fUsePsyco = arsutils.fDetectRemoveCmdFlag("-usepsyco")
     if g_fPsycoAvailable and fUsePsyco:

@@ -145,8 +145,17 @@ ALERT ID lookupLimitReachedAlert
     ERROR
 BEGIN
     TITLE "Trial expired"
-    MESSAGE "Your unregistered version expired. Please register."
+    MESSAGE "Your unregistered version expired. Please register by purchasing registration code and entering it using menu 'Options/Register'."
     BUTTONS "OK"
+END
+
+ALERT ID forceUpgradeAlert
+    DEFAULTBUTTON 0
+    ERROR
+BEGIN
+    TITLE "Upgrade required"
+    MESSAGE "You need to upgrade iPedia to a newer version. Use menu 'Options/Check for updates' or press Update button to download newer version."
+    BUTTONS "Update" "Later"
 END
 
 ALERT ID unsupportedDeviceAlert
@@ -167,7 +176,6 @@ BEGIN
     MESSAGE "Unexpected request argument. Please contact support@arslexis.com if the problem persists."
     BUTTONS "OK"
 END
-
 
 ALERT ID requestArgumentMissingAlert
     DEFAULTBUTTON 0

@@ -35,14 +35,16 @@ static const uint_t serverErrorToAlertMap[][2]=
 
 using ArsLexis::status_t;
 
-// 0 means not found
-static uint_t getAlertFromServerError(iPediaServerError serverError)
+// map errors that can be returned from the server to alerts that we display
+// in the ui for this error. 
+// returning 0 means there's no mapping for this error
+static uint_t getAlertIdFromServerError(iPediaServerError serverError)
 {
     assert(serverErrorNone!=serverError);
     assert(serverErrorLast>=serverError);
     
     uint_t error = (uint_t)serverError;
-    int arrSize = sizeof(serverErrorToAlertMap)/sizeof(serverErrorToAlertMap[0]);
+    int    arrSize = sizeof(serverErrorToAlertMap)/sizeof(serverErrorToAlertMap[0]);
     for (int i=0; i<arrSize; i++)
     {
         if (error==serverErrorToAlertMap[i][0])
@@ -53,11 +55,19 @@ static uint_t getAlertFromServerError(iPediaServerError serverError)
 
 void LookupManager::handleServerError(iPediaServerError serverError)
 {
-    uint_t alertId = getAlertFromServerError(serverError);
+
+    if (serverErrorForceUpgrade == serverError)
+    {
+        // special treatment - this doesn't map to a simple alert, so we
+        // need to trigger more complicated handling
+        sendEvent(iPediaApplication::appForceUpgrade);
+    }
+    uint_t alertId = getAlertIdFromServerError(serverError);
     if (0==alertId)
-        iPediaApplication::sendDisplayAlertEvent(serverFailureAlert);
-    else
-        iPediaApplication::sendDisplayAlertEvent(alertId);
+        alertId = serverFailureAlert;
+    
+    iPediaApplication::sendDisplayAlertEvent(alertId);
+
     lastInputTerm_ = _T("");
     lastSearchExpression_ = _T("");
 }
@@ -198,7 +208,9 @@ void LookupManager::moveHistory(bool forward)
 {
     if ((forward && history_.hasNext()) || (!forward && history_.hasPrevious()))
     {
-        historyChange_=(forward?historyMoveForward:historyMoveBack);
+        historyChange_ = historyMoveBack;
+        if (forward)
+            historyChange_ = historyMoveForward;
         iPediaConnection* conn=new iPediaConnection(*this);
         conn->setTerm(lastInputTerm_=(forward?history_.nextTerm():history_.previousTerm()));
         conn->setAddress(iPediaApplication::instance().server());

@@ -13,19 +13,20 @@ class LookupHistory;
 enum iPediaServerError
 {
     serverErrorNone,
-    serverErrorFailure=1,
-    serverErrorFirst=serverErrorFailure,
-    serverErrorUnsupportedDevice=2,
-    serverErrorInvalidRegCode=3,
-    serverErrorMalformedRequest=4,    
-    serverErrorLookupLimitReached=5,
-    serverErrorInvalidRequest=6,
-    serverErrorUnexpectedRequestArgument=7,
-    serverErrorRequestArgumentMissing=8,
-    serverErrorInvalidProtocolVersion=9,
-    serverErrorInvalidCookie=10,
-    serverErrorUserDisabled=11,
-    serverErrorLast=serverErrorInvalidCookie
+    serverErrorFailure              = 1,
+    serverErrorFirst                = serverErrorFailure,
+    serverErrorUnsupportedDevice    = 2,
+    serverErrorInvalidRegCode       = 3,
+    serverErrorMalformedRequest     = 4,    
+    serverErrorLookupLimitReached   = 5,
+    serverErrorInvalidRequest       = 6,
+    serverErrorUnexpectedRequestArgument= 7,
+    serverErrorRequestArgumentMissing   = 8,
+    serverErrorInvalidProtocolVersion   = 9,
+    serverErrorInvalidCookie    = 10,
+    serverErrorUserDisabled     = 11,
+    serverErrorForceUpgrade     = 12,
+    serverErrorLast=serverErrorForceUpgrade // WATCH THIS WHEN ADDING NEW ERRORS!
 };
 
 struct LookupFinishedEventData

@@ -107,9 +107,7 @@ void RegistrationForm::handleLookupFinished(const EventType& event)
     }
     else if (data.outcomeRegCodeInvalid==data.outcome)
     {
-        // TODO: should it be done as a message to ourselves?
-        UInt16 buttonId;
-        buttonId = FrmAlert(alertRegistrationFailed);
+        UInt16 buttonId = FrmAlert(alertRegistrationFailed);
         
         if (0==buttonId)
         {

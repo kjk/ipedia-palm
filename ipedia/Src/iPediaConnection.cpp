@@ -226,7 +226,7 @@ ArsLexis::status_t iPediaConnection::handleField(const String& name, const Strin
     if (transactionIdField==name)
     {
         error=numericValue(value, numValue, 16);
-        if (error || (numValue!=transactionId_))
+        if (error || ((ulong_t)numValue!=transactionId_))
             error=errResponseMalformed;
     }
     else if (notFoundField==name)

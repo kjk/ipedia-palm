@@ -464,6 +464,19 @@ bool MainForm::handleEvent(EventType& event)
             handled=true;
             break;
 
+        case iPediaApplication::appForceUpgrade:
+            {
+                UInt16 buttonId = FrmAlert(forceUpgradeAlert);
+                if (0==buttonId)
+                {
+                    // this is "Update" button so take them to a web page
+                    if ( errNone != WebBrowserCommand(false, 0, sysAppLaunchCmdGoToURL, "http://www.arslexis.com/updates/palm-ipedia-1-0.html",NULL) )
+                        FrmAlert(noWebBrowserAlert);
+                }
+                handled=true;
+            }
+            break;
+
         case iPediaApplication::appRandomWord:
             randomArticle();
             handled=true;
@@ -573,7 +586,6 @@ void MainForm::switchServer(const char* server)
     iPediaApplication& app=static_cast<iPediaApplication&>(application());
     app.setServer(server);    
 }
-
 
 bool MainForm::handleMenuCommand(UInt16 itemId)
 {

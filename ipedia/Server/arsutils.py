@@ -386,9 +386,6 @@ def exceptionAsStr(e):
     res = "%s\n%s\n%s\n%s" % (str(e), str(sys.exc_info()[0]), str(sys.exc_info()[1]), tbStr)
     return res
     
-def dumpException(e):
-    print exceptionAsStr(e)
-
 from httplib import HTTPConnection, HTTPException
 
 # @note assumption that url is not encoded is unrealistic; url must be encoded

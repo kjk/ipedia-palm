@@ -96,6 +96,7 @@ public:
         appRegisterEvent,
         appRandomWord,
         appRegistrationFinished,
+        appForceUpgrade,
         appFirstAvailableEvent
     };
     
