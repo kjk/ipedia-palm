@@ -119,19 +119,20 @@ Err iPediaConnection::open()
     lookupManager_.setStatusText(status);
     ArsLexis::sendEvent(LookupManager::lookupProgressEvent);
         
-/*    
     if (!error)
     {
-        NetSocketLingerType linger;
-        linger.onOff=true;
-        linger.time=0;
+        ArsLexis::SocketLinger linger;
+        linger.portable.onOff=true;
+        linger.portable.time=0;
         iPediaApplication& app=iPediaApplication::instance();
+#if defined(_PALM_OS)        
         if (app.romVersionMajor()==5)  // Very, very ugly! But PalmSource claims there's bug in PalmOS 5.X and that's the way to walkaround it.
         {
             typedef UInt16 UInt16Arr[2];
             UInt16Arr& toSwap=reinterpret_cast<UInt16Arr&>(linger);
             std::swap(toSwap[0], toSwap[1]);
         }        
+#endif        
         error=socket().setLinger(linger);
         if (error)
         {
@@ -139,7 +140,6 @@ Err iPediaConnection::open()
             error=errNone;
         }
     }
-    */
     return errNone;
 }
 
@@ -289,7 +289,7 @@ Err iPediaConnection::notifyFinished()
 
 void iPediaConnection::handleError(Err error)
 {
-    log()<<"handleError(): error code "<<error;
+    log().error()<<"handleError(): error code "<<error;
     LookupFinishedEventData data(LookupFinishedEventData::outcomeError, error);
     ArsLexis::sendEvent(LookupManager::lookupFinishedEvent, data);
     SimpleSocketConnection::handleError(error);

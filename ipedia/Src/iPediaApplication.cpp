@@ -25,11 +25,13 @@ iPediaApplication::iPediaApplication():
     hasHighDensityFeatures_(false)
 {
 #ifdef INTERNAL_BUILD
-    log_.addSink(new MemoLogSink(), log_.logError);
-#ifndef NDEBUG    
+# ifndef NDEBUG    
+    log_.addSink(new MemoLogSink(), log_.logDebug);
     log_.addSink(new HostFileLogSink("\\var\\log\\iPedia.log"), log_.logEverything);
     log_.addSink(new DebuggerLogSink(), log_.logWarning);
-#endif    
+# else
+    log_.addSink(new MemoLogSink(), log_.logError);
+# endif
 #endif
 }
 
