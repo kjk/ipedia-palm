@@ -39,7 +39,7 @@ def closeConn():
 def fRedirectValid(redirect):
     conn = getConn()
     cur = conn.cursor()
-    cur.execute("SELECT title FROM articles WHERE title='%s'" % conn.dbEscape(redirect))
+    cur.execute("SELECT title FROM articles WHERE title='%s'" % conn.escape_string(redirect))
     row = cur.fetchone()
     cur.close()
     if row==None:
@@ -47,7 +47,6 @@ def fRedirectValid(redirect):
     return True
 
 def validateRedirects():
-    limit = 100 # testing only
     print "Reading all redirects into memory"
     conn = getConn()
     cur = conn.cursor()
@@ -67,8 +66,6 @@ def validateRedirects():
         count += 1
         if 0 == (count % 1000):
             print "Loaded %d redirects, last title='%s'" % (count,title)
-        if count > limit:
-            break
     print "Validating redirects"
     count = 0
     invalidCount = 0
@@ -78,7 +75,7 @@ def validateRedirects():
             print "'%s' INVALID" % title
             invalidCount += 1
         count += 1    
-        if 0 == (cunt % 1000):
+        if 0 == (count % 1000):
             print "Validated %d redirects, last title='%s'" % (count,title)
     print "%d invalid redirects" % invalidCount
 
