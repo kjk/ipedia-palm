@@ -1,12 +1,14 @@
 #ifndef __DEFINITION_PARSER_HPP__
 #define __DEFINITION_PARSER_HPP__
 
+#include "Definition.hpp"
+
 #include <Debug.hpp>
 #include <FieldPayloadProtocolConnection.hpp>
 #include <list>
 #include <vector>
+#include <BaseTypes.hpp>
 
-#include "Definition.hpp"
 
 class DefinitionElement;
 
@@ -178,7 +180,7 @@ public:
 
     DefinitionParser();
     
-    Err handleIncrement(const ArsLexis::String& text, ulong_t& length, bool finish=false);
+    ArsLexis::status_t handleIncrement(const ArsLexis::String& text, ulong_t& length, bool finish=0);
 
     Definition::Elements_t& elements()
     {return elements_;}    

@@ -4,6 +4,7 @@
 #include "BulletElement.hpp"
 #include "ParagraphElement.hpp"
 #include "HorizontalLineElement.hpp"
+
 #include <memory>
 #include <Utility.hpp>
 #include <Text.hpp>
@@ -12,6 +13,8 @@ using ArsLexis::String;
 using ArsLexis::FontEffects;
 using ArsLexis::startsWith;
 using ArsLexis::startsWithIgnoreCase;
+using ArsLexis::char_t;
+using ArsLexis::status_t;
 
 namespace {
     typedef std::auto_ptr<ParagraphElement> ParagraphPtr;
@@ -54,9 +57,7 @@ void DefinitionParser::clear()
 }
     
 DefinitionParser::~DefinitionParser()
-{
-    std::for_each(elements_.begin(), elements_.end(), ArsLexis::ObjectDeleter<DefinitionElement>());
-}
+{}
 
 DefinitionElement* DefinitionParser::currentParent()
 {
@@ -114,8 +115,8 @@ void DefinitionParser::applyCurrentFormatting(FormattedTextElement* element)
 
 namespace {
 
-    static const char entityReferenceStart='&';
-    static const char entityReferenceEnd=';';
+    static const char_t entityReferenceStart='&';
+    static const char_t entityReferenceEnd=';';
 
 }    
 
@@ -127,7 +128,7 @@ void DefinitionParser::decodeHTMLCharacterEntityRefs(String& text) const
     uint_t entityStart=0;
     while (index<length)
     {
-        char chr=text[index];
+        char_t chr=text[index];
         if (!inEntity && chr==entityReferenceStart)
         {
             inEntity=true;
@@ -140,11 +141,11 @@ void DefinitionParser::decodeHTMLCharacterEntityRefs(String& text) const
                 String entity(text, entityStart+1, index-entityStart-1);
                 if (!entity.empty() && entity[0]=='#')
                 {
-                    Int32 numVal=StrAToI(entity.c_str()+1);
+                    signed long numVal=tatoi(entity.c_str()+1);
                     if (numVal<0 || numVal>255)
                         chr=chrNull;
                     else
-                        chr=(unsigned char)numVal;
+                        chr=(char_t)numVal;
                 }
                 else
                     chr=1;
@@ -165,30 +166,30 @@ void DefinitionParser::decodeHTMLCharacterEntityRefs(String& text) const
 
 namespace {
 
-    static const char indentLineChar=':';
-    static const char bulletChar='*';
-    static const char numberedListChar='#';
-    static const char headerChar='=';
-    static const char strongChar='\'';
-    static const char htmlTagStart='<';
-    static const char htmlTagEnd='>';
-    static const char htmlClosingTagChar='/';
-    static const char horizontalLineChar='-';
-    static const char definitionListChar=';';
-    static const char linkOpenChar='[';
-    static const char linkCloseChar=']';
+    static const char_t indentLineChar=':';
+    static const char_t bulletChar='*';
+    static const char_t numberedListChar='#';
+    static const char_t headerChar='=';
+    static const char_t strongChar='\'';
+    static const char_t htmlTagStart='<';
+    static const char_t htmlTagEnd='>';
+    static const char_t htmlClosingTagChar='/';
+    static const char_t horizontalLineChar='-';
+    static const char_t definitionListChar=';';
+    static const char_t linkOpenChar='[';
+    static const char_t linkCloseChar=']';
 
 }
 
-#define horizontalLineString "----"
-#define sectionString "=="
-#define subSectionString "==="
-#define subSubSectionString "===="
-#define listCharacters "*#:"
+#define horizontalLineString _T("----")
+#define sectionString _T("==")
+#define subSectionString _T("===")
+#define subSubSectionString _T("====")
+#define listCharacters _T("*#:")
 
-#define emphasizeText "''"
-#define strongText "'''"
-#define veryStrongText "''''"
+#define emphasizeText _T("''")
+#define strongText _T("'''")
+#define veryStrongText _T("''''")
 
 bool DefinitionParser::detectStrongTag(uint_t end)
 {
@@ -201,33 +202,33 @@ bool DefinitionParser::detectStrongTag(uint_t end)
             isStrongTag=true;
             if (startsWith(textLine_, veryStrongText, textPosition_))
             {
-                textPosition_+=StrLen(veryStrongText);
+                textPosition_+=tstrlen(veryStrongText);
                 openVeryStrong_=!openVeryStrong_;
             }
             else
             {
-                textPosition_+=StrLen(strongText);
+                textPosition_+=tstrlen(strongText);
                 openStrong_=!openStrong_;
             }
         }
         else
         {
             isStrongTag=true;
-            textPosition_+=StrLen(emphasizeText);
+            textPosition_+=tstrlen(emphasizeText);
             openEmphasize_=!openEmphasize_;
         }
     }
     return isStrongTag;
 }
 
-#define nowikiText "nowiki"
-#define teleTypeText "tt"
-#define lineBreakText "br"
-#define smallText "small"
-#define strikeOutText "strike"
-#define underlineText "u"
-#define subscriptText "sub"
-#define superscriptText "sup"
+#define nowikiText _T("nowiki")
+#define teleTypeText _T("tt")
+#define lineBreakText _T("br")
+#define smallText _T("small")
+#define strikeOutText _T("strike")
+#define underlineText _T("u")
+#define subscriptText _T("sub")
+#define superscriptText _T("sup")
 
 bool DefinitionParser::detectHTMLTag(uint_t end)
 {
@@ -323,12 +324,12 @@ bool DefinitionParser::detectHyperlink(uint_t end)
         {
             hyperlinkType_=hyperlinkTerm;
             ++textPosition_;
-            separatorPos=textLine_.find_first_of("|]", textPosition_);
+            separatorPos=textLine_.find_first_of(_T("|]"), textPosition_);
         }
         else
         {
             hyperlinkType_=hyperlinkExternal;
-            separatorPos=textLine_.find_first_of(" ]", textPosition_);
+            separatorPos=textLine_.find_first_of(_T(" ]"), textPosition_);
         }
         bool hasSeparator=true;
         if (textLine_.npos==separatorPos)
@@ -353,9 +354,10 @@ bool DefinitionParser::detectHyperlink(uint_t end)
             {
                 textPosition_=separatorPos;
                 ++unnamedLinksCount_;
-                char buffer[8];
-                StrPrintF(buffer, "[%hu]", unnamedLinksCount_);
-                ArsLexis:String hyperlinkTitle=buffer;
+                char_t buffer[8];
+                //TODO
+                tprintf(buffer, _T("[%hu]"), unnamedLinksCount_);
+                ArsLexis::String hyperlinkTitle=buffer;
                 createTextElement(hyperlinkTitle, 0, hyperlinkTitle.length());
             }
         }
@@ -390,7 +392,7 @@ bool DefinitionParser::detectHyperlink(uint_t end)
 
 namespace {
 
-    inline static bool isNewline(char chr)
+    inline static bool isNewline(char_t chr)
     {
         return chr=='\n';
     }
@@ -424,7 +426,8 @@ void DefinitionParser::parseText(uint_t end, ElementStyle style)
     lastElementStart_=textPosition_=0;
     while (textPosition_<length)
     {
-        char chr=textLine_[textPosition_];
+        //TODO
+        char_t chr=textLine_[textPosition_];
         if (isNewline(chr))
             chr=textLine_[textPosition_]=' ';
             
@@ -520,7 +523,8 @@ void DefinitionParser::manageListNesting(const String& requestedNesting)
         {
             for (uint_t i=lastNestingDepth; i>firstDiff; --i)
             {
-                char listType=lastListNesting_[i-1];
+                //TODO check
+                char_t listType=lastListNesting_[i-1];
                 if (numberedListChar==listType)
                     finishCurrentNumberedList();
                 popParent();
@@ -539,7 +543,8 @@ void DefinitionParser::manageListNesting(const String& requestedNesting)
             }
             for (uint_t i=firstDiff; i<newNestingDepth; ++i)
             {
-                char elementType=newNesting[i];
+                //TODO: check
+                char_t elementType=newNesting[i];
                 ElementPtr element;
                 if (numberedListChar==elementType)
                 {
@@ -663,10 +668,10 @@ void DefinitionParser::parseTextLine()
     parseText(lineEnd_, styleDefault);                
 }
 
-Err DefinitionParser::handleIncrement(const String& text, ulong_t& length, bool finish)
+status_t DefinitionParser::handleIncrement(const String& text, ulong_t& length, bool finish)
 {
-    Err error=errNone;
-    ErrTry {
+    status_t error=errNone;
+    ErrTryT {
         text_=&text;
         parsePosition_=0;
         lineEnd_=0;
@@ -674,7 +679,7 @@ Err DefinitionParser::handleIncrement(const String& text, ulong_t& length, bool 
         do 
         {
 #ifndef NDEBUG    
-            const char* text=text_->data()+parsePosition_;
+            const char_t* text=text_->data()+parsePosition_;
 #endif        
             goOn=detectNextLine(length, finish);
             if (goOn || finish)
@@ -735,10 +740,10 @@ Err DefinitionParser::handleIncrement(const String& text, ulong_t& length, bool 
         if (!finish)
             length=parsePosition_;
     }
-    ErrCatch (ex) {
+    ErrCatchT (ex)
         clear();
         error=ex;
-    } ErrEndCatch        
+    } ErrEndCatchT       
     return error;
 }
 
