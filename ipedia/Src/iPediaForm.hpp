@@ -5,7 +5,7 @@
 
 class iPediaApplication;
 
-class iPediaForm: public ArsLexis::RichForm
+class iPediaForm: public RichForm
 {
 public:
 

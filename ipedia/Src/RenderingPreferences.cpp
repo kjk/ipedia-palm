@@ -1,10 +1,6 @@
 #include "RenderingPreferences.hpp"
 #include <PrefsStore.hpp>
 
-using ArsLexis::FontEffects;
-using ArsLexis::Graphics;
-using ArsLexis::Font;
-
 RenderingPreferences::RenderingPreferences():
     standardIndentation_(16),
     bulletIndentation_(2),
@@ -43,7 +39,7 @@ void RenderingPreferences::calculateIndentation()
     standardIndentation_=graphics.textWidth(bullet, 1)+bulletIndentation_;
 }
 
-Err RenderingPreferences::serializeOut(ArsLexis::PrefsStoreWriter& writer, int uniqueId) const
+Err RenderingPreferences::serializeOut(PrefsStoreWriter& writer, int uniqueId) const
 {
     Err error;
     if (errNone!=(error=writer.ErrSetUInt16(uniqueId++, backgroundColor_)))
@@ -67,7 +63,7 @@ OnError:
     return error;    
 }
 
-Err RenderingPreferences::serializeIn(ArsLexis::PrefsStoreReader& reader, int uniqueId)
+Err RenderingPreferences::serializeIn(PrefsStoreReader& reader, int uniqueId)
 {
     Err                  error;
     RenderingPreferences tmp;
@@ -96,7 +92,7 @@ OnError:
     return error;    
 }
 
-Err RenderingPreferences::StyleFormatting::serializeOut(ArsLexis::PrefsStoreWriter& writer, int uniqueId) const
+Err RenderingPreferences::StyleFormatting::serializeOut(PrefsStoreWriter& writer, int uniqueId) const
 {
     Err error;
     if (errNone!=(error=writer.ErrSetUInt16(uniqueId++, font.fontId())))
@@ -109,7 +105,7 @@ OnError:
     return error;
 }
 
-Err RenderingPreferences::StyleFormatting::serializeIn(ArsLexis::PrefsStoreReader& reader, int uniqueId)
+Err RenderingPreferences::StyleFormatting::serializeIn(PrefsStoreReader& reader, int uniqueId)
 {
     Err             error;
     StyleFormatting tmp;
@@ -120,7 +116,7 @@ Err RenderingPreferences::StyleFormatting::serializeIn(ArsLexis::PrefsStoreReade
     tmp.font.setFontId(static_cast<FontID>(val));
     if (errNone!=(error=reader.ErrGetUInt16(uniqueId++, &val)))
         goto OnError;
-    tmp.font.setEffects(ArsLexis::FontEffects(val));
+    tmp.font.setEffects(FontEffects(val));
     if (errNone!=(error=reader.ErrGetUInt16(uniqueId++, &val)))
         goto OnError;
     tmp.textColor=val;

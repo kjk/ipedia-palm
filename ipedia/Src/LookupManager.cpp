@@ -7,7 +7,7 @@
 
 LookupManager::~LookupManager()
 {
-    std::for_each(lastDefinitionElements_.begin(), lastDefinitionElements_.end(), ArsLexis::ObjectDeleter<DefinitionElement>());
+    std::for_each(lastDefinitionElements_.begin(), lastDefinitionElements_.end(), ObjectDeleter<DefinitionElement>());
 }
 
 namespace {
@@ -34,7 +34,6 @@ static const uint_t serverErrorToAlertMap[][2]=
 } // namespace
 
 using ArsLexis::status_t;
-using ArsLexis::sendEvent;
 
 LookupManager::LookupManager(LookupHistory& history):
     history_(history),
@@ -91,7 +90,6 @@ void LookupManager::handleServerError(iPediaServerError serverError)
 
 void LookupManager::handleConnectionError(status_t error)
 {
-    using ArsLexis::SocketConnection;
     ushort_t alertId=connectionErrorAlert;
     switch (error)
     {
@@ -181,7 +179,6 @@ void LookupManager::handleLookupFinished(const LookupFinishedEventData& data)
 // return true if last search term is different than term
 bool LookupManager::lastSearchTermDifferent(const String& term, const String& lang)
 {
-    using ArsLexis::equalsIgnoreCase;
     if (lastSearchTerm().empty() || !equalsIgnoreCase(lastSearchTerm(), term) || (!lang.empty() && lang != lastSearchLang_))
         return true;
     return false;

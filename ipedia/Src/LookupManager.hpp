@@ -61,7 +61,7 @@ struct LookupFinishedEventData
     
 };
 
-class LookupManager: public ArsLexis::LookupManagerBase<iPediaApplication::appLookupEventFirst, LookupFinishedEventData>
+class LookupManager: public LookupManagerBase<iPediaApplication::appLookupEventFirst, LookupFinishedEventData>
 {
     LookupHistory& history_;
 

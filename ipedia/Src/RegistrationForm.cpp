@@ -4,15 +4,7 @@
 #include "LookupManager.hpp"
 #include "Text.hpp"
 
-using ArsLexis::Rectangle;
-using ArsLexis::FormObject;
-using ArsLexis::Field;
-using ArsLexis::Control;
-using ArsLexis::String;
-using ArsLexis::removeNonDigits;
-using ArsLexis::sendEvent;
-
-void RegistrationForm::resize(const ArsLexis::Rectangle& screenBounds)
+void RegistrationForm::resize(const Rectangle& screenBounds)
 {
     Rectangle rect(2, screenBounds.height()-70, screenBounds.width()-4, 68);
     setBounds(rect);

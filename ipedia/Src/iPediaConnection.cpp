@@ -7,7 +7,7 @@
 #include "LookupManager.hpp"
 #include <ipedia.h>
 
-using namespace ArsLexis;
+using ArsLexis::status_t;
 
 iPediaConnection::iPediaConnection(LookupManager& lookupManager):
     FieldPayloadProtocolConnection(lookupManager.connectionManager()),
@@ -56,9 +56,46 @@ iPediaConnection::~iPediaConnection()
 #define availableLangsField     _T("Available-Langs")
 #define useLangField            _T("Use-Lang")
 
-void iPediaConnection::prepareRequest()
+#define lineSeparator _T("\n")
+
+// Given a fieldName and fieldValue, make it a protocol field and add to the
+// existing request.
+// Format of protocol field:
+// - if we have value: fieldName ": " fieldValue lineSeparator
+// - if we don't have value: fieldName ":" lineSeparator
+// Return NULL if failed to add it to existing request (memory allocation failed)
+// TODO: this should always use char * instead of char_t * since we're constructing
+// a char * value in the end
+static DynStr *DynStrAddField(DynStr *dstr, const char_t *fieldName, const char_t *fieldValue)
 {
-    iPediaApplication& app=iPediaApplication::instance();
+    assert(NULL != fieldName);
+    // TODO: could be optimized
+    if (NULL == DynStrAppendCharP(dstr, fieldName))
+        return NULL;
+
+    if (NULL == fieldValue)
+    {
+        if (NULL == DynStrAppendCharP(dstr, _T(":")))
+            return NULL;
+    }
+    else
+    {
+        if (NULL == DynStrAppendCharP(dstr, _T(": ")))
+            return NULL;
+
+        if (NULL == DynStrAppendCharP(dstr, fieldValue))
+            return NULL;
+    }
+
+    if (NULL == DynStrAppendCharP(dstr, lineSeparator))
+        return NULL;
+
+    return dstr;
+}
+
+status_t iPediaConnection::prepareRequest()
+{
+    iPediaApplication& app = iPediaApplication::instance();
 
     // decide if we want to send registration code. We don't send it if
     // we don't have it or if we're asking to verify registration code (a strange
@@ -70,68 +107,85 @@ void iPediaConnection::prepareRequest()
 
     bool fSendCookie = !fSendRegCode;
  
-    String request;
-    appendField(request, protocolVersionField, protocolVersion);
+    DynStr *request = DynStrNew(128);
+    if (NULL == request)
+        goto Error;
+
+    if (NULL == DynStrAddField(request, protocolVersionField, protocolVersion))
+        goto Error;
 
 #if defined(_PALM_OS)
-    appendField(request, clientInfoField, clientInfo);
+    if (NULL == DynStrAddField(request, clientInfoField, clientInfo))
+        goto Error;
 #endif
 #if defined(WIN32_PLATFORM_PSPC)
-    appendField(request, clientInfoField, pocketPCClientInfo );
+    if (NULL == DynStrAddField(request, clientInfoField, pocketPCClientInfo ))
+        goto Error;
 #endif
 #if defined(WIN32_PLATFORM_WFSP)
-    appendField(request, clientInfoField, smartphoneClientInfo);
+    if (NULL == DynStrAddField(request, clientInfoField, smartphoneClientInfo))
+        goto Error;
 #endif
 
     char_t buffer[16];
     tprintf(buffer, _T("%08lx"), transactionId_);
-    appendField(request, transactionIdField, buffer);
+    if (NULL == DynStrAddField(request, transactionIdField, buffer))
+        goto Error;
 
     if (fSendCookie)
     {
         if (chrNull==app.preferences().cookie[0])
-            appendField(request, getCookieField, deviceInfoToken());
+        {
+            if (NULL == DynStrAddField(request, getCookieField, deviceInfoToken().c_str()))
+                goto Error;
+        }
         else
-            appendField(request, cookieField, app.preferences().cookie);
+        {
+            if (NULL == DynStrAddField(request, cookieField, app.preferences().cookie.c_str()))
+                goto Error;
+        }
     }
 
     if (!newDbLangCode_.empty())
     {
         // a bit of a hack but this one has priority over langToUse
-        appendField(request, useLangField, newDbLangCode_);
+        if (NULL == DynStrAddField(request, useLangField, newDbLangCode_.c_str()))
+            goto Error;
     }
     else if (!langToUse_.empty())
     {
-        appendField(request, useLangField, langToUse_);
+        if (NULL == DynStrAddField(request, useLangField, langToUse_.c_str()))
+            goto Error;
     }
 
     if (!term_.empty())
     {
         if (performFullTextSearch_)
-            appendField(request, searchField, term_);
+            if (NULL == DynStrAddField(request, searchField, term_.c_str()))
+                goto Error;
         else
         {
-#ifdef UNLOCKED
-            appendField(request, getArticleUField, term_);
-#else
-            appendField(request, getArticleField, term_);
-#endif
+            if (NULL == DynStrAddField(request, getArticleField, term_.c_str()))
+                goto Error;
         }
     }
 
     if (!regCodeToVerify.empty())
     {
         assert(!fSendRegCode);
-        appendField(request, verifyRegCodeField, regCodeToVerify);
+        if (NULL == DynStrAddField(request, verifyRegCodeField, regCodeToVerify.c_str()))
+            goto Error;
     }
 
     if (fSendRegCode)
-        appendField(request, regCodeField, app.preferences().regCode);
+        if (NULL == DynStrAddField(request, regCodeField, app.preferences().regCode.c_str()))
+            goto Error;
 
     if (getRandom_)
     {
         assert(term_.empty());
-        appendField(request, getRandomField);
+        if (NULL == DynStrAddField(request, getRandomField, NULL))
+            goto Error;
     }
 
     // get article count from the server when during first request or after a day
@@ -155,24 +209,41 @@ void iPediaConnection::prepareRequest()
 
     if (fNeedsToGetArticleCount)
     {
-        appendField(request, getArticleCountField);
-        appendField(request, getDatabaseTimeField);
-        appendField(request, getAvailableLangsField);
+        if (NULL == DynStrAddField(request, getArticleCountField, NULL))
+            goto Error;
+        if (NULL == DynStrAddField(request, getDatabaseTimeField, NULL))
+            goto Error;
+        if (NULL == DynStrAddField(request, getAvailableLangsField, NULL))
+            goto Error;
 #ifdef _WIN32
         // wince only code
         GetSystemTime(&app.lastArticleCountCheckTime);
 #endif
     }
 
-    request += '\n';
-//    NarrowString req;
-//    TextToByteStream(request, req);
-    setRequest(request); 
+    if (NULL == DynStrAppendChar(request, _T('\n')))
+        goto Error;
+
+#ifdef _PALM_OS
+    ulong_t len = DynStrLen(request);
+    setRequestOwn(DynStrReleaseStr(request), len); 
+#else
+    char *newReq = Utf16ToStr(DynStrGetCStr(request), DynStrLen(request));
+    if (NULL == newReq)
+        goto Error;
+    setRequestOwn(newReq, strlen(newReq)); 
+#endif
+    DynStrDelete(request);
+    return errNone;
+Error:
+    if (NULL != request)
+        DynStrDelete(request);
+    return memErrNotEnoughSpace;
 }
 
-ArsLexis::status_t iPediaConnection::enqueue()
+status_t iPediaConnection::enqueue()
 {
-    ArsLexis::status_t error=FieldPayloadProtocolConnection::enqueue();
+    status_t error=FieldPayloadProtocolConnection::enqueue();
     if (error)
         return error;
 
@@ -182,14 +253,19 @@ ArsLexis::status_t iPediaConnection::enqueue()
     lookupManager_.setStatusText(_T("Downloading data..."));
 #endif
     lookupManager_.setPercentProgress(LookupManager::percentProgressDisabled);
-    ArsLexis::sendEvent(LookupManager::lookupStartedEvent);
+    sendEvent(LookupManager::lookupStartedEvent);
     return errNone;
 }
 
-ArsLexis::status_t iPediaConnection::open()
+status_t iPediaConnection::open()
 {
-    prepareRequest();
-    ArsLexis::status_t error=SimpleSocketConnection::open();
+    status_t error;
+
+    error = prepareRequest();
+    if (errNone != error)
+        return error;
+
+    error = SimpleSocketConnection::open();
     if (error)
         return error;
 
@@ -201,14 +277,14 @@ ArsLexis::status_t iPediaConnection::open()
     lookupManager_.setStatusText(_T("Downloading data..."));
 #endif
 
-    ArsLexis::sendEvent(LookupManager::lookupProgressEvent);
+    sendEvent(LookupManager::lookupProgressEvent);
 
 #if defined(_PALM_OS)        
     assert(!error);
-    ArsLexis::SocketLinger linger;
+    SocketLinger linger;
     linger.portable.onOff = true;
     linger.portable.time = 0;
-    ArsLexis::Application& app=ArsLexis::Application::instance();
+    Application& app=Application::instance();
     // according to newsgroups in os 5 linger is broken and we need to do this
     // hack. Seems to help on Tungsten. However, on Treo 600 it doesn't seem
     // to be necessary
@@ -224,9 +300,9 @@ ArsLexis::status_t iPediaConnection::open()
     return errNone;
 }
 
-ArsLexis::status_t iPediaConnection::notifyProgress()
+status_t iPediaConnection::notifyProgress()
 {
-    ArsLexis::status_t error=FieldPayloadProtocolConnection::notifyProgress();
+    status_t error = FieldPayloadProtocolConnection::notifyProgress();
     if (error)
         return error;
 
@@ -249,7 +325,7 @@ ArsLexis::status_t iPediaConnection::notifyProgress()
     if (inPayload_)
         progress = ((payloadLength()-payloadLengthLeft())*100L)/payloadLength();
     lookupManager_.setPercentProgress(progress);
-    ArsLexis::sendEvent(LookupManager::lookupProgressEvent);
+    sendEvent(LookupManager::lookupProgressEvent);
     return error;
 }
 
@@ -259,24 +335,24 @@ ArsLexis::status_t iPediaConnection::notifyProgress()
 // TODO: we should add some more checking of the type "regCodeValidField should
 // be the only field send by the server (with the exception of standard fields
 // like transactionIdField)
-ArsLexis::status_t iPediaConnection::handleField(const String& name, const String& value)
+status_t iPediaConnection::handleField(const char_t *name, const char_t *value)
 {
-    long                numValue;
-    ArsLexis::status_t  error = errNone;
+    long            numValue;
+    status_t        error = errNone;
     iPediaApplication&  app = iPediaApplication::instance();
 
-    if (transactionIdField==name)
+    if (0 == tstrcmp(transactionIdField, name))
     {
         error = numericValue(value, numValue, 16);
         assert(errNone==error);
         if (error || ((ulong_t)numValue!=transactionId_))
             error = errResponseMalformed;
     }
-    else if (notFoundField==name)
+    else if (0 == tstrcmp(notFoundField, name))
     {
         notFound_ = true;
     }
-    else if (formatVersionField==name)
+    else if (0 == tstrcmp(formatVersionField, name))
     {
         error = numericValue(value, numValue);
         assert(errNone==error);
@@ -285,11 +361,11 @@ ArsLexis::status_t iPediaConnection::handleField(const String& name, const Strin
         else
             formatVersion_ = numValue;
     }
-    else if (articleTitleField==name)
+    else if (0 == tstrcmp(articleTitleField, name))
     {
         articleTitle_ = value;
     }
-    else if (articleBodyField==name)
+    else if (0 == tstrcmp(articleBodyField, name))
     {
         error=numericValue(value, numValue);
         assert(errNone==error);
@@ -302,7 +378,7 @@ ArsLexis::status_t iPediaConnection::handleField(const String& name, const Strin
             payloadType_ = payloadArticleBody;
         }
     }
-    else if (reverseLinksField==name)
+    else if (0 == tstrcmp(reverseLinksField, name))
     {
         error = numericValue(value, numValue);
         assert(errNone==error);
@@ -315,7 +391,7 @@ ArsLexis::status_t iPediaConnection::handleField(const String& name, const Strin
             payloadType_ = payloadReverseLinks;
         }
     }
-    else if (searchResultsField==name)
+    else if (0 == tstrcmp(searchResultsField, name))
     {
         error = numericValue(value, numValue);
         assert(errNone==error);
@@ -328,15 +404,15 @@ ArsLexis::status_t iPediaConnection::handleField(const String& name, const Strin
             payloadType_ = payloadSearchResults;
         }
     }
-    else if (cookieField==name)
+    else if (0 == tstrcmp(cookieField, name))
     {
-        assert(value.length()<=iPediaApplication::Preferences::cookieLength);
-        if (value.length()>iPediaApplication::Preferences::cookieLength)
+        assert(tstrlen(value)<=iPediaApplication::Preferences::cookieLength);
+        if (tstrlen(value)>iPediaApplication::Preferences::cookieLength)
             error = errResponseMalformed;
         else
             app.preferences().cookie=value;
     }
-    else if (errorField==name)
+    else if (0 == tstrcmp(errorField, name))
     {
         error = numericValue(value, numValue);
         assert(errNone==error);
@@ -350,7 +426,7 @@ ArsLexis::status_t iPediaConnection::handleField(const String& name, const Strin
             error = errResponseMalformed;
         }
     }
-    else if (articleCountField==name)
+    else if (0 == tstrcmp(articleCountField, name))
     {
         error=numericValue(value, numValue);
         assert(errNone==error);
@@ -362,15 +438,15 @@ ArsLexis::status_t iPediaConnection::handleField(const String& name, const Strin
             app.fArticleCountChecked = true;
         }
     }
-    else if (databaseTimeField==name)
+    else if (0 == tstrcmp(databaseTimeField, name))
     {
         app.preferences().databaseTime = value;
     }
-    else if (availableLangsField==name)
+    else if (0 == tstrcmp(availableLangsField, name))
     {
         app.preferences().availableLangs = value;
     }
-    else if (regCodeValidField==name)
+    else if (0 == tstrcmp(regCodeValidField, name))
     {
         error = numericValue(value, numValue);
         assert(errNone==error);
@@ -392,9 +468,9 @@ ArsLexis::status_t iPediaConnection::handleField(const String& name, const Strin
 // called when the whole response from the server have been read
 // inspects the state set during response parsing and sets appropriate
 // outcome to be inspected by those who initiated requests
-ArsLexis::status_t iPediaConnection::notifyFinished()
+status_t iPediaConnection::notifyFinished()
 {
-    ArsLexis::status_t error=FieldPayloadProtocolConnection::notifyFinished();
+    status_t error = FieldPayloadProtocolConnection::notifyFinished();
     if (error)
         return error;
 
@@ -403,7 +479,7 @@ ArsLexis::status_t iPediaConnection::notifyFinished()
     {
         data.outcome = data.outcomeServerError;
         data.serverError = serverError_;
-        ArsLexis::sendEvent(LookupManager::lookupFinishedEvent, data);
+        sendEvent(LookupManager::lookupFinishedEvent, data);
         assert(errNone==error);
         return errNone;
     }
@@ -466,17 +542,17 @@ ArsLexis::status_t iPediaConnection::notifyFinished()
     if (data.outcomeNothing==data.outcome)
         return errResponseMalformed;
 
-    ArsLexis::sendEvent(LookupManager::lookupFinishedEvent, data);
+    sendEvent(LookupManager::lookupFinishedEvent, data);
 
     assert(errNone == error);
     return error;        
 }
 
-void iPediaConnection::handleError(ArsLexis::status_t error)
+void iPediaConnection::handleError(status_t error)
 {
     //log().error()<<_T("handleError(): error code ")<<error;
     LookupFinishedEventData data(LookupFinishedEventData::outcomeError, error);
-    ArsLexis::sendEvent(LookupManager::lookupFinishedEvent, data);
+    sendEvent(LookupManager::lookupFinishedEvent, data);
     SimpleSocketConnection::handleError(error);
 }
 

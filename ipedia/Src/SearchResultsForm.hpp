@@ -30,7 +30,7 @@ protected:
 
     bool handleOpen();
 
-    void resize(const ArsLexis::Rectangle& screenBounds);
+    void resize(const Rectangle& screenBounds);
 
     bool handleMenuCommand(UInt16 menuItem);
 

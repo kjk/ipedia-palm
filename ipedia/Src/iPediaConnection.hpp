@@ -6,9 +6,11 @@
 #include <FieldPayloadProtocolConnection.hpp>
 #include <BaseTypes.hpp>
 
+using ArsLexis::status_t;
+
 class DefinitionParser;
 
-class iPediaConnection: public ArsLexis::FieldPayloadProtocolConnection
+class iPediaConnection: public FieldPayloadProtocolConnection
 {
     LookupManager&      lookupManager_;
     ulong_t             transactionId_;
@@ -22,7 +24,7 @@ class iPediaConnection: public ArsLexis::FieldPayloadProtocolConnection
     bool isSwitchLangRequest_;
     
 
-    class SearchResultsHandler: public ArsLexis::FieldPayloadProtocolConnection::PayloadHandler
+    class SearchResultsHandler: public FieldPayloadProtocolConnection::PayloadHandler
     {
         ArsLexis::String searchResults_;
 
@@ -31,7 +33,7 @@ class iPediaConnection: public ArsLexis::FieldPayloadProtocolConnection
         SearchResultsHandler()
         {}
         
-        ArsLexis::status_t handleIncrement(const ArsLexis::char_t* text, ulong_t& length, bool finish)
+        status_t handleIncrement(const ArsLexis::char_t* text, ulong_t& length, bool finish)
         {
             if (finish)
                 searchResults_.assign(text, 0, length);
@@ -49,7 +51,7 @@ class iPediaConnection: public ArsLexis::FieldPayloadProtocolConnection
 
     // TODO: ReverseLinksResultsHandler is identical to SearchResultsHandler. Maybe we should just have
     // one SimpleResultsHandler instead?
-    class ReverseLinksResultsHandler: public ArsLexis::FieldPayloadProtocolConnection::PayloadHandler
+    class ReverseLinksResultsHandler: public FieldPayloadProtocolConnection::PayloadHandler
     {
         ArsLexis::String reverseLinksResults_;
 
@@ -58,7 +60,7 @@ class iPediaConnection: public ArsLexis::FieldPayloadProtocolConnection
         ReverseLinksResultsHandler()
         {}
         
-        ArsLexis::status_t handleIncrement(const ArsLexis::char_t * text, ulong_t& length, bool finish)
+        status_t handleIncrement(const ArsLexis::char_t * text, ulong_t& length, bool finish)
         {
             if (finish)
                 reverseLinksResults_.assign(text, 0, length);
@@ -74,7 +76,7 @@ class iPediaConnection: public ArsLexis::FieldPayloadProtocolConnection
 
     ReverseLinksResultsHandler* reverseLinksResultsHandler_;
         
-    void prepareRequest();
+    status_t prepareRequest();
     
     enum PayloadType 
     {
@@ -95,21 +97,21 @@ class iPediaConnection: public ArsLexis::FieldPayloadProtocolConnection
 
 protected:
 
-    ArsLexis::status_t notifyFinished();
+    status_t notifyFinished();
     
-    void handleError(ArsLexis::status_t error);
+    void handleError(status_t error);
     
-    ArsLexis::status_t handleField(const ArsLexis::String& name, const ArsLexis::String& value);
+    status_t handleField(const char_t *name, const char_t *value);
     
-    ArsLexis::status_t notifyPayloadFinished();
+    status_t notifyPayloadFinished();
     
-    ArsLexis::status_t notifyProgress();
+    status_t notifyProgress();
 
-    ArsLexis::status_t open();
+    status_t open();
     
 public:
 
-    ArsLexis::status_t enqueue();
+    status_t enqueue();
 
     iPediaConnection(LookupManager& lm);
     

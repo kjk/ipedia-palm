@@ -10,12 +10,6 @@
 #include "MainForm.hpp"
 
 using ArsLexis::String;
-using ArsLexis::FormObject;
-using ArsLexis::List;
-using ArsLexis::Rectangle;
-using ArsLexis::Control;
-using ArsLexis::Field;
-using ArsLexis::formatNumber;
 
 void SearchResultsForm::updateSearchResults()
 {
@@ -83,8 +77,8 @@ SearchResultsForm::~SearchResultsForm()
 
 void SearchResultsForm::draw(UInt16 updateCode)
 {
-    ArsLexis::Graphics graphics;
-    ArsLexis::Rectangle rect(bounds());
+    Graphics graphics;
+    Rectangle rect(bounds());
     Rectangle progressArea(rect.x(), rect.height()-16, rect.width(), 16);
     if (redrawAll==updateCode)
     {   
@@ -105,7 +99,7 @@ bool SearchResultsForm::handleOpen()
     return handled;
 }
 
-void SearchResultsForm::resize(const ArsLexis::Rectangle& screenBounds)
+void SearchResultsForm::resize(const Rectangle& screenBounds)
 {
     Rectangle rect(bounds());
     if (screenBounds!=rect)

@@ -130,7 +130,7 @@ LookupManager* iPediaApplication::getLookupManager(bool create)
 
 void iPediaApplication::waitForEvent(EventType& event)
 {
-    ArsLexis::SocketConnectionManager* manager=0;
+    SocketConnectionManager* manager=0;
     if (lookupManager_)
         manager=&lookupManager_->connectionManager();
     if (manager && manager->active())
@@ -237,8 +237,8 @@ namespace {
     };
 
     // These globals will be removed by dead code elimination.
-    ArsLexis::StaticAssert<(sizeof(uint_t) == sizeof(UInt16))> uint_t_the_same_size_as_UInt16;
-    ArsLexis::StaticAssert<(sizeof(bool) == sizeof(Boolean))> bool_the_same_size_as_Boolean;
+    StaticAssert<(sizeof(uint_t) == sizeof(UInt16))> uint_t_the_same_size_as_UInt16;
+    StaticAssert<(sizeof(bool) == sizeof(Boolean))> bool_the_same_size_as_Boolean;
     
 }
 

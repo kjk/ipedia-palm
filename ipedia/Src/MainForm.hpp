@@ -15,15 +15,15 @@ class RenderingPreferences;
 class PediaMainForm: public iPediaForm
 {
 
-    ArsLexis::FormObject graffiti_;
-    ArsLexis::Field termInputField_;
-    ArsLexis::ScrollBar scrollBar_;
-    ArsLexis::Control backButton_;
-    ArsLexis::Control forwardButton_;
-    ArsLexis::Control searchButton_;
+    FormObject graffiti_;
+    Field termInputField_;
+    ScrollBar scrollBar_;
+    Control backButton_;
+    Control forwardButton_;
+    Control searchButton_;
 
-    ArsLexis::TextRenderer articleRenderer_;
-    ArsLexis::TextRenderer infoRenderer_;
+    TextRenderer articleRenderer_;
+    TextRenderer infoRenderer_;
 
     int  penUpsToEat_;
     bool ignoreEvents_;
@@ -81,7 +81,7 @@ class PediaMainForm: public iPediaForm
 
 protected:
 
-    void resize(const ArsLexis::Rectangle& screenBounds);
+    void resize(const Rectangle& screenBounds);
     
     void draw(UInt16 updateCode = frmRedrawUpdateCode);
     

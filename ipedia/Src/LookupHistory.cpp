@@ -108,8 +108,7 @@ const String& LookupHistory::currentLang() const
     return *langPosition_;
 }        
 
-
-status_t LookupHistory::serializeOut(ArsLexis::PrefsStoreWriter& writer, int uniqueId) const
+status_t LookupHistory::serializeOut(PrefsStoreWriter& writer, int uniqueId) const
 {
     status_t error;
     StringList_t::const_iterator end;
@@ -139,7 +138,7 @@ OnError:
     return error;
 }
 
-status_t LookupHistory::serializeIn(ArsLexis::PrefsStoreReader& reader, int uniqueId)
+status_t LookupHistory::serializeIn(PrefsStoreReader& reader, int uniqueId)
 {
     status_t error;
     LookupHistory tmp;

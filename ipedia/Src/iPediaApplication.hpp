@@ -15,7 +15,7 @@ class LookupHistory;
 #define SERVER_LOCALHOST     "127.0.0.1:9000"
 #define SERVER_OFFICIAL      "ipedia.arslexis.com:9000"
 
-class iPediaApplication: public ArsLexis::RichApplication 
+class iPediaApplication: public RichApplication 
 {
     iPediaHyperlinkHandler*  hyperlinkHandler_;
     LookupHistory*          history_;
@@ -31,7 +31,7 @@ protected:
 
     void waitForEvent(EventType& event);
     
-    ArsLexis::Form* createForm(UInt16 formId);
+    Form* createForm(UInt16 formId);
 
     bool handleApplicationEvent(EventType& event);
     

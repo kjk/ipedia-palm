@@ -13,8 +13,6 @@
 
 #include <LangNames.hpp>
 
-using namespace ArsLexis;
-
 static char_t** ExtractLinksFromDefinition(const TextRenderer& renderer, int& strListSize)
 {
     int       strCount;
@@ -113,7 +111,7 @@ inline const LookupHistory& PediaMainForm::getHistory() const
     return static_cast<const iPediaApplication&>(application()).history();
 }
 
-void PediaMainForm::resize(const ArsLexis::Rectangle& screenBounds)
+void PediaMainForm::resize(const Rectangle& screenBounds)
 {
     Rectangle bounds(this->bounds());
     if (screenBounds==bounds)
@@ -813,7 +811,7 @@ static void prepareArticleCountEl(GenericTextElement *articleCountElement, long 
 
     iPediaApplication& app = iPediaApplication::instance();
     const String& langCode = app.preferences().currentLang;
-    const char_t* langName = GetLangNameByLangCode(langCode);
+    const char_t* langName = GetLangNameByLangCode(langCode.c_str());
     if (NULL == langName)
         langName = _T("Unknown");
         

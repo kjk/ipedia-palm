@@ -89,10 +89,10 @@ void iPediaHyperlinkHandler::handleHyperlink(Definition& definition, DefinitionE
     {
         iPediaApplication& app=iPediaApplication::instance();
         props->type=hyperlinkClicked;
-        ArsLexis::Form* form=app.getOpenForm(mainForm);
+        Form* form=app.getOpenForm(mainForm);
         if (form) 
         {
-            ArsLexis::Graphics graphics(form->windowHandle());
+            Graphics graphics(form->windowHandle());
             definition.renderSingleElement(graphics, app.preferences().renderingPreferences, element);
         }
     }

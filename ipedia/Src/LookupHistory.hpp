@@ -6,11 +6,8 @@
 #include <Text.hpp>
 #include <list>
 
-namespace ArsLexis
-{
-    class PrefsStoreReader;
-    class PrefsStoreWriter;
-}    
+class PrefsStoreReader;
+class PrefsStoreWriter;
 
 class LookupHistory
 {
@@ -28,8 +25,8 @@ public:
         reservedPrefIdCount=maxLength*2+2
     };
     
-    ArsLexis::status_t serializeOut(ArsLexis::PrefsStoreWriter& writer, int uniqueId) const;
-    ArsLexis::status_t serializeIn(ArsLexis::PrefsStoreReader& reader, int uniqueId);
+    ArsLexis::status_t serializeOut(PrefsStoreWriter& writer, int uniqueId) const;
+    ArsLexis::status_t serializeIn(PrefsStoreReader& reader, int uniqueId);
 
     LookupHistory();
     

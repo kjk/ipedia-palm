@@ -20,10 +20,8 @@ enum ElementStyle
     styleHeader
 };
 
-namespace ArsLexis {
-    class PrefsStoreReader;
-    class PrefsStoreWriter;
-}    
+class PrefsStoreReader;
+class PrefsStoreWriter;
 
 class RenderingPreferences
 {
@@ -57,16 +55,16 @@ public:
     
     struct StyleFormatting
     {
-        ArsLexis::Font font;
-        ArsLexis::Color textColor;
+        Font font;
+        Color textColor;
         
         StyleFormatting():
             textColor(1)
         {}
         
         enum {reservedPrefIdCount=3};
-        Err serializeOut(ArsLexis::PrefsStoreWriter& writer, int uniqueId) const;
-        Err serializeIn(ArsLexis::PrefsStoreReader& reader, int uniqueId);
+        Err serializeOut(PrefsStoreWriter& writer, int uniqueId) const;
+        Err serializeIn(PrefsStoreReader& reader, int uniqueId);
         
     };
     
@@ -91,19 +89,19 @@ public:
     void setBulletIndentation(uint_t bulletIndentation)
     {bulletIndentation_=bulletIndentation;}
 
-    ArsLexis::Color backgroundColor() const
+    Color backgroundColor() const
     {return backgroundColor_;}
     
-    void setBackgroundColor(ArsLexis::Color color)
+    void setBackgroundColor(Color color)
     {backgroundColor_=color;}
     
     enum {reservedPrefIdCount=2+(hyperlinkTypesCount_+stylesCount_)*StyleFormatting::reservedPrefIdCount};
-    Err serializeOut(ArsLexis::PrefsStoreWriter& writer, int uniqueId) const;
-    Err serializeIn(ArsLexis::PrefsStoreReader& reader, int uniqueId);
+    Err serializeOut(PrefsStoreWriter& writer, int uniqueId) const;
+    Err serializeIn(PrefsStoreReader& reader, int uniqueId);
 
 private:
     
-    ArsLexis::Color backgroundColor_;
+    Color backgroundColor_;
     StyleFormatting hyperlinkDecorations_[hyperlinkTypesCount_];
     StyleFormatting styles_[stylesCount_];
 };

@@ -14,7 +14,7 @@ class RegistrationForm: public iPediaForm
 
 protected:
 
-    void resize(const ArsLexis::Rectangle& screenBounds);
+    void resize(const Rectangle& screenBounds);
 
     bool handleEvent(EventType& event);
 
