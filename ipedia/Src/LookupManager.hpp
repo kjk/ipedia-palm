@@ -1,22 +1,53 @@
 #ifndef __LOOKUP_MANAGER_HPP__
 #define __LOOKUP_MANAGER_HPP__
 
-#include <SocketConnection.hpp>
-#include <Utility.hpp>
+#include <LookupManagerBase.hpp>
+#include "iPediaApplication.hpp"
 #include "Definition.hpp"
-
-namespace ArsLexis
-{
-    class Graphics;
-    class Rectangle;
-}    
 
 class LookupHistory;
 
-class LookupManager: private ArsLexis::NonCopyable
+enum iPediaServerError
+{
+    serverErrorNone,
+    serverErrorFailure,
+    serverErrorFirst=serverErrorFailure,
+    serverErrorUnsupportedDevice,
+    serverErrorInvalidAuthorization,
+    serverErrorMalformedRequest,
+    serverErrorTrialExpired,
+    serverErrorLast=serverErrorTrialExpired
+};
+        
+struct LookupFinishedEventData
+{
+    enum Outcome
+    {
+        outcomeNothing,
+        outcomeDefinition,
+        outcomeList,
+        outcomeError,
+        outcomeServerError,
+        outcomeNotFound
+    } outcome;
+    
+    union
+    {
+        Err error;
+        iPediaServerError serverError;
+    };        
+    
+    LookupFinishedEventData(Outcome o=outcomeNothing, Err err=errNone):
+        outcome(o),
+        error(err)
+    {}
+    
+};
+
+class LookupManager: public ArsLexis::LookupManagerBase<iPediaApplication::appLookupEventFirst, LookupFinishedEventData>,  private ArsLexis::NonCopyable
 {
     LookupHistory& history_;
-    ArsLexis::SocketConnectionManager connectionManager_;
+
     Definition::Elements_t lastDefinitionElements_;
 
     ArsLexis::String lastInputTerm_;
@@ -30,72 +61,23 @@ class LookupManager: private ArsLexis::NonCopyable
         historyMoveForward,
         historyReplaceForward
     };
+    
+protected:
 
-    ArsLexis::String statusText_;
-    uint_t percentProgress_;    
-    
-    
-    
+    void handleLookupFinished(const LookupFinishedEventData& data);
+
 public:
-
-    enum ServerError
-    {
-        serverErrorNone,
-        serverErrorFailure,
-        serverErrorFirst=serverErrorFailure,
-        serverErrorUnsupportedDevice,
-        serverErrorInvalidAuthorization,
-        serverErrorMalformedRequest,
-        serverErrorTrialExpired,
-        serverErrorLast=serverErrorTrialExpired
-    };
-        
-    struct LookupFinishedEventData
-    {
-        enum Outcome
-        {
-            outcomeNothing,
-            outcomeDefinition,
-            outcomeList,
-            outcomeError,
-            outcomeServerError,
-            outcomeNotFound
-        } outcome;
-        
-        union
-        {
-            Err error;
-            ServerError serverError;
-        };        
-        
-        LookupFinishedEventData(Outcome o=outcomeNothing, Err err=errNone):
-            outcome(o),
-            error(err)
-        {}
-    };
 
     LookupManager(LookupHistory& history):
         history_(history),
-        historyChange_(historyMoveForward),
-        percentProgress_(percentProgressDisabled),
-        lookupInProgress_(false)
+        historyChange_(historyMoveForward)
     {}
     
     ~LookupManager();
 
-    ArsLexis::SocketConnectionManager& connectionManager()
-    {return connectionManager_;}    
-
     const ArsLexis::String& lastSearchResults() const
     {return lastSearchResults_;}
     
-    bool lookupInProgress() const
-    {return lookupInProgress_;}
-
-    void showProgress(ArsLexis::Graphics& graphics, const ArsLexis::Rectangle& bounds) const;
-
-    void handleLookupEvent(const EventType& event);
-
     Definition::Elements_t& lastDefinitionElements() 
     {return lastDefinitionElements_;}
     
@@ -122,7 +104,7 @@ public:
     
 private:
     
-    void handleServerError(ServerError serverError);
+    void handleServerError(iPediaServerError serverError);
     
     void handleDefinitionMissing();
     
@@ -131,14 +113,6 @@ private:
     void handleDefinition();
     
     void handleList();
-    
-    void setStatusText(const ArsLexis::String& text)
-    {statusText_=text;}
-    
-    enum {percentProgressDisabled=(uint_t)-1};
-    
-    void setPercentProgress(uint_t progress)
-    {percentProgress_=progress;}
     
     void setLastSearchResults(const ArsLexis::String& sr)
     {lastSearchResults_=sr;}
@@ -154,8 +128,7 @@ private:
     
     friend class iPediaConnection;
 
-    HistoryChange historyChange_:7; // I don't remember how many bits it needs. I assume 7 will do.
-    bool lookupInProgress_:1;
+    HistoryChange historyChange_; // I don't remember how many bits it needs. I assume 7 will do.
     
 };
 

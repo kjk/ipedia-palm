@@ -3,6 +3,7 @@
 #include "DefinitionParser.hpp"
 #include <SysUtils.hpp>
 #include <DeviceInfo.hpp>
+#include <Text.hpp>
 #include "LookupManager.hpp"
 
 using namespace ArsLexis;
@@ -15,7 +16,7 @@ iPediaConnection::iPediaConnection(LookupManager& lookupManager):
     definitionParser_(0),
     searchResultsHandler_(0),
     payloadType_(payloadNone),
-    serverError_(LookupManager::serverErrorNone),
+    serverError_(serverErrorNone),
     notFound_(false),
     registering_(false),
     performFullTextSearch_(false),
@@ -100,7 +101,7 @@ Err iPediaConnection::enqueue()
 #endif
     lookupManager_.setStatusText(status);
     lookupManager_.setPercentProgress(LookupManager::percentProgressDisabled);
-    Application::sendEvent(iPediaApplication::appLookupStartedEvent);
+    Application::sendEvent(LookupManager::lookupStartedEvent);
     return errNone;
 }
 
@@ -116,7 +117,7 @@ Err iPediaConnection::open()
     String status;
     getResource(connectionStatusStrings, statusStringSendingRequest, status);
     lookupManager_.setStatusText(status);
-    Application::sendEvent(iPediaApplication::appLookupProgressEvent);
+    Application::sendEvent(LookupManager::lookupProgressEvent);
         
 /*    
     if (!error)
@@ -157,7 +158,7 @@ Err iPediaConnection::notifyProgress()
         if (inPayload())
             progress=((payloadLength()-payloadLengthLeft())*100L)/payloadLength();
         lookupManager_.setPercentProgress(progress);
-        Application::sendEvent(iPediaApplication::appLookupProgressEvent);
+        Application::sendEvent(LookupManager::lookupProgressEvent);
     }
     return error;
 }
@@ -222,8 +223,8 @@ Err iPediaConnection::handleField(const String& name, const String& value)
         error=numericValue(value, numValue);
         if (!error)
         {
-            if (numValue>=LookupManager::serverErrorFirst && numValue<=LookupManager::serverErrorLast)
-                serverError_=static_cast<LookupManager::ServerError>(numValue);
+            if (numValue>=serverErrorFirst && numValue<=serverErrorLast)
+                serverError_=static_cast<iPediaServerError>(numValue);
             else
                 error=errResponseMalformed;
         }            
@@ -251,7 +252,7 @@ Err iPediaConnection::notifyFinished()
     Err error=FieldPayloadProtocolConnection::notifyFinished();
     if (!error)
     {
-        LookupManager::LookupFinishedEventData data;
+        LookupFinishedEventData data;
         if (!serverError_)
         {
             iPediaApplication& app=iPediaApplication::instance();
@@ -281,7 +282,7 @@ Err iPediaConnection::notifyFinished()
             data.outcome=data.outcomeServerError;
             data.serverError=serverError_;
         }
-        Application::sendEvent(iPediaApplication::appLookupFinishedEvent, data);               
+        Application::sendEvent(LookupManager::lookupFinishedEvent, data);               
     }
     return error;        
 }
@@ -289,8 +290,8 @@ Err iPediaConnection::notifyFinished()
 void iPediaConnection::handleError(Err error)
 {
     log()<<"handleError(): error code "<<error;
-    LookupManager::LookupFinishedEventData data(LookupManager::LookupFinishedEventData::outcomeError, error);
-    Application::sendEvent(iPediaApplication::appLookupFinishedEvent, data);
+    LookupFinishedEventData data(LookupFinishedEventData::outcomeError, error);
+    Application::sendEvent(LookupManager::lookupFinishedEvent, data);
     SimpleSocketConnection::handleError(error);
 }
 

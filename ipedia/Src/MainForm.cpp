@@ -218,8 +218,8 @@ void MainForm::draw(UInt16 updateCode)
     {
         enableInputFieldAfterUpdate_=false;
         Field field(*this, termInputField);
-        field.focus();
         field.show();
+        field.focus();
     }
 }
 
@@ -332,7 +332,7 @@ void MainForm::setControlsState(bool enabled)
 void MainForm::handleLookupFinished(const EventType& event)
 {
     setControlsState(true);
-    const LookupManager::LookupFinishedEventData& data=reinterpret_cast<const LookupManager::LookupFinishedEventData&>(event.data);
+    const LookupFinishedEventData& data=reinterpret_cast<const LookupFinishedEventData&>(event.data);
     switch (data.outcome)
     {
         case data.outcomeDefinition:
@@ -426,14 +426,14 @@ bool MainForm::handleEvent(EventType& event)
             handleScrollRepeat(event);
             break;
             
-        case iPediaApplication::appLookupFinishedEvent:
+        case LookupManager::lookupFinishedEvent:
             handleLookupFinished(event);
             break;     
             
-        case iPediaApplication::appLookupStartedEvent:
+        case LookupManager::lookupStartedEvent:
             setControlsState(false);            // No break is intentional.
             
-        case iPediaApplication::appLookupProgressEvent:
+        case LookupManager::lookupProgressEvent:
             update(redrawProgressIndicator);
             break;
 

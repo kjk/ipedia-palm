@@ -96,7 +96,7 @@ public:
     
 private:
     
-    LookupManager::ServerError serverError_;
+    iPediaServerError serverError_;
 
     bool notFound_:1;
     bool registering_:1;

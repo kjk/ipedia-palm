@@ -1,10 +1,8 @@
 #include "LookupManager.hpp"
 #include "LookupHistory.hpp"
-#include "iPediaApplication.hpp"
 #include "iPediaConnection.hpp"
-#include <Graphics.hpp>
-#include <Text.hpp>
 #include "DefinitionElement.hpp"
+#include <Text.hpp>
 
 LookupManager::~LookupManager()
 {
@@ -13,7 +11,9 @@ LookupManager::~LookupManager()
 
 namespace {
 
+#ifdef __MWERKS__
 #pragma pcrelconstdata on
+#endif
 
     static const UInt16 serverErrorAlerts[]=
     {   
@@ -26,10 +26,10 @@ namespace {
 
 }
 
-void LookupManager::handleServerError(LookupManager::ServerError serverError)
+void LookupManager::handleServerError(iPediaServerError serverError)
 {
-    assert(LookupManager::serverErrorNone!=serverError);
-    assert(LookupManager::serverErrorLast>=serverError);
+    assert(serverErrorNone!=serverError);
+    assert(serverErrorLast>=serverError);
     iPediaApplication::sendDisplayAlertEvent(serverErrorAlerts[serverError-1]);
 }
 
@@ -106,23 +106,10 @@ void LookupManager::handleLookupFinishedInForm(const LookupFinishedEventData& da
     }
 }
 
-void LookupManager::handleLookupEvent(const EventType& event)
+void LookupManager::handleLookupFinished(const LookupFinishedEventData& data)
 {
-    switch (event.eType)
-    {
-        case iPediaApplication::appLookupStartedEvent:
-            lookupInProgress_=true;
-            break;
-            
-        case iPediaApplication::appLookupFinishedEvent:
-            {
-                lookupInProgress_=false;
-                const LookupFinishedEventData& data=reinterpret_cast<const LookupFinishedEventData&>(event.data);
-                if (data.outcome==data.outcomeDefinition)
-                    handleDefinition();
-            }
-            break;                    
-    }
+    if (data.outcome==data.outcomeDefinition)
+        handleDefinition();
 }
 
 bool LookupManager::lookupIfDifferent(const ArsLexis::String& term)
@@ -175,35 +162,6 @@ void LookupManager::moveHistory(bool forward)
         conn->setTerm(lastInputTerm_=(forward?history_.nextTerm():history_.previousTerm()));
         conn->setAddress(iPediaApplication::instance().server());
         conn->enqueue();
-    }
-}
-
-void LookupManager::showProgress(ArsLexis::Graphics& graphics, const ArsLexis::Rectangle& bounds) const
-{
-    using ArsLexis::Graphics;
-    using ArsLexis::Rectangle;
-    using ArsLexis::Point;
-    
-    graphics.erase(bounds);
-    Rectangle rect(bounds);
-    rect.explode(2, 2, -4, -4);
-    Graphics::FontSetter setFont(graphics, stdFont);
-    uint_t length=statusText_.length();
-    uint_t width=rect.width();
-    const char* text=statusText_.c_str();
-    graphics.charsInWidth(text, length, width);
-    uint_t height=graphics.fontHeight();
-    Point p(rect.x(), rect.y()+(rect.height()-height)/2);
-    graphics.drawText(text, length, p);
-    if (percentProgressDisabled!=percentProgress_)
-    {
-        assert(percentProgress_<=100);
-        p.x+=width+2;
-        char buffer[8];
-        length=StrPrintF(buffer, " %hd%%", percentProgress_);
-        width=rect.width()-width;
-        graphics.charsInWidth(buffer, length, width);
-        graphics.drawText(buffer, length, p);
     }
 }
 

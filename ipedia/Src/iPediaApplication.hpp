@@ -106,15 +106,14 @@ public:
     const ArsLexis::DIA_Support& diaSupport() const
     {return diaSupport_;}
     
+    static const uint_t reservedLookupEventsCount=3;
+    
     enum Event
     {
         appDisplayAlertEvent=appFirstAvailableEvent,
         appDisplayCustomAlertEvent,
-        appLookupStartedEvent,
-        appLookupEventFirst=appLookupStartedEvent,
-        appLookupProgressEvent,
-        appLookupFinishedEvent,
-        appLookupEventLast=appLookupFinishedEvent,
+        appLookupEventFirst,
+        appLookupEventLast=appLookupEventFirst+reservedLookupEventsCount,
         appGetArticlesCountEvent,
         appFirstAvailableEvent
     };

@@ -280,7 +280,7 @@ bool SearchResultsForm::handleKeyPress(const EventType& event)
 void SearchResultsForm::handleLookupFinished(const EventType& event)
 {
     setControlsState(true);
-    const LookupManager::LookupFinishedEventData& data=reinterpret_cast<const LookupManager::LookupFinishedEventData&>(event.data);
+    const LookupFinishedEventData& data=reinterpret_cast<const LookupFinishedEventData&>(event.data);
     if (data.outcomeDefinition==data.outcome)
     {
         MainForm* form=static_cast<MainForm*>(application().getOpenForm(mainForm));
@@ -315,15 +315,15 @@ bool SearchResultsForm::handleEvent(EventType& event)
             handled=true;
             break;
 
-        case iPediaApplication::appLookupFinishedEvent:
+        case LookupManager::lookupFinishedEvent:
             handleLookupFinished(event);
             handled=true;
             break;     
             
-        case iPediaApplication::appLookupStartedEvent:
+        case LookupManager::lookupStartedEvent:
             setControlsState(false);            // No break is intentional.
             
-        case iPediaApplication::appLookupProgressEvent:
+        case LookupManager::lookupProgressEvent:
             update(redrawProgressIndicator);
             break;
     

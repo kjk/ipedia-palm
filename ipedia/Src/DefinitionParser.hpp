@@ -3,7 +3,6 @@
 
 #include <Debug.hpp>
 #include <FieldPayloadProtocolConnection.hpp>
-#include <HTMLCharacterEntityReferenceDecoder.hpp>
 #include <list>
 #include <vector>
 
@@ -125,8 +124,6 @@ class DefinitionParser: public ArsLexis::FieldPayloadProtocolConnection::Payload
     
     void parse();
     
-    ArsLexis::HTMLCharacterEntityReferenceDecoder decoder_;
-
     void decodeHTMLCharacterEntityRefs(ArsLexis::String& text) const;
     
     void appendElement(DefinitionElement* element);
