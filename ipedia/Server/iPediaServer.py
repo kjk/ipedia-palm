@@ -15,10 +15,14 @@
 #   -listdbs  : list all available ipedia databases
 #   -demon    : start in deamon mode
 
-import sys, os, re, random, time, traceback, MySQLdb, _mysql_exceptions
-import arsutils,iPediaDatabase
+import sys, os, re, random, time, MySQLdb, _mysql_exceptions
+import arsutils, iPediaDatabase
+
 from twisted.internet import protocol, reactor
 from twisted.protocols import basic
+
+from arsutils import dumpException
+
 try:
     import psyco
     g_fPsycoAvailable = True
@@ -138,12 +142,6 @@ def mainDeamonTest():
         sys.stdout.flush()
         c = c + 1
         time.sleep(1)
-
-def dumpException(e):
-    print str(e)
-    print sys.exc_info()[0]
-    print sys.exc_info()[1]
-    print traceback.print_tb(sys.exc_info()[2])
 
 class iPediaServerError:
     serverFailure=1
