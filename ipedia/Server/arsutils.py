@@ -68,20 +68,59 @@ def normalizeNewlines(txt):
     lf = chr(10)
     return txt.replace(crlf, lf)
 
+# given time as a floating point number of seconds, return a text formatted
+# time that shows time in minutes/seconds
+def timeInSecsToTxt(seconds):
+    minutes = int(seconds / 60.0)
+    seconds = seconds - (float(minutes) * 60.0)
+    assert seconds <= 60.0 # TODO: is it safe due to 
+
+    if minutes > 0:
+        txt = "%d min %.2f secs" % (minutes, seconds)
+    else:
+        txt = "%.2f secs" % seconds
+    return txt
+
+# Timer measures time between start() and stop() calls
+# it uses both time.clock() and time.time() calls
+# time.clock() are more accurate (precision is in 1/1000 sec. on Windows)
+# but I suspect it might overflow, so it's not good for timing long-running
+# processes (I was getting negative values when using just time.clock())
+# So I use time.time() if I suspect that time.clock() overflew
 class Timer:
+
     def __init__(self,fStart=False):
         self.startTime = None
         self.endTime = None
+        self.startLowResTime = None
+        self.endLowResTime = None
         if fStart:
             self.start()
+
     def start(self):
         self.startTime = time.clock()
+        self.startLowResTime = time.time()
+
     def stop(self):
         self.endTime = time.clock()
-    def dumpInfo(self):
+        self.endLowResTime = time.time()
+
+    def getDurationInSecs(self):
         dur = self.endTime - self.startTime
-        txt = "duration %f seconds\n" % dur
-        sys.stderr.write(txt)
+        durLowRes = self.endLowResTime - self.startLowResTime
+        if dur < 0:
+            return durLowRes
+        if durLowRes > dur:
+            return durLowRes
+        return dur
+
+    def dumpInfo(self,txt=None):
+        dur = self.getDurationInSecs()
+        if None == txt:
+            durTxt = timeInSecsToTxt(dur)
+        else:
+            durTxt = "%s%s" % (txt, timeInSecsToTxt(dur))
+        sys.stderr.write(durTxt)
 
 def fFileExists(filePath):
     try:

@@ -72,6 +72,14 @@ MainForm::MainForm(iPediaApplication& app):
     articleCountSet_ = app.preferences().articleCount;
     article_.setRenderingProgressReporter(&renderingProgressReporter_);
     article_.setHyperlinkHandler(&app.hyperlinkHandler());
+
+    article_.setInteractionBehavior(Definition::behavMouseSelection);
+
+    /*behavDoubleClickSelection = 1,
+    behavMouseSelection = 2,
+    behavUpDownScroll = 4,
+    behavHyperlinkNavigation = 8*/
+
     about_.setHyperlinkHandler(&app.hyperlinkHandler());
     tutorial_.setHyperlinkHandler(&app.hyperlinkHandler());
     register_.setHyperlinkHandler(&app.hyperlinkHandler());

@@ -13,6 +13,7 @@
 # http://starship.python.net/crew/tmick/index.html#process
 
 import sys,string,re,time,urllib2,os,os.path,process,smtplib
+import arsutils
 
 # this is the whole text that was logged during this session
 g_logTotal = ""
@@ -26,6 +27,8 @@ TO_LIST = ["krzysztofk@pobox.com", "kkowalczyk@gmail.com"]
 FROM = None
 
 g_machine = ""
+
+g_latestDatabases = []
 
 if sys.platform == "linux2":
     # this is our rackshack server
@@ -199,10 +202,48 @@ def downloadUrl(url):
         logEvent("failed to download %s" % url)
 
 def downloadDb(url):
+    global g_latestDatabases
+
     if fDbDownloaded(url):
         logEvent("%s has already been downloaded" % url)
     else:
         downloadUrl(url)
+
+    if fDbDownloaded(url):
+        (fileNameGzipped, fileNameUngzipped) = fileNamesFromUrl(url)
+        if fFileExists(fileGzipped):
+            g_latestDatabases.append(fileNameGzipped)
+
+def convertDb(sqlDumpFileName):
+    connRoot = wikiToDbConvert.getRootConnection()
+
+    dbName = wikiToDbConvert.getDbNameFromFileName(sqlDumpFileName)
+
+    if dbName in wikiToDbConvert.getDbList():
+        logEvent("db %s already exists" % dbName)
+
+    logEvent("started creating db %s" % dbName)
+    createDb(connRoot,dbName)
+
+    timer = arsutils.Timer(fStart=True)
+    logFileName = wikipediasql.getLogFileName(sqlDump)
+    # use small buffer so that we can observe changes with tail -w
+    foLog = open(logFileName, "wb", 64)
+    sys.stdout = foLog
+    # sys.stderr = foLog
+    convertArticles(sqlDump,articleLimit)
+    calcReverseLinks(sqlDump)
+    timer.stop()
+    durInSecs = timer.getDurationInSecs()
+    durTxt = arsutils.timeInSecsToTxt(durInSecs)
+    logEvent("db %s created in %s" % (dbName, durTxt))
+
+    timer = arsutils.Timer(fStart=True)
+    createFtIndex()
+    timer.stop()
+    durInSecs = timer.getDurationInSecs()
+    durTxt = arsutils.timeInSecsToTxt(durInSecs)
+    logEvent("full-text index for db %s created in %s" % (dbName, durTxt))
 
 def mailLog():
     global g_logTotal, MAILHOST, FROM, TO_LIST, g_machine
@@ -228,4 +269,6 @@ if __name__=="__main__":
     downloadDb(g_frUrlToDownload)
     downloadDb(g_deUrlToDownload)
     downloadDb(g_enUrlToDownload)
+    for sqlDumpFileName in g_latestDatabases:
+        convertDb(sqlDumpFileName)
     mailLog()

@@ -483,7 +483,6 @@ def createDb(conn,dbName):
     cur.execute(reverseLinksSql)
     cur.execute("GRANT ALL ON %s.* TO '%s'@'%s' IDENTIFIED BY '%s';" % (dbName, DB_USER, DB_HOST, DB_PWD))
     cur.close()
-    print "Created '%s' database and granted perms to user '%s'" % (dbName,DB_USER)
 
 usersSql = """CREATE TABLE users (
   user_id           INT(10) NOT NULL auto_increment,
@@ -591,10 +590,12 @@ def createIpediaDb(sqlDumpName,fRecreateDb=False):
 
     if dbName not in getDbList():
         createDb(connRoot,dbName)
+        print "Created '%s' database and granted perms to user '%s'" % (dbName,DB_USER)
     else:
         if fRecreateDb:
             delDb(connRoot,dbName)
             createDb(connRoot,dbName)
+            print "Created '%s' database and granted perms to user '%s'" % (dbName,DB_USER)
         else:
             print "Database '%s' already exists. Use -recreatedb flag in order to force recreation of the database" % dbName
             sys.exit(0)
@@ -660,8 +661,12 @@ if __name__=="__main__":
         convertArticles(sqlDump,articleLimit)
         calcReverseLinks(sqlDump)
         timer.stop()
-        timer.dumpInfo()
+        timer.dumpInfo("converting database: ")
+        timer = arsutils.Timer(fStart=True)
         createFtIndex()
+        timer.stop()
+        timer.dumpInfo("creating full-text index: ")
+
     finally:
         deinitDatabase()
         if None != foLog:
