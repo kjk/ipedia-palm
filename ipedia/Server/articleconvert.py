@@ -82,6 +82,8 @@ wikiMacrosReplacements = {
 
 wikiMacroRe=re.compile("\{\{((msg)|(subst))\:.*?\}\}", re.I)
 
+categoryRe=re.compile("\[\[Category:.*\]\]", re.I)
+
 def replaceWikiMacros(term, text):
 
     for (macro,replacement) in wikiMacrosReplacements.items():
@@ -100,6 +102,9 @@ def dumpException(e):
 def convertArticle(term, text):
     try:
         text=text.replace('__NOTOC__', '')
+        # remove categories. in the future we should provide a better
+        # support for categories
+        text=replaceRegExp(text, categoryRe, '')
         text=replaceWikiMacros(term, text)
         text=text.replace('\r','')
         text=replaceRegExp(text, commentRe, '')     # This should be safe, as it's illegal in html to nest comments

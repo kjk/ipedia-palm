@@ -1,4 +1,12 @@
 # this file contains ideas for things that we might convert in the future
+
+#this test got broken when moving conversion from 2.3 to 2.2 (lack of unicode data module)
+@16
+&lt;&amp;&gt; &quot; &Alpha; &#509;nima &#8220;research&#8221;
+@
+<&> " /Alpha/ ænima "research"
+
+
 @tables from List_of_mayors_of_Vancouver
 
 We might try to support simple tables like that by converting it to a nicely
