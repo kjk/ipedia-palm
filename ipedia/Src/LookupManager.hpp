@@ -32,7 +32,7 @@ struct LookupFinishedEventData
     enum Outcome
     {
         outcomeNothing,
-        outcomeDefinition,
+        outcomeArticleBody,
         outcomeList,
         outcomeError,
         outcomeServerError,

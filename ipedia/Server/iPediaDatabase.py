@@ -89,7 +89,7 @@ def findArticle(db, cursor, title):
         else:
             return None
         
-def findRandomDefinition(db, cursor):
+def getRandomArticle(db, cursor):
     cursor.execute("""SELECT min(id), max(id) FROM articles""")
     row=cursor.fetchone()
     minId, maxId=row[0], row[1]

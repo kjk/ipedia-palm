@@ -35,8 +35,8 @@ iPediaConnection::~iPediaConnection()
 
 #define getArticleField         _T("Get-Article")
 #define getRandomField          _T("Get-Random-Article")
-#define resultsForField         _T("Results-For")
-#define definitionField         _T("Definition")
+#define articleTitleField       _T("Article-Title")
+#define articleBodyField        _T("Article-Body")
 #define notFoundField           _T("Not-Found")
 #define searchField             _T("Search")
 #define searchResultsField      _T("Search-Results")
@@ -230,16 +230,16 @@ ArsLexis::status_t iPediaConnection::handleField(const String& name, const Strin
         else
             error=errResponseMalformed;
     }
-    else if (resultsForField==name)
-        resultsFor_=value;
-    else if (name==definitionField)
+    else if (articleTitleField==name)
+        articleTitle_=value;
+    else if (name==articleBodyField)
     {
         error=numericValue(value, numValue);
         if (!error)
         {
             DefinitionParser* parser=new DefinitionParser();
             startPayload(parser, numValue);
-            payloadType_=payloadDefinition;
+            payloadType_=payloadArticleBody;
         }
         else
             error=errResponseMalformed;
@@ -326,16 +326,16 @@ ArsLexis::status_t iPediaConnection::notifyFinished()
     if (NULL!=definitionParser_)
     {
         std::swap(definitionParser_->elements(), lookupManager_.lastDefinitionElements());
-        lookupManager_.setLastFoundTerm(resultsFor_);
+        lookupManager_.setLastFoundTerm(articleTitle_);
         if (getRandom_)
-            lookupManager_.setLastInputTerm(resultsFor_);
-        data.outcome=data.outcomeDefinition;
+            lookupManager_.setLastInputTerm(articleTitle_);
+        data.outcome=data.outcomeArticleBody;
     }
 
     if (searchResultsHandler_!=0)
     {
         lookupManager_.setLastSearchResults(searchResultsHandler_->searchResults());
-        lookupManager_.setLastSearchExpression(resultsFor_);
+        lookupManager_.setLastSearchExpression(articleTitle_);
         data.outcome=data.outcomeList;
     }
    
@@ -371,7 +371,7 @@ void iPediaConnection::notifyPayloadFinished()
 {
     switch (payloadType_)
     {
-        case payloadDefinition:
+        case payloadArticleBody:
             delete definitionParser_;
             definitionParser_=static_cast<DefinitionParser*>(releasePayloadHandler());
             break;

@@ -311,7 +311,7 @@ void MainForm::handleLookupFinished(const EventType& event)
     const LookupFinishedEventData& data=reinterpret_cast<const LookupFinishedEventData&>(event.data);
     switch (data.outcome)
     {
-        case data.outcomeDefinition:
+        case data.outcomeArticleBody:
             updateAfterLookup();
             break;
             

@@ -6,7 +6,7 @@
 #
 # Usage:
 #   -perfrandom $n : do a performance test for Get-Random-Article by issuing $n requests
-#   -get term : get and display a definition of term
+#   -get tittle : get article for a given title
 #   -getrandom
 #   -articlecount
 #   -ping : does a ping request (to test if the server is alive)
@@ -25,7 +25,7 @@ g_defaultServerNo = 0 # index within g_serverList
 g_cookie = None
 g_exampleDeviceInfo = "HS50616C6D204F5320456D756C61746F72:OC70616C6D:OD00000000"
 
-# current version of the definition format returned by the client
+# current version of the article body format returned by the client
 CUR_FORMAT_VER = "1"
 
 g_fShowTiming = None
@@ -146,7 +146,7 @@ def parseServerResponse(response):
             continue
         #print "line: _%s_" % fld
         if payloadLenLeft > 0:
-            # this is a part of definitionField part of the response
+            # this is a part of articleBodyField part of the response
             payloadTxt += fld + "\n"
             payloadLenLeft -= (len(fld) + 1)
             if 0 == payloadLenLeft:
@@ -157,7 +157,7 @@ def parseServerResponse(response):
         if None == field:
             print "'%s' is not a valid request line" % fld
             return None
-        if definitionField==field or searchResultsField==field:
+        if articleBodyField==field or searchResultsField==field:
             payloadLenLeft = int(value)
             payloadField = field
             #print "*** payloadLenLeft=%d" % payloadLenLeft
@@ -208,10 +208,10 @@ def doGetRandom(fSilent=False,fDoTiming=False):
     handleCookie(rsp)
     assert rsp.hasField(transactionIdField)
     assert rsp.getField(transactionIdField) == req.transactionId
-    assert rsp.hasField(resultsForField)
+    assert rsp.hasField(articleTitleField)
     assert rsp.hasField(formatVersionField)
     assert rsp.getField(formatVersionField) == CUR_FORMAT_VER
-    assert rsp.hasField(definitionField)
+    assert rsp.hasField(articleBodyField)
     if not fSilent:
         print "# response:"
         print rsp.getText()
@@ -224,10 +224,10 @@ def doGetRandomNoTiming():
     handleCookie(rsp)
     assert rsp.hasField(transactionIdField)
     assert rsp.getField(transactionIdField) == req.transactionId
-    assert rsp.hasField(resultsForField)
+    assert rsp.hasField(articleTitleField)
     assert rsp.hasField(formatVersionField)
     assert rsp.getField(formatVersionField) == CUR_FORMAT_VER
-    assert rsp.hasField(definitionField)
+    assert rsp.hasField(articleBodyField)
 
 def doGetDef(term):
     print "term: %s" % term
@@ -236,13 +236,13 @@ def doGetDef(term):
     handleCookie(rsp)
     assert rsp.hasField(transactionIdField)
     assert rsp.getField(transactionIdField) == req.transactionId
-    if rsp.hasField(resultsForField):        
+    if rsp.hasField(articleTitleField):        
         assert rsp.hasField(formatVersionField)
         assert rsp.getField(formatVersionField) == CUR_FORMAT_VER
-        assert rsp.hasField(definitionField)
+        assert rsp.hasField(articleBodyField)
     else:
         assert rsp.hasField(notFoundField)
-    #print "Definition: %s" % rsp.getField(definitionField)
+    #print "Definition: %s" % rsp.getField(articleBodyField)
 
 def doGetArticleCount():
     req = getRequestHandleCookie(getArticleCountField, None)

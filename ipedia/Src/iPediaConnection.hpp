@@ -14,7 +14,7 @@ class iPediaConnection: public ArsLexis::FieldPayloadProtocolConnection
     ulong_t             transactionId_;
     ArsLexis::String    term_;
     uint_t              formatVersion_;
-    ArsLexis::String    resultsFor_;
+    ArsLexis::String    articleTitle_;
     DefinitionParser*   definitionParser_;
 
     class SearchResultsHandler: public ArsLexis::FieldPayloadProtocolConnection::PayloadHandler
@@ -47,7 +47,7 @@ class iPediaConnection: public ArsLexis::FieldPayloadProtocolConnection
     enum PayloadType 
     {
         payloadNone,
-        payloadDefinition,
+        payloadArticleBody,
         payloadSearchResults
     };
 

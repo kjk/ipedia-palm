@@ -161,7 +161,7 @@ class ArsUtils(unittest.TestCase):
     def test_Random(self):
         req = getRequestHandleCookie(getRandomField, None)
         rsp = Response(req)
-        self.assertFieldsExist(rsp,[transactionIdField,cookieField,resultsForField,formatVersionField])
+        self.assertFieldsExist(rsp,[transactionIdField,cookieField,articleTitleField,formatVersionField])
         self.assertFieldsDontExist(rsp,[errorField])
         self.assertFieldEqual(rsp, transactionIdField, req.transactionId)
 
@@ -171,7 +171,7 @@ class ArsUtils(unittest.TestCase):
         #print req.getString()
         rsp = Response(req)
         #print rsp.getText()
-        self.assertFieldsExist(rsp,[transactionIdField,cookieField,resultsForField,formatVersionField])
+        self.assertFieldsExist(rsp,[transactionIdField,cookieField,articleTitleField,formatVersionField])
         self.assertFieldEqual(rsp, transactionIdField, req.transactionId)
         self.assertFieldEqual(rsp, formatVersionField, DEFINITION_FORMAT_VERSION)
 
@@ -183,7 +183,7 @@ class ArsUtils(unittest.TestCase):
         #print req.getString()
         rsp = Response(req)
         #print rsp.getText()
-        self.assertFieldsExist(rsp,[transactionIdField,cookieField,resultsForField,formatVersionField])
+        self.assertFieldsExist(rsp,[transactionIdField,cookieField,articleTitleField,formatVersionField])
         self.assertFieldEqual(rsp, transactionIdField, req.transactionId)
         self.assertFieldEqual(rsp, formatVersionField, DEFINITION_FORMAT_VERSION)
 
@@ -200,9 +200,9 @@ class ArsUtils(unittest.TestCase):
         req = getRequestHandleCookie(searchField, searchTerm)
         rsp = Response(req)
         #print rsp.getText()
-        self.assertFieldsExist(rsp,[transactionIdField,cookieField,resultsForField,searchResultsField])
+        self.assertFieldsExist(rsp,[transactionIdField,cookieField,articleTitleField,searchResultsField])
         self.assertFieldEqual(rsp, transactionIdField, req.transactionId)
-        self.assertFieldEqual(rsp,resultsForField,searchTerm)
+        self.assertFieldEqual(rsp,articleTitleField,searchTerm)
         count = searchResultsCount(rsp.getField(searchResultsField))
         #print "search result count: '%d'" % count
         # hard to establish the exact number but 100 should be good (when checked

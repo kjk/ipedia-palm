@@ -144,7 +144,7 @@ void LookupManager::handleLookupFinishedInForm(const LookupFinishedEventData& da
 
 void LookupManager::handleLookupFinished(const LookupFinishedEventData& data)
 {
-    if (data.outcome==data.outcomeDefinition)
+    if (data.outcome==data.outcomeArticleBody)
         handleDefinition();
 }
 

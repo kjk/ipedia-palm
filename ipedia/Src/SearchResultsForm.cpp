@@ -299,7 +299,7 @@ void SearchResultsForm::handleLookupFinished(const EventType& event)
 {
     setControlsState(true);
     const LookupFinishedEventData& data=reinterpret_cast<const LookupFinishedEventData&>(event.data);
-    if (data.outcomeDefinition==data.outcome)
+    if (data.outcomeArticleBody==data.outcome)
     {
         MainForm* form=static_cast<MainForm*>(application().getOpenForm(mainForm));
         assert(form);
