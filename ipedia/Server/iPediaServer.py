@@ -53,6 +53,8 @@ searchField =           "Search"
 searchResultsField =    "Search-Results"
 getArticleCountField =  "Get-Article-Count"
 articleCountField =     "Article-Count"
+getDatabaseTimeField =  "Get-Database-Time"
+databaseTimeField =     "Database-Time"
 pingField =             "Ping"
 
 definitionFormatVersion = 1
@@ -171,6 +173,7 @@ class iPediaProtocol(basic.LineReceiver):
         self.getRandom=None
         self.linesCount=0
         self.getArticleCount=False
+        self.getDatabaseTime=False
         self.searchExpression=None
         self.ping=False
 
@@ -557,6 +560,9 @@ class iPediaProtocol(basic.LineReceiver):
             if self.getArticleCount:
                 self.outputField(articleCountField, str(self.factory.articleCount))
 
+            if self.getDatabaseTime:
+                self.outputField(databaseTimeField, self.factory.dbTime)
+
         except Exception, ex:
             dumpException(ex)
             self.error=iPediaServerError.serverFailure
@@ -613,6 +619,9 @@ class iPediaProtocol(basic.LineReceiver):
                 elif request.startswith(getArticleCountField):
                     self.getArticleCount=True
 
+                elif request.startswith(getDatabaseTimeField):
+                    self.getDatabaseTime=True
+
                 elif request.startswith(pingField):
                     self.ping = True
                     #print "lines: %d" % self.linesCount
@@ -640,6 +649,7 @@ class iPediaFactory(protocol.ServerFactory):
 
     def __init__(self, dbName):
         self.dbName=dbName
+        self.dbTime = dbName[7:]
         db=self.createArticlesConnection()
         cursor=db.cursor()
         cursor.execute("""SELECT COUNT(*), min(id), max(id) FROM articles""")

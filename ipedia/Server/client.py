@@ -29,8 +29,10 @@ PROTOCOL_VER      = "Protocol-Version:"
 CLIENT_VER        = "Client-Version:"
 GET_DEF           = "Get-Definition:"
 GET_RANDOM        = "Get-Random-Definition:"
-GET_ARTICLE_COUNT = "Get-Article-Count"
+GET_ARTICLE_COUNT = "Get-Article-Count:"
 ARTICLE_COUNT     = "Article-Count:"
+GET_DATABASE_TIME = "Get-Database-Time:"
+DATABASE_TIME     = "Database-Time:"
 PING              = "Ping:"
 
 g_fShowTiming = None
@@ -118,6 +120,16 @@ def buildGetArticleCountRequest():
     req += "\n\n"
     return req
 
+def buildGetDatabaseTimeRequest():
+    req = buildCommonRequestPart()
+    if getGlobalCookie():
+        req += buildLine(COOKIE, getGlobalCookie())
+    else:
+        req += buildLine(GET_COOKIE, g_exampleDeviceInfo)
+    req += GET_DATABASE_TIME
+    req += "\n\n"
+    return req
+
 # parser server response. Returns a dictionary where keys are the
 # names of fields e.g. like FORMAT_VER, COOKIE and values their values
 # returns None if there was an error parsing (the response didn't follow
@@ -184,6 +196,10 @@ def getArticleCount():
     req = buildGetArticleCountRequest()
     return getReqResponse(req)
 
+def getDatabaseTime():
+    req = buildGetDatabaseTimeRequest()
+    return getReqResponse(req)
+
 def doGetDef(term):
     global g_cookie
     defResponse = getDef(term)
@@ -243,6 +259,22 @@ def doGetArticleCount():
     else:
         print "Article count: ", parsedResponse[ARTICLE_COUNT]
 
+def doGetDatabaseTime():
+    global g_cookie
+    defResponse = getDatabaseTime()
+    parsedResponse = parseServerResponse(defResponse)
+    if not parsedResponse:
+        print "FAILURE in parseServerResponse"
+        sys.exit(0)
+    if not getGlobalCookie() and parsedResponse.has_key(COOKIE):
+        print "Found cookie: %s" % parsedResponse[COOKIE]
+        g_cookie = parsedResponse[COOKIE]
+    if not parsedResponse.has_key(DATABASE_TIME):
+        print "FAILURE: no %s field" % DATABASE_TIME
+        sys.exit(0)
+    else:
+        print "Database time: ", parsedResponse[DATABASE_TIME]
+
 def doRandomPerf(count):
     timer = arsutils.Timer(fStart=True)
     for i in range(count):
@@ -258,7 +290,7 @@ def doPing():
     assert pingResponse.strip() == "PONG"
 
 def usageAndExit():
-    print "client.py [-showtiming] [-perfrandom N] [-getrandom] [-get term] [-articlecount] [-ping]"
+    print "client.py [-showtiming] [-perfrandom N] [-getrandom] [-get term] [-articlecount] [-dbtime] [-ping]"
 
 if __name__=="__main__":
     g_fShowTiming = arsutils.fDetectRemoveCmdFlag("-showtiming")
@@ -270,20 +302,21 @@ if __name__=="__main__":
         randomCount = arsutils.getRemoveCmdArgInt("-perfrandom")
         if randomCount != None:
             doRandomPerf(randomCount)
-        else:
-            fGetRandom = arsutils.fDetectRemoveCmdFlag("-getrandom")
-            if fGetRandom:
-                doGetRandomDef(False,True)
-            else:
-                term = arsutils.getRemoveCmdArg("-get")
-                if term:
-                    doGetDef(term)
-                else:
-                    fGetArticle = arsutils.fDetectRemoveCmdFlag("-articlecount")
-                    if fGetArticle:
-                        doGetArticleCount()
-                    else:
-                        usageAndExit()
+            sys.exit(0)
+        if arsutils.fDetectRemoveCmdFlag("-getrandom"):
+            doGetRandomDef(False,True)
+            sys.exit(0)
+        term = arsutils.getRemoveCmdArg("-get")
+        if term:
+            doGetDef(term)
+            sys.exit(0)
+        if arsutils.fDetectRemoveCmdFlag("-articlecount"):
+            doGetArticleCount()
+            sys.exit(0)
+        if arsutils.fDetectRemoveCmdFlag("-dbtime"):
+            doGetDatabaseTime()
+            sys.exit(0)
+        usageAndExit()
     finally:
         # make sure that we pickle the state even if we crash
         pickleState()
