@@ -81,7 +81,7 @@ def findArticle(db, cursor, title):
         row=cursor.fetchone()
         if row:
             return (row[0], row[1], row[2])
-        query="""SELECT redirect FROM redirect WHERE title='%s';""" % db.escape_string(term)
+        query="""SELECT redirect FROM redirects WHERE title='%s';""" % db.escape_string(term)
         cursor.execute(query)
         row=cursor.fetchone()
         if row:

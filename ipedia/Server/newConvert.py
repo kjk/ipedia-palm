@@ -122,9 +122,14 @@ def dbEscape(txt):
     global g_connIpedia
     return g_connIpedia.escape_string(txt)
 
+# Given a title of the article (title) the title of the article
+# to which it's redirected (cur_redirect), a hash of all redirects
+# (allRedirects) and hash containing titles of all non-redirect articles
+# (allArticles) find the title of final non-redirect article (i.e. eliminate
+# chained redirects). Return None if the redirect is invalid (i.e. the article
+# to which it tries to redirect doesn't exist)
 def resolveRedirect(title,cur_redirect, allRedirects, allArticles):
-    # check for (hopefuly frequent) case: this a valid, direct
-    # redirect
+    # check for (hopefuly frequent) case: this a valid, direct redirect
     if allArticles.has_key(cur_redirect):
         return cur_redirect
     visited = [title]
@@ -242,15 +247,18 @@ def convertArticles(sqlDump,dbName,articleLimit):
         if articleLimit and count >= articleLimit:
             break
     # verify redirects
-    print "Number of redirects: %d" % len(redirects)
     print "Number of real articles: %d" % len(articleTitles)
+    print "Number of all redirects: %d (%d in total)" % (len(redirects), len(articleTitles)+len(redirects))
     unresolvedCount = 0
     setUnresolvedRedirectWriter(sqlDump)
+    redirectsExisting = {}
     for (title,redirect) in redirects.items():
         redirectResolved = resolveRedirect(title,redirect,redirects,articleTitles)
         if None == redirectResolved:
             unresolvedCount +=1
             #print "redirect '%s' (to '%s') not resolved" % (title,redirect)
+        else:
+            redirectsExisting[title] = redirectResolved
     print "Number of unresolved redirects: %d" % unresolvedCount
 
     ipedia_write_cur = getNamedCursor(getIpediaConnection(dbName), "ipedia_write_cur")
@@ -262,11 +270,10 @@ def convertArticles(sqlDump,dbName,articleLimit):
     convWriter = wikipediasql.ConvertedArticleCacheWriter(sqlDump)
     convWriter.open()
     for article in wikipediasql.iterWikipediaArticles(sqlDump,articleLimit,True,False):
+        title = article.getTitle()
         if article.fRedirect():
-            convertedArticle = ConvertedArticleRedirect(article.getNamespace(), article.getTitle(), article.getRedirect())
-            # what do I do now?
+            convertedArticle = ConvertedArticleRedirect(article.getNamespace(), title, article.getRedirect())
         else:
-            title = article.getTitle()
             txt = article.getText()
             converted = articleconvert.convertArticle(title,txt)
             noLinks = articleconvert.removeInvalidLinks(converted,redirects,articleTitles)
@@ -274,12 +281,23 @@ def convertArticles(sqlDump,dbName,articleLimit):
                 converted = noLinks
             convertedArticle = ConvertedArticle(article.getNamespace(), article.getTitle(), converted)
 
-        title = title.replace("_", " ")
         #title = title.lower()
         if article.fRedirect():
-            # what now?
-            pass
+            if redirectsExisting.has_key(title):
+                redirect = redirectsExisting[title]
+                print "INSERT REDIRECT '%s' => '%s' (article.getRedirect()='%s',convertedArticle.getRedirect()='%s'" % (title,redirect,article.getRedirect(),convertedArticle.getRedirect())
+                #try:
+                #    title = title.replace("_", " ")
+                #    redirect = redirect.replace("_", " ")
+                #    ipedia_write_cur.execute("""INSERT INTO redirects (title, redirect) VALUES ('%s', '%s')""" % (dbEscape(title), dbEscape(redirect)))
+                #except:
+                #    print "Failed to insert the redirect. Shouldn't happen"
+                #    raise
+            else:
+                print "NO REDIRECT '%s' => '%s' (convertedArticle.getRedirect='%s')" % (title, article.getRedirect(), convertedArticle.getRedirect())
         else:
+            print "ARTICLE '%s'" % title
+            title = title.replace("_", " ")
             if g_fVerbose:
                 log_txt = "title: %s " % title
             try:
@@ -323,7 +341,7 @@ CREATE TABLE `articles` (
 """
 
 genSchema2Sql = """
-CREATE TABLE `redirect` (
+CREATE TABLE `redirects` (
   `id` int(10) unsigned NOT NULL auto_increment,
   `title` varchar(255) NOT NULL,
   `redirect` varchar(255) NOT NULL,

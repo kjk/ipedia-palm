@@ -12,6 +12,7 @@
 #             by default)
 #   -usepsyco : will use psyco, if available
 #   -db name  : use database name
+#   -listdbs  : list all available ipedia databases
 
 import sys, re, random, datetime, MySQLdb, _mysql_exceptions
 import arsutils,iPediaDatabase
@@ -26,8 +27,6 @@ except:
 
 g_unregisteredLookupsLimit=10
 g_unregisteredLookupsDailyLimit=2    
-    
-g_articleCount = 0
 
 # if True we'll print debugging info
 g_fVerbose = None
@@ -609,16 +608,19 @@ class iPediaFactory(protocol.ServerFactory):
         return MySQLdb.Connect(host=iPediaDatabase.DB_HOST, user=iPediaDatabase.DB_USER, passwd=iPediaDatabase.DB_PWD, db=iPediaDatabase.MANAGEMENT_DB)
 
     def __init__(self, dbName):
-        global g_articleCount
         self.dbName=dbName
         db=self.createArticlesConnection()
         cursor=db.cursor()
-        cursor.execute("""select count(*), min(id), max(id) from articles""")
+        cursor.execute("""SELECT COUNT(*), min(id), max(id) FROM articles""")
         row=cursor.fetchone()
-        g_articleCount=self.articleCount=row[0]
+        self.articleCount=row[0]
         self.minDefinitionId=row[1]
         self.maxDefinitionId=row[2]
+        cursor.execute("""SELECT COUNT(*) FROM redirects""")
+        row=cursor.fetchone()
+        self.articleCount=row[0]
         print "Number of Wikipedia articles: ", self.articleCount
+        print "Number of redirects: ", self.redirectsCount
         cursor.close()
         db.close()
 
@@ -628,15 +630,21 @@ class iPediaFactory(protocol.ServerFactory):
     protocol = iPediaProtocol
 
 ipediaRe = re.compile("ipedia_[0-9]{8}", re.I)
+def fIpediaDb(dbName):
+    """Return True if a given database name is a name of the database with Wikipedia
+    articles"""
+    if ipediaRe.match(dbName):
+        return True
+    return False
 
-def getDbList():
-    conn = MySQLdb.Connect(host=iPediaDatabase.DB_HOST, user=iPediaDatabase.DB_USER, passwd=iPediaDatabase.DB_PWD, db=iPediaDatabase.MANAGEMENT_DB)
+def getIpediaDbList():
+    conn = MySQLdb.Connect(host=iPediaDatabase.DB_HOST, user=iPediaDatabase.DB_USER, passwd=iPediaDatabase.DB_PWD, db='')
     cur = conn.cursor()
     cur.execute("SHOW DATABASES;")
     dbs = []
     for row in cur.fetchall():
         dbName = row[0]
-        if ipediaRe.match(dbName):
+        if fIpediaDb(dbName):
             dbs.append(dbName)
     cur.close()
     conn.close()
@@ -648,25 +656,14 @@ class iPediaTelnetProtocol(basic.LineReceiver):
     useDbRe=re.compile(r'\s*use\s+(\w+)\s*', re.I)
     
     def listDatabases(self):
-        db=None
-        cursor=None
+        dbs = None
         try:
-            db=self.factory.iPediaFactory.createManagementConnection()
-            cursor=db.cursor()
-            cursor.execute("show databases like 'ipedia_%'")
-            row=cursor.fetchone()
-            while row:
-                dbName = row[0]
-                if dbName != MANAGEMENT_DB:
-                    self.transport.write(dbName+'\r\n')
-                row=cursor.fetchone()
+            dbs = getIpediaDbList()
+            for dbName in dbs:
+                self.transport.write(dbName+'\r\n')
         except _mysql_exceptions.Error, ex:
             print ex
             self.transport.write("exception\r\n")
-        if cursor:            
-            cursor.close()
-        if db:            
-            db.close()
 
     def useDatabase(self, dbName):
         self.factory.iPediaFactory.changeDatabase(dbName)
@@ -701,7 +698,7 @@ def main():
         print "using psyco"
         psyco.full()
 
-    dbs = getDbList()
+    dbs = getIpediaDbList()
     if 0==len(dbs):
         print "No databases available"
 
