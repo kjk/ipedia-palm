@@ -103,7 +103,6 @@ def _recentRegistrations(db, limit):
     while row:
         whenCreated=row[2]
         devInfo=row[1]
-#        decodedDevInfo = _decodeDevInfo(devInfo)
         if (selected):
             selected=False
             body=body+"<tr class=\"selected\">\n"
@@ -112,8 +111,11 @@ def _recentRegistrations(db, limit):
             body=body+"<tr>\n"
 
         body=body+"  <td>%s</td>\n" % whenCreated
-        deviceName="Not implemented"
-        hotsyncName="Not implemented"
+        decodedDevInfo = arsutils.decodeDi(devInfo)
+        deviceName=decodedDevInfo["device_name"]
+        hotsyncName="Unavailable"
+        if decodedDevInfo.has_key("HS"):
+            hotsyncName=decodedDevInfo["HS"]
         body=body+"  <td>%s</td>\n" % hotsyncName
         body=body+"  <td>%s</td>\n" % deviceName
         body=body+"</tr>\n"
@@ -164,6 +166,32 @@ def _recentLookups(db, limit):
     cursor.close()        
     body=body+"</table>\n"
     return body
+    
+def _showDeviceStats(db):
+    body="""
+<table id="stats" cellspacing="0">
+<tr class="header">
+  <td>Device name</td>
+  <td>Count</td>
+</tr>"""
+    stats=[]
+    
+    selected = False
+    for stat in stats:
+        deviceName=stat[0]
+        count = stat[1]
+        if selected:
+            selected=False
+            body=body+"<tr class=\"selected\">\n"
+        else:
+            selected=True
+            body=body+"<tr>\n"
+        body=body+"  <td>%s</td>\n" % deviceName
+        body=body+"  <td>%d</td>\n" % count
+        body=body+"</tr>\n"
+    body=body+"</table>\n"
+    return body
+
     
 def summary(req):
     contents=_readTemplate(req)
@@ -216,7 +244,7 @@ def summary(req):
         </td>
     </tr>
     </table>"""
-    #body=body+_showDeviceStats(db)        
+    body=body+_showDeviceStats(db)        
     
     db.close()
     return contents % body
