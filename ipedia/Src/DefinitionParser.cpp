@@ -450,6 +450,24 @@ void DefinitionParser::parseText(uint_t end, ElementStyle style)
     createTextElement();
 }
 
+const char_t *GetLangNameByLangCode(String& langCode);
+
+const char_t *GetLangNameByLangCode(String& langCode)
+{
+    if ("en" == langCode)
+    {
+        return "English";
+    } else if ("fr" == langCode)
+    {
+        return "French";
+    } else if ("de" == langCode)
+    {
+        return "German";
+    } else {
+        return "Unknown";
+    }
+}
+
 GenericTextElement* DefinitionParser::createTextElement(const String& text, String::size_type start, String::size_type length)
 {
     String copy(text, start, length);
@@ -460,11 +478,12 @@ GenericTextElement* DefinitionParser::createTextElement(const String& text, Stri
             copy.erase(0, colonPos+1);
         String langCode(hyperlinkTarget_, 0, colonPos);
         const char_t* langName = GetLangNameByLangCode(langCode);
+        //const char_t* langName = langCode.c_str();
         if (NULL != langName)
             copy.append(_T(" (")).append(langName).append(1, _T(')'));
     }
-// We no longer send HTML entity refs    
-//    decodeHTMLCharacterEntityRefs(copy);
+    // We no longer send HTML entity refs    
+    //    decodeHTMLCharacterEntityRefs(copy);
     TextPtr textElement;
     if (isPlainText())
         textElement=TextPtr(new GenericTextElement(copy));

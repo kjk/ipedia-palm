@@ -427,6 +427,8 @@ void MainForm::handleLookupFinished(const EventType& event)
     }        
 }
 
+extern const char_t *GetLangNameByLangCode(String& langCode);
+
 void MainForm::updateArticleCountEl(long articleCount, ArsLexis::String& dbTime)
 {
     assert(NULL!=articleCountElement_);
@@ -440,7 +442,8 @@ void MainForm::updateArticleCountEl(long articleCount, ArsLexis::String& dbTime)
     articleCountText.append(" articles. ");
 
     const String& langCode = app().preferences().currentLang;
-    const char_t* langName = GetLangNameByLangCode(langCode);
+    //const char_t* langName = GetLangNameByLangCode(langCode);
+    const char_t* langName = langCode.c_str();
     if (NULL == langName)
         langName = _T("Unknown");
         
