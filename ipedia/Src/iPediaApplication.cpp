@@ -70,7 +70,7 @@ Err iPediaApplication::normalLaunch()
     // if running on Treo 600 set the default server to my server
     if (isTreo600())
     {
-        server_ = serverDictPcArslexis;
+        server_ = serverOfficial;
     }
 #endif
     gotoForm(mainForm);

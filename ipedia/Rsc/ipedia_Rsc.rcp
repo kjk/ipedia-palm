@@ -19,7 +19,7 @@ BEGIN
 #ifdef  INTERNAL_BUILD
          MENUITEM SEPARATOR ID AUTOID
          MENUITEM "localhost" ID useLocalhostMenuItem  
-         MENUITEM "dict-pc.arslexis.com" ID useDictPcMenuItem    
+         MENUITEM "ipedia.arslexis.com" ID useDictPcMenuItem    
          MENUITEM "Stress mode" ID toggleStressModeMenuItem   
 #endif
     END

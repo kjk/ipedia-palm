@@ -26,6 +26,7 @@ except:
     print "psyco not available. You should consider using it (http://psyco.sourceforge.net/)"
     g_fPsycoAvailable = False
 
+g_fDisableRegistrationCheck = False
 g_unregisteredLookupsLimit=10
 g_unregisteredLookupsDailyLimit=2    
 
@@ -199,7 +200,7 @@ class iPediaProtocol(basic.LineReceiver):
             db=self.getManagementDatabase()
             trIdStr='0'
             if self.transactionId:
-                trIdStr=str(int(self.transactionId, 16))
+                trIdStr=str(long(self.transactionId, 16))
             hasGetCookie=0
             if self.deviceInfoToken:
                 hasGetCookie=1
@@ -217,8 +218,8 @@ class iPediaProtocol(basic.LineReceiver):
                 defFor='\''+db.escape_string(self.term)+'\''
             cursor=db.cursor()
             clientIp=0
-            query=("""insert into requests (client_ip, transaction_id, has_get_cookie_field, cookie_id, has_register_field, requested_term, error, definition_for, request_date) """
-                                        """values (%d, %s, %d, %s, %d, %s, %d, %s, now())""" % (clientIp, trIdStr, hasGetCookie, cookieIdStr, hasRegister, reqTerm, self.error, defFor))
+            query=("""INSERT INTO requests (client_ip, transaction_id, has_get_cookie_field, cookie_id, has_register_field, requested_term, error, definition_for, request_date) """
+                                        """VALUES (%d, %s, %d, %s, %d, %s, %d, %s, now())""" % (clientIp, trIdStr, hasGetCookie, cookieIdStr, hasRegister, reqTerm, self.error, defFor))
             cursor.execute(query)
             cursor.close()
         except _mysql_exceptions.Error, ex:
@@ -276,18 +277,18 @@ class iPediaProtocol(basic.LineReceiver):
         try:
             db=self.getManagementDatabase()
             cursor=db.cursor()
-            cursor.execute("""select id, cookie from cookies where device_info_token='%s'""" % db.escape_string(self.deviceInfoToken))
+            cursor.execute("""SELECT id, cookie FROM cookies WHERE device_info_token='%s'""" % db.escape_string(self.deviceInfoToken))
             row=cursor.fetchone()
             if row:
                 self.cookieId=row[0]
                 self.cookie=row[1]
-                cursor.execute("""select id from registered_users where cookie_id=%d""" % self.cookieId)
+                cursor.execute("""SELECT id FROM registered_users WHERE cookie_id=%d""" % self.cookieId)
                 row=cursor.fetchone()
                 if row:
                     self.userId=row[0]
             else:
                 self.createCookie(cursor)
-                cursor.execute("""insert into cookies (cookie, device_info_token, issue_date) values ('%s', '%s', now())""" % (self.cookie, db.escape_string(self.deviceInfoToken)))
+                cursor.execute("""INSERT INTO cookies (cookie, device_info_token, issue_date) VALUES ('%s', '%s', now())""" % (self.cookie, db.escape_string(self.deviceInfoToken)))
                 self.cookieId=cursor.lastrowid
             cursor.close()                                      
             self.outputField(cookieField, str(self.cookie))
@@ -311,7 +312,7 @@ class iPediaProtocol(basic.LineReceiver):
             cursor=db.cursor()
 
             if not self.deviceInfoToken:
-                cursor.execute("""select device_info_token from cookies where id=%d""" % self.cookieId)
+                cursor.execute("""SELECT device_info_token FROM cookies WHERE id=%d""" % self.cookieId)
                 row=cursor.fetchone()
                 assert row!=None
                 self.deviceInfoToken=row[0]
@@ -320,13 +321,13 @@ class iPediaProtocol(basic.LineReceiver):
             if not userName:
                 userName="[no hotsync name]"
             
-            cursor.execute("""select id, cookie_id from registered_users where serial_number='%s'""" % db.escape_string(self.serialNumber))
+            cursor.execute("""SELECT id, cookie_id FROM registered_users WHERE serial_number='%s'""" % db.escape_string(self.serialNumber))
             row=cursor.fetchone()
             if row:
                 currentCookieId=row[1]
                 if currentCookieId==None:
                     self.userId=row[0]
-                    cursor.execute("""update registered_users set cookie_id=%d, user_name='%s' where id=%d""" % (self.cookieId, db.escape_string(userName), self.userId))
+                    cursor.execute("""UPDATE registered_users SET cookie_id=%d, user_name='%s' WHERE id=%d""" % (self.cookieId, db.escape_string(userName), self.userId))
                 elif currentCookieId!=self.cookieId:
                     self.error=iPediaServerError.invalidAuthorization
                     cursor.close()
@@ -466,34 +467,38 @@ class iPediaProtocol(basic.LineReceiver):
             return False
         return True
         
-    def checkLookupsLimit(self):
+    def fOverUnregisteredLookupsLimit(self):
+        global g_unregisteredLookupsDailyLimit, g_unregisteredLookupsLimit, g_fDisableRegistrationCheck
+        if g_fDisableRegistrationCheck:
+            return False
         cursor=None
-        result=True
+        fOverLimit=False
         try:
             db=self.getManagementDatabase()
             cursor=db.cursor()
             assert None==self.userId
             assert None!=self.cookieId
-            query="select count(*) from requests where not (requested_term is NULL) and cookie_id=%d" % self.cookieId
+            query="SELECT COUNT(*) FROM requests WHERE NOT (requested_term is NULL) AND cookie_id=%d" % self.cookieId
             cursor.execute(query)
             row=cursor.fetchone()
             assert None!=row
+            print "lookups by this cookie: %s" % row[0]
             if row[0]>=g_unregisteredLookupsLimit:
-                query="select count(*) from requests where not (requested_term is NULL) and cookie_id=%d and request_date>DATE_SUB(CURDATE(), INTERVAL 1 DAY)" % self.cookieId
+                query="SELECT COUNT(*) FROM requests WHERE NOT (requested_term is NULL) AND cookie_id=%d AND request_date>DATE_SUB(CURDATE(), INTERVAL 1 DAY)" % self.cookieId
                 cursor.execute(query)
                 row=cursor.fetchone()
                 assert None!=row
                 if row[0]>=g_unregisteredLookupsDailyLimit:
                     self.error=iPediaServerError.trialExpired
-                    result=False
+                    fOverLimit=True
             cursor.close()
         except _mysql_exceptions.Error, ex:
             print ex
             if cursor:
                 cursor.close()
             self.error=iPediaServerError.serverFailure
-            result=False
-        return result
+            fOverLimit=True
+        return fOverLimit
         
     def answer(self):
         global g_fVerbose
@@ -521,7 +526,7 @@ class iPediaProtocol(basic.LineReceiver):
             if self.serialNumber and not self.handleRegisterRequest():
                 return self.finish()
                 
-            if self.term and not self.userId and not self.checkLookupsLimit():
+            if self.term and not self.userId and self.fOverUnregisteredLookupsLimit():
                 return self.finish()
             
             if self.term and not self.handleDefinitionRequest():

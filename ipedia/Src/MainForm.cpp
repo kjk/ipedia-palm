@@ -559,7 +559,7 @@ bool MainForm::handleMenuCommand(UInt16 itemId)
     
 #ifdef  INTERNAL_BUILD    
         case useDictPcMenuItem:
-            switchServer(serverDictPcArslexis);
+            switchServer(serverOfficial);
             handled=true;
             break;
             

@@ -12,7 +12,7 @@
 import sys, re, socket, random, pickle, time, arsutils
 
 # server string must be of form "name:port"
-g_serverList = ["localhost:9000", "dict-pc.arslexis.com:9000"]
+g_serverList = ["localhost:9000", "ipedia.arslexis.com:9000"]
 
 g_defaultServerNo = 0 # index within g_serverList
 

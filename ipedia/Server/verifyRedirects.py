@@ -11,7 +11,7 @@
 #   -db name  : use database name
 #   -listdbs  : list all available ipedia databases
 
-import sys, re, random, datetime, MySQLdb, _mysql_exceptions
+import sys, re, random, MySQLdb, _mysql_exceptions
 import arsutils,iPediaDatabase,iPediaServer
 try:
     import psyco

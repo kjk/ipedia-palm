@@ -12,7 +12,7 @@
 
 # devnotes: using iterators (http://www-106.ibm.com/developerworks/library/l-pycon.html)
 
-import MySQLdb, MySQLdb.cursors, sys, datetime, re
+import MySQLdb, MySQLdb.cursors, sys, re
 import timeit
 
 def queryGetOneVal(db,query):
