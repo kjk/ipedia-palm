@@ -24,8 +24,6 @@ class MainForm: public iPediaForm
     ArsLexis::TextRenderer articleRenderer_;
     ArsLexis::TextRenderer infoRenderer_;
 
-    GenericTextElement* articleCountElement_;
-    bool forceAboutRecalculation_;    
     long articleCountSet_;
     int  penUpsToEat_;
     bool ignoreEvents_;
@@ -87,8 +85,6 @@ class MainForm: public iPediaForm
     RenderingProgressReporter renderingProgressReporter_;
     
     void prepareAbout();
-
-    void updateArticleCountEl(long articleCount, const ArsLexis::String& dbTime);
 
     void doLookupSelectedTerm(int sel);
 

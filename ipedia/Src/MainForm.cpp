@@ -58,8 +58,6 @@ MainForm::MainForm(iPediaApplication& app):
     lastPenDownTimestamp_(0),
     updateDefinitionOnEntry_(false),
     enableInputFieldAfterUpdate_(false),
-    forceAboutRecalculation_(false),
-    articleCountElement_(0),
     articleCountSet_(-1),
     penUpsToEat_(0),
     log_(_T("MainForm")),
@@ -231,10 +229,7 @@ void MainForm::handleLookupFinished(const EventType& event)
 
         case data.outcomeDatabaseSwitched:
             // recalc about info and show about screen
-            setDisplayMode(showAbout);
-            updateArticleCountEl(app().preferences().articleCount, app().preferences().databaseTime);
-
-            forceAboutRecalculation_ = true;
+            setDisplayMode(showAbout);            
             termInputField_.replace("");
             update();
             break;
@@ -262,8 +257,6 @@ void MainForm::handleLookupFinished(const EventType& event)
     if (app().preferences().articleCount != articleCountSet_) 
     {
         articleCountSet_ = app().preferences().articleCount;
-        updateArticleCountEl(articleCountSet_, app().preferences().databaseTime);
-        forceAboutRecalculation_ = true;
     }
 
     LookupManager* lookupManager=app().getLookupManager();
@@ -275,37 +268,6 @@ void MainForm::handleLookupFinished(const EventType& event)
         EvtResetAutoOffTimer();
         randomArticle();
     }        
-}
-
-void MainForm::updateArticleCountEl(long articleCount, const ArsLexis::String& dbTime)
-{
-    if (NULL == articleCountElement_)
-        return;
-    assert(NULL != articleCountElement_);
-    assert(-1 != articleCount);
-    assert(8 == dbTime.length());
-    char buffer[32];
-    int len = formatNumber(articleCount, buffer, sizeof(buffer));
-    assert(len != -1 );
-    String articleCountText;
-    articleCountText.append(buffer, len);
-    articleCountText.append(" articles. ");
-
-    const String& langCode = app().preferences().currentLang;
-    const char_t* langName = GetLangNameByLangCode(langCode);
-    if (NULL == langName)
-        langName = _T("Unknown");
-        
-    articleCountText.append(langName);
-
-    articleCountText.append(" encyclopedia last updated on ");
-    articleCountText.append(dbTime, 0, 4);
-    articleCountText.append(1, '-');
-    articleCountText.append(dbTime, 4, 2);
-    articleCountText.append(1, '-');
-    articleCountText.append(dbTime, 6, 2);
-    articleCountElement_->setText(articleCountText);
-    
 }
 
 bool MainForm::handleEvent(EventType& event)
@@ -357,7 +319,6 @@ bool MainForm::handleEvent(EventType& event)
         case iPediaApplication::appRegistrationFinished:
             if (showAbout == displayMode_)
                 prepareAbout();
-            forceAboutRecalculation_=true;
             update();
             handled = true;
             break;
@@ -916,12 +877,45 @@ static void randomArticleActionCallback(void *data)
     sendEvent(iPediaApplication::appRandomWord);
 }
 
+static void prepareArticleCountEl(GenericTextElement *articleCountElement, long articleCount, const ArsLexis::String& dbTime)
+{
+    assert(NULL!=articleCountElement);
+
+    assert(-1 != articleCount);
+    assert(8 == dbTime.length());
+    char buffer[32];
+    int len = formatNumber(articleCount, buffer, sizeof(buffer));
+    assert(len != -1 );
+    String articleCountText;
+    articleCountText.append(buffer, len);
+    articleCountText.append(" articles. ");
+
+    iPediaApplication& app = iPediaApplication::instance();
+    const String& langCode = app.preferences().currentLang;
+    const char_t* langName = GetLangNameByLangCode(langCode);
+    if (NULL == langName)
+        langName = _T("Unknown");
+        
+    articleCountText.append(langName);
+
+    articleCountText.append(" encyclopedia last updated on ");
+    articleCountText.append(dbTime, 0, 4);
+    articleCountText.append(1, '-');
+    articleCountText.append(dbTime, 4, 2);
+    articleCountText.append(1, '-');
+    articleCountText.append(dbTime, 6, 2);
+    articleCountElement->setText(articleCountText);
+
+}
+
+
+GenericTextElement *    articleCountElement;
+
 void MainForm::prepareAbout()
 {
-    articleCountElement_ = NULL;
-
-    Definition::Elements_t elems;
-    FormattedTextElement* text;
+    Definition::Elements_t  elems;
+    FormattedTextElement *  text;
+    GenericTextElement *    articleCountElement;
 
     FontEffects fxBold;
     fxBold.setWeight(FontEffects::weightBold);
@@ -993,12 +987,14 @@ void MainForm::prepareAbout()
 
     elems.push_back(new LineBreakElement(1,2));
 
-    elems.push_back(articleCountElement_=new FormattedTextElement(" "));
+    articleCountElement = new FormattedTextElement(" ");
     if (-1 != articleCountSet_)    
     {
-        updateArticleCountEl(articleCountSet_,app().preferences().databaseTime);
+        prepareArticleCountEl(articleCountElement, articleCountSet_,app().preferences().databaseTime);
     }
-    articleCountElement_->setJustification(DefinitionElement::justifyCenter);
+
+    elems.push_back(articleCountElement);
+    articleCountElement->setJustification(DefinitionElement::justifyCenter);
 
     elems.push_back(new LineBreakElement(1, 2));
     elems.push_back(text=new FormattedTextElement("Using iPedia: "));
@@ -1016,8 +1012,6 @@ void MainForm::prepareAbout()
 // TODO: make those on-demand only to save memory
 void MainForm::prepareTutorial()
 {
-    articleCountElement_ = NULL;
-
     Definition::Elements_t elems;
     FormattedTextElement* text;
 
@@ -1103,8 +1097,6 @@ static void registerActionCallback(void *data)
 // TODO: make those on-demand only to save memory
 void MainForm::prepareHowToRegister()
 {
-    articleCountElement_ = NULL;
-
     Definition::Elements_t elems;
     FormattedTextElement* text;
 
@@ -1150,7 +1142,6 @@ void MainForm::prepareHowToRegister()
 
 void MainForm::prepareWikipedia()
 {
-    articleCountElement_ = NULL;
     Definition::Elements_t elems;
     FormattedTextElement* text;
     FontEffects fxBold;
