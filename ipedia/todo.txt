@@ -1,1 +1,6 @@
 ## 1. remove timeline in the parser e.g. "List of Federal Presidents of Austria"
+
+## 2. change "trail expired" dialog to "Unregistered version expired. Please
+register by purchasing registration code.\nEnter registration code?
+Yes/NO". Just like in iPedia/SM
+
