@@ -399,7 +399,7 @@ class iPediaProtocol(basic.LineReceiver):
 
         self.dbManagement = None
         self.dbArticles = None
-        self.error = 0
+        self.error = None
 
         # dictionary to keep values of client request fields parsed so far
         self.fields = {}
@@ -537,7 +537,7 @@ class iPediaProtocol(basic.LineReceiver):
 
     def finish(self):
         global g_fVerbose
-        if self.error:
+        if None != self.error:
             self.outputField(errorField, str(self.error))
         self.transport.loseConnection()
 
@@ -969,16 +969,30 @@ class iPediaProtocol(basic.LineReceiver):
         if self.fHasField(getCookieField):
             return self.handleGetCookieRequest()
 
-    def answer(self):
+    # called after we parse the whole client request (or if there's an error
+    # during request parsing) so that we can process the request and return
+    # apropriate response to the client.
+    # If error is != None, this is the server errro code to return to the client
+    def answer(self,error):
         global g_fVerbose, validClientFields
+
+        assert None == self.error
+        self.error = error
+
         try:
             if g_fVerbose:
                 print "--------------------------------------------------------------------------------"
 
-            # check transaction id before anything else
+            # try to return transactionIdField at all costs
             if self.fHasField(transactionIdField):
                 self.outputField(transactionIdField, self.getFieldValue(transactionIdField))
-            else:
+
+            # exit if there was an error during request parsing
+            if None != self.error:
+                return self.finish()
+
+            if not self.fHasField(transactionIdField):
+                self.error = iPediaServerError.malformedRequest
                 return self.finish()
 
             # protocolVersion and clientInfo must exist
@@ -1025,47 +1039,40 @@ class iPediaProtocol(basic.LineReceiver):
         try:
             # empty line marks end of request
             if request == "":
-                return self.answer()
+                return self.answer(None)
 
-            if self.error:
-                return self.answer()
+            assert None == self.error
 
             if g_fVerbose:
                 print request
 
             (fieldName,value) = parseRequestLine(request)
             if None == fieldName:
-                self.error = iPediaServerError.malformedRequest
-                return self.answer()
+                return self.answer(iPediaServerError.malformedRequest)
 
             if not fValidClientField(fieldName):
-                self.error = iPediaServerError.invalidRequest
-                return self.answer()                
+                return self.answer(iPediaServerError.invalidRequest)                
 
             fieldData = validClientFields[fieldName]
             fHasArguments = fieldData[0]
             if fHasArguments:
                 if None == value:
                     # expected arguments for this request, but didn't get it
-                    self.error = iPediaServerError.requestArgumentMissing
-                    return self.answer()
+                    return self.answer(iPediaServerError.requestArgumentMissing)
             else:
                 if None != value:
                     # got arguments even though the function doesn't expect it
-                    self.error = iPediaServerError.unexpectedRequestArgument
-                    return self.answer()
+                    return self.answer(iPediaServerError.unexpectedRequestArgument)
 
             if self.fHasField(fieldName):
                 # duplicate field
-                self.error = iPediaServerError.malformedRequest
-                return self.answer()
+                return self.answer(iPediaServerError.malformedRequest)
 
             self.setFieldValue(fieldName,value)
 
         except Exception, ex:
             arsutils.dumpException(ex)
-            self.error=iPediaServerError.serverFailure
-            self.answer()
+            self.answer(iPediaServerError.serverFailure)
 
 # a dict of valid client requests. The value is a tuple.
 # The first element is a boolean saying if a given

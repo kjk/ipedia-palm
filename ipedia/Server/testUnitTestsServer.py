@@ -106,7 +106,7 @@ class ArsUtils(unittest.TestCase):
 
     def test_UnrecognizedField(self):
         self.req = getRequestHandleCookie("Foo", "blast")
-        self.getResponse([errorField,transactionIdField,cookieField])
+        self.getResponse([errorField,transactionIdField])
         self.assertError(iPediaServerError.invalidRequest)
 
     def test_VerifyValidRegCode(self):
@@ -229,10 +229,11 @@ class ArsUtils(unittest.TestCase):
     def test_VerifyRegCodeAsFirstRequest(self):
         # this is what client sends when it sends Verify-Register-Code
         # as the first request ever
-        self.req = getRequestHandleCookie(verifyRegCodeField, testValidRegCode)
-        self.req.addField(getCookieField, g_exampleDeviceInfo)
+        self.req = Request()
         self.req.addField(getArticleCountField, None)
         self.req.addField(getDatabaseTimeField, None)
+        self.req.addField(verifyRegCodeField, testValidRegCode)
+        self.req.addField(getCookieField, g_exampleDeviceInfo)
         self.getResponse([cookieField,transactionIdField,regCodeValidField])
         self.assertFieldEqual(self.rsp,regCodeValidField,1)
 
