@@ -4,11 +4,6 @@
 # Collect routines frequently used in other places
 
 import os,sys,time,string,binascii,traceback
-try:
-    import process
-except:
-    print "requires process module (http://starship.python.net/crew/tmick/)"
-    sys.exit(0)
 
 # which diff tool to use. AraxisMerge is the best, imo (shows character-level
 # diffs, not only line-level)
@@ -146,14 +141,29 @@ def fFinishProcess(proc,fPrintStdout=False):
     return fExecutedCorrectly(res_stderr)
 
 def diffWithWindiff(orig,converted):
+    try:
+        import process
+    except:
+        print "requires process module (http://starship.python.net/crew/tmick/)"
+        sys.exit(0)
     p = process.ProcessOpen(["windiff.exe", orig, converted])
     fFinishProcess(p,True)
 
 def diffWithAraxis(orig,converted):
+    try:
+        import process
+    except:
+        print "requires process module (http://starship.python.net/crew/tmick/)"
+        sys.exit(0)
     p = process.ProcessOpen(["C:\Program Files\Araxis Merge 2001\compare.exe", orig, converted])
     fFinishProcess(p,True)
 
 def diffWithWinMerge(orig,converted):
+    try:
+        import process
+    except:
+        print "requires process module (http://starship.python.net/crew/tmick/)"
+        sys.exit(0)
     p = process.ProcessOpen(["c:\Program Files\WinMerge\WinMergeU.exe", orig, converted])
     fFinishProcess(p,True)
 

@@ -15,10 +15,8 @@
 
 import sys, string, re, random, time, MySQLdb, _mysql_exceptions
 
-from twisted.internet import protocol, reactor
-from twisted.protocols import basic
-
 import Fields, ServerErrors, arsutils
+from ThreadedServer import *
 
 try:
     import psyco
@@ -317,7 +315,7 @@ SEARCH_TYPE_STANDARD = 's'
 SEARCH_TYPE_EXTENDED = 'e'
 SEARCH_TYPE_RANDOM   = 'r'
 
-class iPediaProtocol(basic.LineReceiver):
+class iPediaProtocol(LineReceiver):
 
     def __init__(self):
         self.delimiter = '\n'
@@ -1049,13 +1047,6 @@ def getDbInfo(dbName):
     dbInfo = DbInfo(dbName,lang, articlesCount, dbDate, redirectsCount, minDefinitionId, maxDefinitionId)
     return dbInfo
 
-class iPediaFactory(protocol.ServerFactory):
-
-    def __init__(self):
-        pass
-
-    protocol = iPediaProtocol
-
 dbDateRe = re.compile("[0-9]{8}", re.I)
 def fDbDate(dbDate):
     if not dbDateRe.match(dbDate):
@@ -1110,7 +1101,7 @@ def getDbByName(dbName):
                 return dbInfo
     return None
 
-class iPediaTelnetProtocol(basic.LineReceiver):
+class iPediaTelnetProtocol(LineReceiver):
 
     listRe=re.compile(r'\s*list\s*', re.I)
     useDbRe=re.compile(r'\s*use\s+(\w+)\s*', re.I)
@@ -1193,20 +1184,12 @@ class iPediaTelnetProtocol(basic.LineReceiver):
             self.listDatabases()
             return
 
-        match=iPediaTelnetProtocol.useDbRe.match(request)
+        match = iPediaTelnetProtocol.useDbRe.match(request)
         if match:
             self.useDatabase(match.group(1))
             return
 
         self.transport.loseConnection()
-                
-    
-class iPediaTelnetFactory(protocol.ServerFactory):
-
-    def __init__(self, otherFactory):
-        self.iPediaFactory = otherFactory 
-    
-    protocol=iPediaTelnetProtocol
 
 def usageAndExit():
     print "iPediaServer.py [-demon] [-verbose] [-usepsyco] [-listdbs] [-db name]"
@@ -1332,10 +1315,16 @@ def main():
     if fDemon:
         arsutils.daemonize('/dev/null','/tmp/ipedia.log','/tmp/ipedia.log')
 
-    factory = iPediaFactory()
-    reactor.listenTCP(9000, factory)
-    reactor.listenTCP(9001, iPediaTelnetFactory(factory))
-    reactor.run()
+    port = 9000
+    runServer(port, iPediaProtocol)
+
+    # TODO: restore the telnet interface
+    # either use another thread for runServer or add ability to runServer
+    # to listen on multiple (port, protocol)
+    #factory = iPediaFactory()
+    #reactor.listenTCP(9000, factory)
+    #reactor.listenTCP(9001, iPediaTelnetFactory(factory))
+    #reactor.run()
 
 if __name__ == "__main__":
     main()
