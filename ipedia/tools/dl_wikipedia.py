@@ -22,7 +22,7 @@ g_workingDir = "g:\\wikipedia\\"
 # Which mail server to use when sending an e-mail
 MAILHOST = None
 # list of e-mail addresses to which send the e-mail
-TO_LIST = ["krzysztofk@pobox.com", "kkowalczyk@gmail.com", "kjk@arslexis.com", "support@arslexis.com"]
+TO_LIST = ["krzysztofk@pobox.com", "kkowalczyk@gmail.com"]
 FROM = None
 
 g_machine = ""
@@ -31,7 +31,7 @@ if sys.platform == "linux2":
     # this is our rackshack server
     g_workingDir = "/ipedia/wikipedia"
     MAILHOST = "localhost"
-    FROM = "ipedia-dl-bot@localhost"
+    FROM = "ipedia-dl-bot@ipedia.arslexis.com"
     g_machine = "ipedia.arslexis.com"
 else:
     # this must be windows

@@ -43,10 +43,13 @@
 #  $count   : number of reg codes to generate
 #  $purpose : who the reg codes are for Valid entries:
 #     - 'h' for Handango
+#     - 'hppc' for Handango Pocket PC version
+#     - 'hsm' for Handango Smartphone version
 #     - 'pg' for PalmGear
 #     - 'es' for eSellerate
 #     - 'sn' for smartphone.net
-
+#     - 'pog' for PocketGear.com
+#
 #
 # History:
 #  2004-04-15  created
@@ -99,10 +102,13 @@ MIN_PG_CODES = 500
 
 # TODO: check MIN_H_CODES limit
 # minimum number of per-file codes for Handango
-MIN_H_CODES = 500
+MIN_H_CODES = 100
 
 # minimum number of per-file codes for smartphone.net
 MIN_SN_CODES = 100
+
+# generic minium of per-file codes for pocketgear.net
+MIN_POG_CODES = 100
 
 # given argument name in argName, tries to return argument value
 # in command line args and removes those entries from sys.argv
@@ -168,8 +174,14 @@ def getEsellerateFileName():
     return getUniqueDatedFileName("es-")
 def getHandangoFileName():
     return getUniqueDatedFileName("h-")
+def getHandangoSmartphoneFileName():
+    return getUniqueDatedFileName("h-sm-")
+def getHandangoPocketPCFileName():
+    return getUniqueDatedFileName("h-ppc-")
 def getPalmGearFileName():
     return getUniqueDatedFileName("pg-")
+def getPocketGearFileName():
+    return getUniqueDatedFileName("pog-")
 def getSmartphoneFileName():
     return getUniqueDatedFileName("sn-")
 
@@ -245,8 +257,7 @@ def createEsellerateFile(codes):
 # uploading files, you have to copy&paste reg codes into a text field.
 # FireFox 0.9.1 doesn't show such a long text in text field (although it's there).
 # IE 6 works better.
-def createHandangoFile(codes):
-    fileName = getHandangoFileName()
+def createHandangoFileGeneric(codes, fileName):
     assert not fFileExists(fileName)
     assert len(codes)>=MIN_H_CODES
     fo = open(fileName, "wb")
@@ -259,6 +270,18 @@ def createHandangoFile(codes):
             fo.write( ",%s" % code )
     fo.write("\n")
     fo.close()
+
+def createHandangoFile(codes):
+    fileName = getHandangoFileName()
+    createHandangoFileGeneric(codes, fileName)
+
+def createHandangoSmartphoneFile(codes):
+    fileName = getHandangoSmartphoneFileName()
+    createHandangoFileGeneric(codes, fileName)
+
+def createHandangoPocketPCFile(codes):
+    fileName = getHandangoPocketPCFileName()
+    createHandangoFileGeneric(codes, fileName)
 
 # smartphone.net: comma separated list of registration codes. They don't support
 # uploading files, you have to copy&paste reg codes into a text field.
@@ -316,8 +339,8 @@ def main():
         if len(sys.argv) != 3:
             usageAndExit()
         purpose = sys.argv[1]
-        if purpose not in ["pg", "h", "es", "sn"]:
-            print 'purpose cannot be %s. Must be "pg", "h", "es" or "sn"' % purpose
+        if purpose not in ["pg", "h", "hsm", "hppc", "es", "sn", "pog"]:
+            print 'purpose cannot be %s. Must be "pg", "h", "hsm", "hppc", "es", "sn" or "pog"' % purpose
             usageAndExit()
         regCodesCount = int(sys.argv[2])
 
@@ -327,7 +350,7 @@ def main():
                 print "When generating Esellerate codes, the minium number of codes is %d" % MIN_ES_CODES
                 usageAndExit()
 
-        if "h" == purpose:
+        if purpose in ["h", "hsm", "hppc"]:
             if regCodesCount < MIN_H_CODES:
                 print "When generating Handango codes, the minium number of codes is %d" % MIN_H_CODES
                 usageAndExit()
@@ -340,6 +363,11 @@ def main():
         if "sn" == purpose:
             if regCodesCount < MIN_SN_CODES:
                 print "When generating Smartphone.net codes, the minium number of codes is %d" % MIN_SN_CODES
+                usageAndExit()
+
+        if "pog" == purpose:
+            if regCodesCount < MIN_POG_CODES:
+                print "When generating PocketGear.com codes, the minium number of codes is %d" % MIN_POG_CODES
                 usageAndExit()
 
     print "reading previous codes"
@@ -355,10 +383,16 @@ def main():
             createEsellerateFile(newCodes)
         if "h" == purpose:
             createHandangoFile(newCodes)
+        if "hsm" == purpose:
+            createHandangoSmartphoneFile(newCodes)
+        if "hppc" == purpose:
+            createHandangoPocketPCFile(newCodes)
         if "pg" == purpose:
             createPalmGearFile(newCodes)
         if "sn" == purpose:
             createSmartphoneFile(newCodes)
+        if "pog" == purpose:
+            createPocketGearFile(newCodes)
     print "generated %d new codes" % len(newCodes)
     
     saveNewCodesToCsv(newCodes)

@@ -50,7 +50,7 @@ def main():
     for reg_code in codes.keys():
         purpose = codes[reg_code][0]
         assert 12 == len(reg_code) or purpose=="test"
-        assert purpose in ["h","pg", "es", "sn", "test"] or "s:" == purpose[:2]
+        assert purpose in ["h","hsm","hppc","pg","es","sn","pog","test"] or "s:" == purpose[:2]
         assert len(purpose) < 200 # the column is 255, use 200 just in case
 
     insertedCount = 0
