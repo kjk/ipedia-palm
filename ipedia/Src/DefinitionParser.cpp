@@ -14,14 +14,10 @@
 #include <Text.hpp>
 #include <LangNames.hpp>
 
-using namespace ArsLexis;
-
-namespace {
-    typedef std::auto_ptr<ParagraphElement> ParagraphPtr;
-    typedef std::auto_ptr<GenericTextElement> TextPtr;
-    typedef std::auto_ptr<FormattedTextElement> FormattedTextPtr;
-    typedef std::auto_ptr<DefinitionElement> ElementPtr;
-}
+typedef std::auto_ptr<ParagraphElement> ParagraphPtr;
+typedef std::auto_ptr<GenericTextElement> TextPtr;
+typedef std::auto_ptr<FormattedTextElement> FormattedTextPtr;
+typedef std::auto_ptr<DefinitionElement> ElementPtr;
 
 DefinitionParser::DefinitionParser():
     openEmphasize_(false),

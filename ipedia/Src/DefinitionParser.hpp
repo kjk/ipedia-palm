@@ -27,7 +27,7 @@ class ListNumberElement;
  * When all data is received @c parseIncrement(true) should be called to parse all the
  * remeining lines.
  */
-class DefinitionParser: public ArsLexis::FieldPayloadProtocolConnection::PayloadHandler
+class DefinitionParser: public FieldPayloadProtocolConnection::PayloadHandler
 {
     void clear();
     
