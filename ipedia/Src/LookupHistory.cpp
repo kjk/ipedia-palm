@@ -1,5 +1,11 @@
 #include "LookupHistory.hpp"
+// TODO: hack, this needs to be done in ars_framework's PrefsStore.hpp
+#ifdef _PALM_OS
 #include <PrefsStore.hpp>
+#else
+#include <WinPrefsStore.hpp>
+#endif
+
 #include <BaseTypes.hpp>
 
 #ifdef __MWERKS__
