@@ -806,12 +806,14 @@ void MainForm::prepareSplashScreen()
     
     elems.push_back(new LineBreakElement());
     const char* version="Version " appVersion
+#ifdef INTERNAL_BUILD
+    " (internal)"
+#endif
 #ifdef DEMO
         " (demo)"
-#else
-  #ifdef DEBUG
-        " (beta)"
-  #endif
+#endif
+#ifdef DEBUG
+        " (debug)"
 #endif
     ;
     elems.push_back(text=new FormattedTextElement(version));

@@ -102,7 +102,7 @@ ArsLexis::status_t iPediaConnection::enqueue()
 #ifdef DETAILED_CONNECTION_STATUS
     lookupManager_.setStatusText(_T("Opening connection..."));
 #else
-    lookupManager_.setStatusText(_T("Downloading article"));
+    lookupManager_.setStatusText(_T("Downloading article..."));
 #endif
     lookupManager_.setPercentProgress(LookupManager::percentProgressDisabled);
     ArsLexis::sendEvent(LookupManager::lookupStartedEvent);
@@ -123,27 +123,28 @@ ArsLexis::status_t iPediaConnection::open()
     // but for users we simplify as much as possible
     status=_T("Sending requests...");
 #else
-    status=_T("Downloading article");
+    status=_T("Downloading article...");
 #endif
 
     lookupManager_.setStatusText(status);
     ArsLexis::sendEvent(LookupManager::lookupProgressEvent);
-        
+
 #if defined(_PALM_OS)        
-    if (!error)
+    assert(!error);
+    ArsLexis::SocketLinger linger;
+    linger.portable.onOff=true;
+    linger.portable.time=0;
+    ArsLexis::Application& app=ArsLexis::Application::instance();
+    // according to newsgroups in os 5 linger is broken and we need to do this
+    // hack. Seems to help on Tungsten. However, on Treo 600 it doesn't seem
+    // to be necessary
+    if ( !isTreo600() && (5==app.romVersionMajor()))
+        std::swap(linger.portable.onOff, linger.portable.time);
+    error=socket().setLinger(linger);
+    if (error)
     {
-        ArsLexis::SocketLinger linger;
-        linger.portable.onOff=true;
-        linger.portable.time=0;
-        ArsLexis::Application& app=ArsLexis::Application::instance();
-        if (5==app.romVersionMajor())
-            std::swap(linger.portable.onOff, linger.portable.time);
-        error=socket().setLinger(linger);
-        if (error)
-        {
-            log().debug()<<"setOption() returned error while setting linger: "<<error;
-            error=errNone;
-        }
+        log().debug()<<"setOption() returned error while setting linger: "<<error;
+        error=errNone;
     }
 #endif        
     return errNone;
