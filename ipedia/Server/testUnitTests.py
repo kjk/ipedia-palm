@@ -62,6 +62,9 @@ class ArticleConvert(unittest.TestCase):
         txt = removeInvalidLinks("al[[me_ko]] [[l2_oj|gol]] a", {"me_me":1}, {"la_ha":1})
         self.assertEqual(txt,"alme ko gol a")
 
+    def test_stripBlocks(self):
+    
+
 class WikipediaSql(unittest.TestCase):
 
     def test_getRedirectFromText(self):

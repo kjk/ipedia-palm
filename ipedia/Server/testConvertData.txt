@@ -123,3 +123,9 @@ René-Lévesque (far right).]]
 @s34 T&#333;ky&#333;*Tokyo
 @s35 [[cy:Tocio]]*
 @s36 [[tokipona:ma tomo Tokijo]]*
+@37
+<div style="float:right; margin:0 0 1em 1em;">[[Image:LeonardoDiCaprio.jpg]]</div>
+
+'''Leonardo Wilhelm DiCaprio''' (born [[November 11]], [[1974]]) in [[Los Angeles, California]], is an [[United States|American]] [[actor]] most famous for his roles in the [[movie]]s:
+@
+'''Leonardo Wilhelm DiCaprio''' (born [[November 11]], [[1974]]) in [[Los Angeles, California]], is an [[United States|American]] [[actor]] most famous for his roles in the [[movie]]s:
