@@ -38,6 +38,7 @@ iPediaConnection::~iPediaConnection()
 #define protocolVersion _T("1")
 
 #define getArticleField         _T("Get-Article")
+#define getArticleUField        _T("Get-Article-U")
 #define getRandomField          _T("Get-Random-Article")
 #define articleTitleField       _T("Article-Title")
 #define articleBodyField        _T("Article-Body")
@@ -109,7 +110,13 @@ void iPediaConnection::prepareRequest()
         if (performFullTextSearch_)
             appendField(request, searchField, term_);
         else
+        {
+#ifdef UNLOCKED
+            appendField(request, getArticleUField, term_);
+#else
             appendField(request, getArticleField, term_);
+#endif
+        }
     }
 
     if (!regCodeToVerify.empty())

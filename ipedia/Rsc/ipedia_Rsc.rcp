@@ -19,7 +19,7 @@ BEGIN
          MENUITEM SEPARATOR ID AUTOID
          MENUITEM "Copy to clipboard" ID copyMenuItem "C"
          MENUITEM SEPARATOR ID AUTOID
-         MENUITEM "Change database" ID changeDatabaseMenuItem "D"
+         MENUITEM "Change language" ID changeDatabaseMenuItem "D"
 #ifdef  INTERNAL_BUILD
          MENUITEM SEPARATOR ID AUTOID
          MENUITEM "localhost" ID useLocalhostMenuItem  
@@ -277,6 +277,14 @@ ALERT ID connectionServerNotRunning
 BEGIN
     TITLE "Error"
     MESSAGE "The iPedia server is not available. Please contact support@arslexis.com if the problem persists."
+    BUTTONS "OK"
+END
+
+ALERT ID alreadyRegisteredAlert
+INFORMATION
+BEGIN
+    TITLE "Already registered"
+    MESSAGE "This version is already registered."
     BUTTONS "OK"
 END
 

@@ -1,6 +1,16 @@
 #ifndef _IPEDIA_TARGET_H_
 #define _IPEDIA_TARGET_H_
 
+
+#if __ide_target("Unlocked")
+    #include <PalmOS_Headers>
+    #ifndef NDEBUG
+    #define NDEBUG
+    #endif
+    #define ARSLEXIS_VERSION 1
+    #define UNLOCKED 1
+#endif
+
 #if __ide_target("Release")
     #include <PalmOS_Headers>
     #ifndef NDEBUG

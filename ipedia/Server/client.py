@@ -294,6 +294,25 @@ def doGetRandomNoTiming():
     assert rsp.hasField(Fields.articleBody)
     assert rsp.hasField(Fields.reverseLinks)
 
+def doGetDefU(term,fSilent=True):
+    print "term: %s" % term
+    req = getRequestHandleCookie(Fields.getArticleU, term)
+    rsp = Response(req.getString())
+    handleCookie(rsp)
+    assert rsp.hasField(Fields.transactionId)
+    assert rsp.getField(Fields.transactionId) == req.transactionId
+    if not fSilent:
+        print "# response:"
+        print rsp.getText()
+    if rsp.hasField(Fields.articleTitle):        
+        assert rsp.hasField(Fields.formatVersion)
+        assert rsp.getField(Fields.formatVersion) == CUR_FORMAT_VER
+        assert rsp.hasField(Fields.articleBody)
+        #assert rsp.hasField(Fields.reverseLinks)
+    else:
+        assert rsp.hasField(Fields.notFound)
+    #print "Definition: %s" % rsp.getField(Fields.articleBody)
+
 def doGetDef(term,fSilent=True):
     print "term: %s" % term
     req = getRequestHandleCookie(Fields.getArticle, term)
@@ -398,7 +417,8 @@ argsInfo = {
     "ping" : (0, doPing),
     "perfrandom" : (0, doRandomPerf),
     "getrandom" : (0, doGetRandom),
-    "get" : (0, doGetDef),
+    "get" : (1, doGetDef),
+    "getu" : (1, doGetDefU),
     "search" : (1, doSearch),
     "articlecount" : (0, doGetArticleCount),
     "dbtime" : (0, doGetDatabaseTime),

@@ -719,7 +719,11 @@ bool MainForm::handleMenuCommand(UInt16 itemId)
 #endif
             
         case registerMenuItem:
+#ifdef UNLOCKED
+            FrmAlert(alreadyRegisteredAlert);
+#else
             Application::popupForm(registrationForm);
+#endif
             handled = true;
             break;
             
@@ -1201,6 +1205,11 @@ void MainForm::prepareAbout()
     text->setJustification(DefinitionElement::justifyCenter);
     elems.push_back(new LineBreakElement(1,4));
 
+#ifdef UNLOCKED
+    elems.push_back(text=new FormattedTextElement("Registered PalmSource version"));
+    text->setJustification(DefinitionElement::justifyCenter);
+    elems.push_back(new LineBreakElement(1,2));
+#else
     if (app().preferences().regCode.empty())
     {
         elems.push_back(text=new FormattedTextElement("Unregistered ("));
@@ -1220,6 +1229,7 @@ void MainForm::prepareAbout()
         text->setJustification(DefinitionElement::justifyCenter);
         elems.push_back(new LineBreakElement(1,2));
     }
+#endif
 
     elems.push_back(text=new FormattedTextElement("Software \251 "));
     text->setJustification(DefinitionElement::justifyCenter);

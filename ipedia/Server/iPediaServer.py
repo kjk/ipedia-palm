@@ -462,6 +462,8 @@ class iPediaProtocol(basic.LineReceiver):
 
         if self.fHasField(Fields.getArticle):
             self.logSearchRequest(self.userId,self.getFieldValue(Fields.getArticle),self.searchResult,error)
+        elif self.fHasField(Fields.getArticleU):
+            self.logSearchRequest(self.userId,self.getFieldValue(Fields.getArticleU),self.searchResult,error)
         elif self.fHasField(Fields.search):
             self.logExtendedSearchRequest(self.userId,self.getFieldValue(Fields.search),error)
         elif self.fHasField(Fields.getRandom):
@@ -569,18 +571,25 @@ class iPediaProtocol(basic.LineReceiver):
         body=body.replace("{{CURRENTTIME}}",        time.strftime("%X"))
         return body
 
-    def handleGetArticleRequest(self):
-        assert self.fHasField(Fields.getArticle)
+    def handleGetArticleURequest(self):
+        assert self.fHasField(Fields.getArticleU)
+        title = self.getFieldValue(Fields.getArticleU)
+        return self.handleGetArticleRequestGeneric(title,False)
 
+    def handleGetArticleRequest(self, fCheckLookupLimit=True):
+        assert self.fHasField(Fields.getArticle)
+        title = self.getFieldValue(Fields.getArticle)
+        return self.handleGetArticleRequestGeneric(title,True)
+
+    def handleGetArticleRequestGeneric(self, title, fCheckLookupLimit):
         if self.fHasField(Fields.search) or self.fHasField(Fields.getRandom):
             # those shouldn't be in the same request
             return ServerErrors.malformedRequest
 
-        if not self.fRegisteredUser:
+        if not self.fRegisteredUser and fCheckLookupLimit:
             if self.fOverUnregisteredLookupsLimit(self.userId):
                 return ServerErrors.lookupLimitReached
 
-        title = self.getFieldValue(Fields.getArticle)
         cursor = None
         try:
             db = self.getArticlesDatabase()
@@ -1004,6 +1013,7 @@ clientFieldsHandlers = {
     Fields.verifyRegCode     : iPediaProtocol.handleVerifyRegistrationCodeRequest,
 
     Fields.getArticle        : iPediaProtocol.handleGetArticleRequest,
+    Fields.getArticleU       : iPediaProtocol.handleGetArticleURequest,
     Fields.getRandom         : iPediaProtocol.handleGetRandomRequest,
     Fields.search            : iPediaProtocol.handleSearchRequest,
     Fields.getArticleCount   : None,

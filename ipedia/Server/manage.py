@@ -9,7 +9,7 @@ import sys, string, re, socket, random, arsutils
 # server string must be of form "name:port"
 g_serverList = ["localhost:9001", "ipedia.arslexis.com:9001"]
 
-g_defaultServerNo = 0 # index within g_serverList
+g_defaultServerNo = 1 # index within g_serverList
 
 def usageAndExit():
     print "manage.py [-listdbs] [-use dbName]"

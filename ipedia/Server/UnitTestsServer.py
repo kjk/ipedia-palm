@@ -279,7 +279,7 @@ class ServerTests(unittest.TestCase):
         self.assertEqual(cookie,cookie2)
 
     # test that unregistered user reaches lookup limits
-    def test_LookupLimit(self):
+    def test_LookupLimitSearch(self):
         searchTerms = ["brazil","seattle","poland","comedy"]
         # make sure to get a unique cookie, to start over
         self.req = Request()
@@ -304,6 +304,26 @@ class ServerTests(unittest.TestCase):
                 self.assertFieldEqual(self.rsp, Fields.formatVersion, DEFINITION_FORMAT_VERSION)
         # didn't find response with an error so far, so there's a bug in the server
         self.assertEqual(True,False)
+
+    # test that our server does unlocked version properly
+    def test_NoLookupLimitInUnlockedVersion(self):
+        searchTerms = ["brazil","seattle","poland","comedy"]
+        # make sure to get a unique cookie, to start over
+        self.req = Request()
+        self.req.addField(Fields.getCookie,g_nonUniqueDeviceInfo)
+        self.getResponse([Fields.transactionId,Fields.cookie])
+        cookie = self.rsp.getField(Fields.cookie)
+        lookupsToDo = g_unregisteredLookupsLimit+10
+        for t in range(lookupsToDo):
+            searchTerm = searchTerms[t%len(searchTerms)]
+            self.req = Request()
+            self.req.addField(Fields.cookie,cookie)
+            self.req.addField(Fields.getArticleU, searchTerm)
+            self.getResponse([Fields.transactionId])
+            self.assertEqual(True,self.rsp.hasField(Fields.articleTitle))
+            self.assertEqual(True,self.rsp.hasField(Fields.articleBody))
+            self.assertEqual(True,self.rsp.hasField(Fields.formatVersion))
+            self.assertFieldEqual(self.rsp, Fields.formatVersion, DEFINITION_FORMAT_VERSION)
 
     def test_InvalidDeviceInfo(self):
         self.req = Request()

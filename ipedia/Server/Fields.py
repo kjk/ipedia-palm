@@ -40,6 +40,11 @@ cookie =            "Cookie"
 # Value: term for which we want the article (e.g. "seattle")
 # Response: (Article-Title, Article-Body, Format-Version) or Not-Found or Search-Results
 getArticle =        "Get-Article"
+
+# Just like Get-Article except that server doesn't check lookup limits. It's
+# used in special "unlocked" builds that we sometimes have to generate.
+getArticleU =        "Get-Article-U"
+
 # Client uses Get-Random-Article to get a random article
 # Value: none
 # Response: (Article-Title, Article-Body, Format-Version)
@@ -155,6 +160,7 @@ fieldsInfo = {
     regCodeValid    : (fieldTypeServer, valueInline),
 
     getArticle      : (fieldTypeClient, valueInline),
+    getArticleU     : (fieldTypeClient, valueInline),
     getRandom       : (fieldTypeClient, valueNone),
     search          : (fieldTypeClient, valueInline),
     getDatabaseTime : (fieldTypeClient, valueNone),

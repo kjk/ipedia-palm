@@ -54,6 +54,7 @@ def logEvent(txtToLog):
     #print txtToLog
     fo = openLogFileIfNotOpen()
     fo.write("  " + txtToLog + "\n")
+    fo.flush()
 
 def matchUrlInTxt(txt, regExp):
     match=regExp.search(txt)
@@ -159,7 +160,7 @@ def downloadUrl(url):
     #print "status = %d" % status
 
     if -1 != res_stderr.find("is not recognized"):
-        logEvent("didn't launch wget.exe properly")
+        logEvent("didn't launch wget properly")
         return
     
     if fDbDownloaded(url):

@@ -117,7 +117,6 @@ namespace {
 
 }    
 
-/*
 void DefinitionParser::decodeHTMLCharacterEntityRefs(String& text) const
 {
     uint_t length=text.length();
@@ -164,7 +163,6 @@ void DefinitionParser::decodeHTMLCharacterEntityRefs(String& text) const
     }
 }
 
-*/
 namespace {
 
     static const char_t indentLineChar=':';
@@ -464,8 +462,9 @@ GenericTextElement* DefinitionParser::createTextElement(const String& text, Stri
         if (NULL != langName)
             copy.append(_T(" (")).append(langName).append(1, _T(')'));
     }
-    // We no longer send HTML entity refs    
-    //    decodeHTMLCharacterEntityRefs(copy);
+    // andrzej: We no longer send HTML entity refs
+    // kjk: we do, see e.g. "Chinese language" in English database
+    decodeHTMLCharacterEntityRefs(copy);
     TextPtr textElement;
     if (isPlainText())
         textElement=TextPtr(new GenericTextElement(copy));

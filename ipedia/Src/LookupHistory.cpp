@@ -112,14 +112,17 @@ const String& LookupHistory::currentLang() const
 status_t LookupHistory::serializeOut(ArsLexis::PrefsStoreWriter& writer, int uniqueId) const
 {
     status_t error;
+    StringList_t::const_iterator end;
+    StringList_t::const_iterator lit;
+    StringList_t::const_iterator it;
+    ushort_t currentItem = 0;
 
-    ushort_t itemCount=termHistory_.size(); 
+    ushort_t itemCount = termHistory_.size(); 
     if (errNone!=(error=writer.ErrSetUInt16(uniqueId++, itemCount)))
         goto OnError;
-    ushort_t currentItem=0;
-    StringList_t::const_iterator end = termHistory_.end();
-    StringList_t::const_iterator lit = langHistory_.begin();    
-    for (StringList_t::const_iterator it = termHistory_.begin(); it!=end; ++it, ++lit)
+    end = termHistory_.end();
+    lit = langHistory_.begin();    
+    for (it = termHistory_.begin(); it!=end; ++it, ++lit)
     {
         if (historyPosition_ != it)
             ++currentItem;
@@ -141,6 +144,8 @@ status_t LookupHistory::serializeIn(ArsLexis::PrefsStoreReader& reader, int uniq
     status_t error;
     LookupHistory tmp;
     ushort_t itemCount;
+    ushort_t i;
+
     if (errNone!=(error=reader.ErrGetUInt16(uniqueId++, &itemCount)))
         goto OnError;
     if (maxLength<itemCount)
@@ -148,7 +153,7 @@ status_t LookupHistory::serializeIn(ArsLexis::PrefsStoreReader& reader, int uniq
         error=psErrDatabaseCorrupted;
         goto OnError;
     }
-    for (ushort_t i=0; i<itemCount; ++i)
+    for (i=0; i<itemCount; ++i)
     {
         const ArsLexis::char_t* p=0;
         if (errNone!=(error=reader.ErrGetStr(uniqueId++, &p)))
