@@ -5,6 +5,11 @@
 #include "LookupHistory.hpp"
 #include <SysUtils.hpp>
 
+#include <FormattedTextElement.hpp>
+#include <LineBreakElement.hpp>
+#include <ParagraphElement.hpp>
+
+
 using namespace ArsLexis;
 
 MainForm::MainForm(iPediaApplication& app):
@@ -14,10 +19,15 @@ MainForm::MainForm(iPediaApplication& app):
     lastPenDownTimestamp_(0),
     updateDefinitionOnEntry_(false),
     checkedArticleCount_(false),
-    enableInputFieldAfterUpdate_(false)
+    enableInputFieldAfterUpdate_(false),
+    forceSplashRecalculation_(false),
+    articleCountElement_(0),
+    articleCountSet_(iPediaApplication::Preferences::articleCountNotChecked)
 {
-    definition_.setRenderingProgressReporter(&renderingProgressReporter_);
-    definition_.setHyperlinkHandler(&app.hyperlinkHandler());
+    article_.setRenderingProgressReporter(&renderingProgressReporter_);
+    article_.setHyperlinkHandler(&app.hyperlinkHandler());
+    about_.setHyperlinkHandler(&app.hyperlinkHandler());
+    prepareSplashScreen();
 }
 
 bool MainForm::handleOpen()
@@ -71,75 +81,23 @@ void MainForm::resize(const ArsLexis::Rectangle& screenBounds)
     }        
 }
 
-void MainForm::drawSplashScreen(Graphics& graphics, const ArsLexis::Rectangle& bounds)
-{
-    FormObject object(*this, definitionScrollBar);
-    object.hide();
-    
-    const iPediaApplication& app=static_cast<iPediaApplication&>(application());
-    Graphics::ColorSetter setBackground(graphics, Graphics::colorBackground, app.renderingPreferences().backgroundColor());
-    Rectangle rect(bounds);
-    rect.explode(0, 15, 0, -33);
-    graphics.erase(rect);
-    
-    Point point(rect.x(), rect.y()+20);
-    
-    Font font(largeFont);
-    
-    Graphics::FontSetter setFont(graphics, font);
-    graphics.drawCenteredText("ArsLexis iPedia", point, rect.width());
-    point.y+=16;
-#ifdef DEMO
-    graphics.drawCenteredText("Ver 0.5 (demo)", point, rect.width());
-#else
-  #ifdef DEBUG
-    graphics.drawCenteredText("Ver 0.5 (beta)", point, rect.width());
-  #else
-    graphics.drawCenteredText("Ver 0.5", point, rect.width());
-  #endif
-#endif
-    point.y+=20;
-    
-    font.setFontId(stdFont);
-    FontEffects fx;
-    fx.setWeight(FontEffects::weightBold);
-    font.setEffects(fx);
-
-    setFont.changeTo(font);
-    
-    graphics.drawCenteredText("Copyright (c) ArsLexis", point, rect.width());
-    point.y+=24;
-    
-    fx.clear();
-    font.setEffects(fx);
-    
-    setFont.changeTo(font);
-    
-    graphics.drawCenteredText("http://www.arslexis.com", point, rect.width());
-    
-    if (app.preferences().articleCountNotChecked!=app.preferences().articleCount)
-    {
-        point.y+=20;
-        ArsLexis::String articleCountText="Number of articles: ";
-        char buffer[16];
-        int len=StrPrintF(buffer, "%ld", app.preferences().articleCount);
-        articleCountText.append(buffer, len);
-        graphics.drawCenteredText(articleCountText.c_str(), point, rect.width());
-    }
-}
-
 void MainForm::updateScrollBar()
 {
     ScrollBar scrollBar(*this, definitionScrollBar);
-    scrollBar.setPosition(definition_.firstShownLine(), 0, definition_.totalLinesCount()-definition_.shownLinesCount(), definition_.shownLinesCount());
-    scrollBar.show();
+    if (showArticle==displayMode())
+    {
+        scrollBar.setPosition(article_.firstShownLine(), 0, article_.totalLinesCount()-article_.shownLinesCount(), article_.shownLinesCount());
+        scrollBar.show();
+    }
+    else
+        scrollBar.hide();
 }
 
-Err MainForm::renderDefinition(ArsLexis::Graphics& graphics, const ArsLexis::Rectangle& rect)
+Err MainForm::renderDefinition(Definition& def, ArsLexis::Graphics& graphics, const ArsLexis::Rectangle& rect)
 {
     volatile Err error=errNone;
     ErrTry {
-        definition_.render(graphics, rect, renderingPreferences(), false);
+        def.render(graphics, rect, renderingPreferences(), showSplashScreen==displayMode()?forceSplashRecalculation_:false);
     }
     ErrCatch (ex) {
         error=ex;
@@ -150,12 +108,18 @@ Err MainForm::renderDefinition(ArsLexis::Graphics& graphics, const ArsLexis::Rec
 
 void MainForm::drawDefinition(Graphics& graphics, const ArsLexis::Rectangle& bounds)
 {
-    assert(!definition_.empty());
+    Definition& def=currentDefinition();
+    assert(!def.empty());
+    if (showSplashScreen==displayMode())
+        updateScrollBar();
     Graphics::ColorSetter setBackground(graphics, Graphics::colorBackground, renderingPreferences().backgroundColor());
     Rectangle rect(bounds);
     rect.explode(0, 15, 0, -33);
     graphics.erase(rect);
-    rect.explode(2, 2, -12, -4);
+    if (showArticle==displayMode())
+        rect.explode(2, 2, -12, -4);
+    else
+        rect.explode(2, 2, -4, -4);
     Err error=errNone;
     bool doubleBuffer=true;
     const iPediaApplication& app=static_cast<const iPediaApplication&>(application());
@@ -170,7 +134,7 @@ void MainForm::drawDefinition(Graphics& graphics, const ArsLexis::Rectangle& bou
             {
             Graphics offscreen(wh);
             ActivateGraphics act(offscreen);
-            error=renderDefinition(offscreen, rect);
+            error=renderDefinition(def, offscreen, rect);
             if (!error)
                 offscreen.copyArea(rect, graphics, rect.topLeft);
             }
@@ -180,16 +144,17 @@ void MainForm::drawDefinition(Graphics& graphics, const ArsLexis::Rectangle& bou
             doubleBuffer=false;
     }
     if (!doubleBuffer)
-        error=renderDefinition(graphics, rect);
+        error=renderDefinition(def, graphics, rect);
+    forceSplashRecalculation_=false;
     if (errNone!=error) 
     {
-        definition_.clear();
+        def.clear();
         setTitle(appName);
         setDisplayMode(showSplashScreen);
         update();
         iPediaApplication::sendDisplayAlertEvent(notEnoughMemoryAlert);
     }
-    else            
+    else if (showArticle==displayMode())            
         updateScrollBar();    
 }
 
@@ -204,10 +169,7 @@ void MainForm::draw(UInt16 updateCode)
             graphics.erase(progressArea);
         iPediaForm::draw(updateCode);
         graphics.drawLine(rect.x(), rect.height()-18, rect.width(), rect.height()-18);
-        if (showSplashScreen==displayMode())
-            drawSplashScreen(graphics, rect);
-        else
-            drawDefinition(graphics, rect);
+        drawDefinition(graphics, rect);
     }
 
     const iPediaApplication& app=static_cast<const iPediaApplication&>(application());
@@ -231,12 +193,13 @@ inline void MainForm::handleScrollRepeat(const EventType& event)
 
 void MainForm::scrollDefinition(int units, MainForm::ScrollUnit unit, bool updateScrollbar)
 {
-    if (definition_.empty())
+    Definition& def=currentDefinition();
+    if (def.empty())
         return;
     WinHandle thisWindow=windowHandle();
     Graphics graphics(thisWindow);
     if (scrollPage==unit)
-        units*=(definition_.shownLinesCount());
+        units*=(def.shownLinesCount());
     
     bool doubleBuffer=true;
     if (-1==units || 1==units)
@@ -260,7 +223,7 @@ void MainForm::scrollDefinition(int units, MainForm::ScrollUnit unit, bool updat
             Graphics offscreen(wh);
             ActivateGraphics act(offscreen);
             graphics.copyArea(b, offscreen, Point(0, 0));
-            definition_.scroll(offscreen, renderingPreferences(), units);
+            def.scroll(offscreen, renderingPreferences(), units);
             offscreen.copyArea(b, graphics, Point(0, 0));
             }
             WinDeleteWindow(wh, false);
@@ -269,7 +232,7 @@ void MainForm::scrollDefinition(int units, MainForm::ScrollUnit unit, bool updat
             doubleBuffer=false;
     }            
     if (!doubleBuffer)
-        definition_.scroll(graphics, renderingPreferences(), units);
+        def.scroll(graphics, renderingPreferences(), units);
     if (updateScrollbar)
         updateScrollBar();
 }
@@ -354,7 +317,19 @@ void MainForm::handleLookupFinished(const EventType& event)
             update();
     }
     
-    iPediaApplication& app=iPediaApplication::instance();
+    iPediaApplication& app=static_cast<iPediaApplication&>(application());
+    if (app.preferences().articleCount!=articleCountSet_) 
+    {
+        articleCountSet_=app.preferences().articleCount;
+        assert(0!=articleCountElement_);
+        ArsLexis::String articleCountText="Number of articles: ";
+        char buffer[16];
+        int len=StrPrintF(buffer, "%ld", app.preferences().articleCount);
+        articleCountText.append(buffer, len);
+        articleCountElement_->setText(articleCountText);
+        forceSplashRecalculation_=true;
+    }
+    
     LookupManager* lookupManager=app.getLookupManager();
     assert(lookupManager);
     lookupManager->handleLookupFinishedInForm(data);
@@ -382,17 +357,16 @@ void MainForm::handleLookupFinished(const EventType& event)
 
 void MainForm::handleExtendSelection(const EventType& event, bool finish)
 {
-    if (showDefinition!=displayMode())
-        return;
     iPediaApplication& app=static_cast<iPediaApplication&>(application());
     const LookupManager* lookupManager=app.getLookupManager();
     if (lookupManager && lookupManager->lookupInProgress())
         return;
-    if (definition_.empty())
+    Definition& def=currentDefinition();
+    if (def.empty())
         return;
     ArsLexis::Point point(event.screenX, event.screenY);
     Graphics graphics(windowHandle());
-    definition_.extendSelection(graphics, app.preferences().renderingPreferences, point, finish);
+    def.extendSelection(graphics, app.preferences().renderingPreferences, point, finish);
 }
 
 inline void MainForm::handlePenDown(const EventType& event)
@@ -477,8 +451,8 @@ void MainForm::updateAfterLookup()
     assert(lookupManager!=0);
     if (lookupManager)
     {
-        definition_.replaceElements(lookupManager->lastDefinitionElements());
-        setDisplayMode(showDefinition);
+        article_.replaceElements(lookupManager->lastDefinitionElements());
+        setDisplayMode(showArticle);
         const LookupHistory& history=getHistory();
         if (history.hasCurrentTerm())
             setTitle(history.currentTerm());
@@ -499,7 +473,7 @@ bool MainForm::handleKeyPress(const EventType& event)
     switch (event.data.keyDown.chr)
     {
         case chrPageDown:
-            if (displayMode()==showDefinition)
+            if (showArticle==displayMode())
             {
                 scrollDefinition(1, scrollPage);
                 handled=true;
@@ -507,7 +481,7 @@ bool MainForm::handleKeyPress(const EventType& event)
             break;
             
         case chrPageUp:
-            if (displayMode()==showDefinition)
+            if (showArticle==displayMode())
             {
                 scrollDefinition(-1, scrollPage);
                 handled=true;
@@ -515,7 +489,7 @@ bool MainForm::handleKeyPress(const EventType& event)
             break;
         
         case chrDownArrow:
-            if (displayMode()==showDefinition)
+            if (showArticle==displayMode())
             {
                 scrollDefinition(1, scrollLine);
                 handled=true;
@@ -523,7 +497,7 @@ bool MainForm::handleKeyPress(const EventType& event)
             break;
 
         case chrUpArrow:
-            if (displayMode()==showDefinition)
+            if (showArticle==displayMode())
             {
                 scrollDefinition(-1, scrollLine);
                 handled=true;
@@ -647,12 +621,11 @@ void MainForm::randomArticle()
 
 void MainForm::copySelectionToClipboard()
 {
-    if (showDefinition!=displayMode())
-        return;
-    if (definition_.empty())
+    Definition& def=currentDefinition();
+    if (def.empty())
         return;
     ArsLexis::String text;
-    definition_.selectionToText(text);
+    def.selectionToText(text);
     ClipboardAddItem(clipboardText, text.data(), text.length());
 }
 
@@ -695,16 +668,16 @@ void MainForm::handleToggleStressMode()
 
 void MainForm::handleAbout()
 {
-    if (showDefinition==displayMode())
+    if (showSplashScreen!=displayMode())
     {
         setDisplayMode(showSplashScreen);
         update();
     }
     else 
     {
-        if (!definition_.empty())
+        if (!article_.empty())
         {
-            setDisplayMode(showDefinition);
+            setDisplayMode(showArticle);
             update();
         }
     }                
@@ -726,7 +699,7 @@ void MainForm::search(bool fullText)
     String term(text, textLen);
     if (!fullText)
     {
-        if (!lookupManager->lookupIfDifferent(term) && showDefinition!=displayMode())
+        if (!lookupManager->lookupIfDifferent(term) && showArticle!=displayMode())
             updateAfterLookup();
     }
     else
@@ -817,3 +790,48 @@ void MainForm::checkArticleCount()
     if (lookupManager && !lookupManager->lookupInProgress())
         lookupManager->checkArticleCount();
 }
+
+void MainForm::prepareSplashScreen()
+{
+    Definition::Elements_t elems;
+    FontEffects fx;
+    fx.setWeight(FontEffects::weightBold);
+    FormattedTextElement* text;
+    elems.push_back(new LineBreakElement());
+
+    elems.push_back(text=new FormattedTextElement("ArsLexis iPedia"));
+    text->setJustification(DefinitionElement::justifyCenter);
+    text->setStyle(styleHeader);
+    text->setEffects(fx);
+    
+    elems.push_back(new LineBreakElement());
+    const char* version="Version " appVersion
+#ifdef DEMO
+        " (demo)"
+#else
+  #ifdef DEBUG
+        " (beta)"
+  #endif
+#endif
+    ;
+    elems.push_back(text=new FormattedTextElement(version));
+    text->setJustification(DefinitionElement::justifyCenter);
+    
+    elems.push_back(new LineBreakElement());
+    elems.push_back(text=new FormattedTextElement("Copyright (c) ArsLexis"));
+    text->setJustification(DefinitionElement::justifyCenter);
+    text->setEffects(fx);
+    
+    elems.push_back(new LineBreakElement());
+    elems.push_back(text=new FormattedTextElement("http://www.arslexis.com"));
+    text->setJustification(DefinitionElement::justifyCenter);
+    text->setHyperlink(text->text(), hyperlinkExternal);
+    
+    elems.push_back(new LineBreakElement());
+    elems.push_back(articleCountElement_=new FormattedTextElement(" "));
+    articleCountElement_->setJustification(DefinitionElement::justifyCenter);
+    
+    about_.replaceElements(elems);    
+}
+    
+

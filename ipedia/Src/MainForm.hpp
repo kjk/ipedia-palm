@@ -8,9 +8,14 @@
 class LookupHistory;
 class RenderingPreferences;
 
+
 class MainForm: public iPediaForm
 {
-    Definition definition_;
+    Definition article_;
+    Definition about_;
+    GenericTextElement* articleCountElement_;
+    bool forceSplashRecalculation_;    
+    long articleCountSet_;
     
     const LookupHistory& getHistory() const;
     
@@ -22,8 +27,6 @@ class MainForm: public iPediaForm
     void handleControlSelect(const EventType& data);
     
     bool handleKeyPress(const EventType& event);
-    
-    void drawSplashScreen(ArsLexis::Graphics& graphics, const ArsLexis::Rectangle& bounds);
     
     void drawDefinition(ArsLexis::Graphics& graphics, const ArsLexis::Rectangle& bounds);
     
@@ -55,7 +58,7 @@ class MainForm: public iPediaForm
     
     void handleExtendSelection(const EventType& event, bool endTracking=false);
     
-    Err renderDefinition(ArsLexis::Graphics& graphics, const ArsLexis::Rectangle& rect);
+    Err renderDefinition(Definition& def, ArsLexis::Graphics& graphics, const ArsLexis::Rectangle& rect);
 
     class RenderingProgressReporter: public Definition::RenderingProgressReporter
     {
@@ -79,6 +82,11 @@ class MainForm: public iPediaForm
     RenderingProgressReporter renderingProgressReporter_;
     
     void checkArticleCount();
+    
+    Definition& currentDefinition()
+    {return showArticle==displayMode()?article_:about_;}
+    
+    void prepareSplashScreen();
     
 protected:
 
@@ -113,7 +121,7 @@ public:
     enum DisplayMode
     {
         showSplashScreen,
-        showDefinition
+        showArticle
     };
     
     DisplayMode displayMode() const
