@@ -334,10 +334,6 @@ class ServerTests(unittest.TestCase):
         # TODO:
         pass
 
-    def test_GetCookieInvalidDeviceInfo(self):
-        # TODO:
-        pass
-
 if __name__ == "__main__":
     client.printUsedServer()
     unittest.main()

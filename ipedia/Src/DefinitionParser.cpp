@@ -450,24 +450,6 @@ void DefinitionParser::parseText(uint_t end, ElementStyle style)
     createTextElement();
 }
 
-const char_t *GetLangNameByLangCode(String& langCode);
-
-const char_t *GetLangNameByLangCode(String& langCode)
-{
-    if ("en" == langCode)
-    {
-        return "English";
-    } else if ("fr" == langCode)
-    {
-        return "French";
-    } else if ("de" == langCode)
-    {
-        return "German";
-    } else {
-        return "Unknown";
-    }
-}
-
 GenericTextElement* DefinitionParser::createTextElement(const String& text, String::size_type start, String::size_type length)
 {
     String copy(text, start, length);

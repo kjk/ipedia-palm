@@ -33,8 +33,8 @@ BEGIN
         MENUITEM "Forward" ID forwardMenuItem  "F"
         MENUITEM "Back"    ID backMenuItem  "B"
         MENUITEM "History" ID historyMenuItem "H"
-        MENUITEM "Linked articles" ID linkedArticlesMenuItem "L"
-        MENUITEM "Linking articles" ID linkingArticlesMenuItem "I"
+        //MENUITEM "Linked articles" ID linkedArticlesMenuItem "L"
+        //MENUITEM "Linking articles" ID linkingArticlesMenuItem "I"
     END
 
     PULLDOWN "Options"
