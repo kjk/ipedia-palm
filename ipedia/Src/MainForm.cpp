@@ -804,7 +804,7 @@ bool MainForm::handleMenuCommand(UInt16 itemId)
             handled = true;
             break;
 
-        case linkedArticlesMenuItem:
+/*        case linkedArticlesMenuItem:
             doLinkedArticles();
             handled = true;
             break;
@@ -812,7 +812,7 @@ bool MainForm::handleMenuCommand(UInt16 itemId)
         case linkingArticlesMenuItem:
             doLinkingArticles();
             handled = true;
-            break;
+            break;*/
 
         default:
             handled = iPediaForm::handleMenuCommand(itemId);
