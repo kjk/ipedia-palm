@@ -674,7 +674,7 @@ bool MainForm::handleWindowEnter(const struct _WinEnterEventType& data)
             setControlsState(!lookupManager->lookupInProgress());
         }
         if (!checkedArticleCount_ && app.preferences().checkArticleCountAtStartup)
-            app.sendEvent(iPediaApplication::appGetArticlesCountEvent);
+            ArsLexis::sendEvent(iPediaApplication::appGetArticlesCountEvent);
     }
     return iPediaForm::handleWindowEnter(data);
 }

@@ -7,6 +7,7 @@
 #include <Logging.hpp>
 #include "RenderingPreferences.hpp"
 #include "iPediaHyperlinkHandler.hpp"
+#include <SysUtils.hpp>
 
 class LookupManager;
 class LookupHistory;
@@ -127,7 +128,7 @@ public:
     };
     
     static void sendDisplayAlertEvent(UInt16 alertId)
-    {sendEvent(appDisplayAlertEvent, DisplayAlertEventData(alertId));}
+    {ArsLexis::sendEvent(appDisplayAlertEvent, DisplayAlertEventData(alertId));}
     
     void sendDisplayCustomAlertEvent(UInt16 alertId, const ArsLexis::String& text1);
     

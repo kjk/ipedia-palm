@@ -24,7 +24,7 @@ class iPediaConnection: public ArsLexis::FieldPayloadProtocolConnection
         statusStringRetrievingResponse
     };        
     
-    class SearchResultsHandler: public PayloadHandler, private ArsLexis::NonCopyable
+    class SearchResultsHandler: public PayloadHandler
     {
         ArsLexis::String searchResults_;
 

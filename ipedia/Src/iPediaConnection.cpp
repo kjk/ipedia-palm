@@ -101,7 +101,7 @@ Err iPediaConnection::enqueue()
 #endif
     lookupManager_.setStatusText(status);
     lookupManager_.setPercentProgress(LookupManager::percentProgressDisabled);
-    Application::sendEvent(LookupManager::lookupStartedEvent);
+    ArsLexis::sendEvent(LookupManager::lookupStartedEvent);
     return errNone;
 }
 
@@ -117,7 +117,7 @@ Err iPediaConnection::open()
     String status;
     getResource(connectionStatusStrings, statusStringSendingRequest, status);
     lookupManager_.setStatusText(status);
-    Application::sendEvent(LookupManager::lookupProgressEvent);
+    ArsLexis::sendEvent(LookupManager::lookupProgressEvent);
         
 /*    
     if (!error)
@@ -158,7 +158,7 @@ Err iPediaConnection::notifyProgress()
         if (inPayload())
             progress=((payloadLength()-payloadLengthLeft())*100L)/payloadLength();
         lookupManager_.setPercentProgress(progress);
-        Application::sendEvent(LookupManager::lookupProgressEvent);
+        ArsLexis::sendEvent(LookupManager::lookupProgressEvent);
     }
     return error;
 }
@@ -282,7 +282,7 @@ Err iPediaConnection::notifyFinished()
             data.outcome=data.outcomeServerError;
             data.serverError=serverError_;
         }
-        Application::sendEvent(LookupManager::lookupFinishedEvent, data);               
+        ArsLexis::sendEvent(LookupManager::lookupFinishedEvent, data);               
     }
     return error;        
 }
@@ -291,7 +291,7 @@ void iPediaConnection::handleError(Err error)
 {
     log()<<"handleError(): error code "<<error;
     LookupFinishedEventData data(LookupFinishedEventData::outcomeError, error);
-    Application::sendEvent(LookupManager::lookupFinishedEvent, data);
+    ArsLexis::sendEvent(LookupManager::lookupFinishedEvent, data);
     SimpleSocketConnection::handleError(error);
 }
 
