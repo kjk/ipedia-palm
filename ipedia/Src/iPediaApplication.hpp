@@ -69,6 +69,10 @@ public:
         
         ArsLexis::String databaseTime;
 
+        ArsLexis::String availableLangs;
+
+        ArsLexis::String currentLang;
+
         Preferences():
             articleCount(-1)            
         {}

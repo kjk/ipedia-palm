@@ -49,6 +49,8 @@ iPediaConnection::~iPediaConnection()
 #define databaseTimeField       _T("Database-Time")
 #define verifyRegCodeField      _T("Verify-Registration-Code")
 #define regCodeValidField       _T("Registration-Code-Valid")
+#define availableLangsField     _T("Available-Langs")
+#define useLangField            _T("Use-Lang")
 
 void iPediaConnection::prepareRequest()
 {
@@ -88,6 +90,13 @@ void iPediaConnection::prepareRequest()
         else
             appendField(request, cookieField, app.preferences().cookie);
     }
+
+    if (!app.preferences().currentLang.empty())
+    {
+        // appendField(request, useLangField, app.preferences().currentLang);
+    }
+    // TODO: temporary fix the lang to "fr"
+    appendField(request, useLangField, "fr");
 
     if (!term_.empty())
     {
@@ -139,7 +148,6 @@ void iPediaConnection::prepareRequest()
         // wince only code
         GetSystemTime(&app.lastArticleCountCheckTime);
 #endif
-        app.fArticleCountChecked = true; // or do it later, when we process the response
     }
 
     request += '\n';
@@ -240,32 +248,32 @@ ArsLexis::status_t iPediaConnection::notifyProgress()
 ArsLexis::status_t iPediaConnection::handleField(const String& name, const String& value)
 {
     long                numValue;
-    ArsLexis::status_t  error=errNone;
-    iPediaApplication&  app=iPediaApplication::instance();
+    ArsLexis::status_t  error = errNone;
+    iPediaApplication&  app = iPediaApplication::instance();
 
     if (transactionIdField==name)
     {
-        error=numericValue(value, numValue, 16);
+        error = numericValue(value, numValue, 16);
         assert(errNone==error);
         if (error || ((ulong_t)numValue!=transactionId_))
             error = errResponseMalformed;
     }
     else if (notFoundField==name)
     {
-        notFound_=true;
+        notFound_ = true;
     }
     else if (formatVersionField==name)
     {
-        error=numericValue(value, numValue);
+        error = numericValue(value, numValue);
         assert(errNone==error);
         if (errNone!=error)
             error = errResponseMalformed;
         else
-            formatVersion_=numValue;
+            formatVersion_ = numValue;
     }
     else if (articleTitleField==name)
     {
-        articleTitle_=value;
+        articleTitle_ = value;
     }
     else if (articleBodyField==name)
     {
@@ -277,12 +285,12 @@ ArsLexis::status_t iPediaConnection::handleField(const String& name, const Strin
         {
             DefinitionParser* parser=new DefinitionParser();
             startPayload(parser, numValue);
-            payloadType_=payloadArticleBody;
+            payloadType_ = payloadArticleBody;
         }
     }
     else if (reverseLinksField==name)
     {
-        error=numericValue(value, numValue);
+        error = numericValue(value, numValue);
         assert(errNone==error);
         if (errNone!=error)
             error = errResponseMalformed;
@@ -295,7 +303,7 @@ ArsLexis::status_t iPediaConnection::handleField(const String& name, const Strin
     }
     else if (searchResultsField==name)
     {
-        error=numericValue(value, numValue);
+        error = numericValue(value, numValue);
         assert(errNone==error);
         if (error)
             error = errResponseMalformed;
@@ -303,7 +311,7 @@ ArsLexis::status_t iPediaConnection::handleField(const String& name, const Strin
         {
             SearchResultsHandler* handler=new SearchResultsHandler();
             startPayload(handler, numValue);
-            payloadType_=payloadSearchResults;
+            payloadType_ = payloadSearchResults;
         }
     }
     else if (cookieField==name)
@@ -316,7 +324,7 @@ ArsLexis::status_t iPediaConnection::handleField(const String& name, const Strin
     }
     else if (errorField==name)
     {
-        error=numericValue(value, numValue);
+        error = numericValue(value, numValue);
         assert(errNone==error);
         if (error)
             return errResponseMalformed;
@@ -335,15 +343,22 @@ ArsLexis::status_t iPediaConnection::handleField(const String& name, const Strin
         if (error)
             error=errResponseMalformed;
         else
-            app.preferences().articleCount=numValue;
+        {
+            app.preferences().articleCount = numValue;
+            app.fArticleCountChecked = true;
+        }
     }
     else if (databaseTimeField==name)
     {
-        app.preferences().databaseTime=value;
+        app.preferences().databaseTime = value;
+    }
+    else if (availableLangsField==name)
+    {
+        app.preferences().availableLangs = value;
     }
     else if (regCodeValidField==name)
     {
-        error=numericValue(value, numValue);
+        error = numericValue(value, numValue);
         assert(errNone==error);
         if (error)
             return errResponseMalformed;

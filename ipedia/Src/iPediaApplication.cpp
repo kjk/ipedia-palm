@@ -172,7 +172,9 @@ namespace {
         lookupHistoryFirstPrefId,
         renderingPrefsFirstPrefId=lookupHistoryFirstPrefId+LookupHistory::reservedPrefIdCount,
         
-        next=renderingPrefsFirstPrefId+RenderingPreferences::reservedPrefIdCount
+        availableLangsPrefId = renderingPrefsFirstPrefId+RenderingPreferences::reservedPrefIdCount,
+        currentLangPrefId,
+        next = currentLangPrefId+1
     };
 
     // These globals will be removed by dead code elimination.
@@ -192,23 +194,30 @@ void iPediaApplication::loadPreferences()
 
     if (errNone!=(error=reader->ErrGetStr(cookiePrefId, &text))) 
         goto OnError;
-    prefs.cookie=text;
+    prefs.cookie = text;
     if (errNone!=(error=reader->ErrGetStr(regCodePrefId, &text))) 
         goto OnError;
-    prefs.regCode=text;
+    prefs.regCode = text;
     if (errNone!=(error=reader->ErrGetLong(lastArticleCountPrefId, &prefs.articleCount))) 
         goto OnError;
     if (errNone!=(error=reader->ErrGetStr(databaseTimePrefId, &text))) 
         goto OnError;
-    prefs.databaseTime=text;
+    prefs.databaseTime = text;
     if (errNone!=(error=prefs.renderingPreferences.serializeIn(*reader, renderingPrefsFirstPrefId)))
         goto OnError;
     preferences_=prefs;    
     assert(0!=history_);
     if (errNone!=(error=history_->serializeIn(*reader, lookupHistoryFirstPrefId)))
         goto OnError;
-    return;
-            
+
+    if (errNone!=(error=reader->ErrGetStr(currentLangPrefId, &text))) 
+        goto OnError;
+    prefs.currentLang = text;
+
+    if (errNone!=(error=reader->ErrGetStr(availableLangsPrefId, &text))) 
+        goto OnError;
+    prefs.availableLangs = text;
+
 OnError:
     return;        
 }
@@ -231,6 +240,12 @@ void iPediaApplication::savePreferences()
     assert(0!=history_);
     if (errNone!=(error=history_->serializeOut(*writer, lookupHistoryFirstPrefId)))
         goto OnError;
+
+    if (errNone!=(error=writer->ErrSetStr(currentLangPrefId, preferences_.currentLang.c_str())))
+        goto OnError;
+    if (errNone!=(error=writer->ErrSetStr(availableLangsPrefId, preferences_.availableLangs.c_str())))
+        goto OnError;
+
     if (errNone!=(error=writer->ErrSavePreferences()))
         goto OnError;
     return;        

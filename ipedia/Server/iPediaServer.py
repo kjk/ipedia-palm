@@ -552,7 +552,7 @@ class iPediaProtocol(basic.LineReceiver):
         # the overhead of storing/retrieving this info will be bigger than code
 
         # perf: maybe we should ignore {{NUMBEROFARTICLES}} or replace it during conversion
-        body=body.replace("{{NUMBEROFARTICLES}}", str(self.factory.articleCount))
+        body=body.replace("{{NUMBEROFARTICLES}}", str(self.dbInfo.articlesCount))
         # speed up trick: don't do the conversion if there can't possibly anything to convert
         if -1 == body.find("{{CURRENT"):
             return body
@@ -923,7 +923,7 @@ class iPediaProtocol(basic.LineReceiver):
             if not self.fHasField(Fields.useLang):
                 lang = "en"
             else:
-                lang = self.getField(Fields.useLang)
+                lang = self.getFieldValue(Fields.useLang)
             # TODO: calculate valid languages list dynamically from the database
             # so that it's easier to add new languages
             if lang not in g_supportedLangs:
@@ -943,7 +943,7 @@ class iPediaProtocol(basic.LineReceiver):
 
             # too simple to warrant functions
             if self.fHasField(Fields.getArticleCount):
-                self.outputField(Fields.articleCount, str(self.dbInfo.articleCount))
+                self.outputField(Fields.articleCount, str(self.dbInfo.articlesCount))
 
             if self.fHasField(Fields.getDatabaseTime):
                 self.outputField(Fields.databaseTime, self.dbInfo.dbDate)
@@ -1017,7 +1017,7 @@ def getDbInfo(dbName):
     assert fIpediaDb(dbName)
 
     lang = getLangFromDbName(dbName)
-    dbDate = getDateFromDbName
+    dbDate = getDateFromDbName(dbName)
 
     db = createArticlesConnection(dbName)
     cursor = db.cursor()
@@ -1039,7 +1039,7 @@ def changeDatabase(dbName):
     global g_allDbsInfo
     dbInfo = g_allDbsInfo[dbName]
     print "Switching to database %s, lang=%s" % (dbInfo.dbName, dbInfo.lang)
-    print "Number of Wikipedia articles: %d" % dbInfo.articleCount
+    print "Number of Wikipedia articles: %d" % dbInfo.articlesCount
     print "Number of redirects: %d" % dbInfo.redirectsCount
     print "Databse date: %s" % dbInfo.dbDate
 
@@ -1114,8 +1114,8 @@ class iPediaTelnetProtocol(basic.LineReceiver):
             dbNames = dbsInfo.keys()
             dbNames.sort()
             for name in dbNames:
-                articleCount = dbsInfo[name]
-                self.transport.write( "%s (%d articles)\r\n" % (name,articleCount))
+                articlesCount = dbsInfo[name]
+                self.transport.write( "%s (%d articles)\r\n" % (name,articlesCount))
             self.transport.write("currently using: %s\r\n" % self.factory.iPediaFactory.dbName)
         except _mysql_exceptions.Error, ex:
             log(SEV_HI, txt)
@@ -1140,14 +1140,14 @@ class iPediaTelnetProtocol(basic.LineReceiver):
             dbNames = dbsInfo.keys()
             dbNames.sort()
             for name in dbNames:
-                articleCount = dbsInfo[name]
-                self.transport.write( "%s (%d articles)\r\n" % (name,articleCount))
+                articlesCount = dbsInfo[name]
+                self.transport.write( "%s (%d articles)\r\n" % (name,articlesCount))
             return
-        articleCount = dbsInfo[dbName]
-        # don't switch if articleCount is smaller than 100.000 - such a database
+        articlesCount = dbsInfo[dbName]
+        # don't switch if articlesCount is smaller than 100.000 - such a database
         # can't be good
-        if articleCount < 100000:
-            self.transport.write("Database '%s' doesn't have enough articles ('%d', at least 100.000 required)\r\n" % (dbName, articleCount))
+        if articlesCount < 100000:
+            self.transport.write("Database '%s' doesn't have enough articles ('%d', at least 100.000 required)\r\n" % (dbName, articlesCount))
             return
         changeDatabase(dbName)
         self.transport.write("Switched to database '%s'\r\n" % dbName)
@@ -1197,8 +1197,8 @@ def getDateFromDbName(dbName):
         dbDate = parts[1]
     else:
         assert 3 == len(parts)
-        dbData = parts[2]
-    return dbData
+        dbDate = parts[2]
+    return dbDate
 
 # read a list of databases in MySQL and set g_allDbsInfo, g_allDbNames
 def getAllDbInfos(fRecreate=False):
