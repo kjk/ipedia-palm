@@ -32,6 +32,7 @@ GET_RANDOM      = "Get-Random-Definition:"
 GET_ARTICLE_COUNT=   "Get-Article-Count"
 ARTICLE_COUNT=      "Article-Count:"
 
+g_fShowTiming = None
 
 g_pickleFileName = "client_pickled_data.dat"
 def pickleState():
@@ -218,7 +219,7 @@ def doGetDef(term):
         g_cookie = parsedResponse[COOKIE]
 
 def doGetRandomDef(fSilent=False,fDoTiming=False):
-    global g_cookie
+    global g_cookie, g_fShowTiming
     timer = arsutils.Timer(fStart=True)
     defResponse = getRandomDef()
     timer.stop()
@@ -232,7 +233,7 @@ def doGetRandomDef(fSilent=False,fDoTiming=False):
     if not getGlobalCookie() and parsedResponse.has_key(COOKIE):
         print "Found cookie: %s" % parsedResponse[COOKIE]
         g_cookie = parsedResponse[COOKIE]
-    if fDumpTiming:
+    if g_fShowTiming:
         timer.dumpInfo()
 
 def doGetRandomDefNoTiming():
@@ -271,9 +272,10 @@ def doRandomPerf(count):
     print "Number of runs: %d" % count
 
 def usageAndExit():
-    print "client.py [-perfrandom N] [-getrandom] [-get term] [-articlecount]"
+    print "client.py [-showtiming] [-perfrandom N] [-getrandom] [-get term] [-articlecount]"
 
 if __name__=="__main__":
+    g_fShowTiming = arsutils.fDetectRemoveCmdFlag("-showtiming")
     try:
         unpickleState()
         randomCount = arsutils.getRemoveCmdArgInt("-perfrandom")
