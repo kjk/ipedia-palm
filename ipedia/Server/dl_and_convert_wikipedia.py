@@ -3,15 +3,8 @@
 # Owner: Krzysztof Kowalczyk
 #
 # This script:
-#  - downloads the main page of http://download.wikimedia.org
-#  - parsers it to find the name of the current english, french and english
-#    wikipedia cur database 
-#    e.g.: http://download.wikimedia.org/archives/en/20040403_cur_table.sql.bz2
-#  - downloads it if it hasn't been downloaded yet
+#  - downloads encyclopedia data from wikipedia, it if it hasn't been downloaded yet
 #  - converts it if it hasn't been converted yet
-
-# requires process module from
-# http://starship.python.net/crew/tmick/index.html#process
 
 import sys,string,re,time,urllib2,os,os.path,smtplib
 import arsutils, wikipediasql, wikiToDbConvert

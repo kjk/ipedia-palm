@@ -14,7 +14,7 @@
 #include <LangNames.hpp>
 
 typedef std::auto_ptr<ParagraphElement> ParagraphPtr;
-typedef std::auto_ptr<GenericTextElement> TextPtr;
+typedef std::auto_ptr<TextElement> TextPtr;
 typedef std::auto_ptr<DefinitionElement> ElementPtr;
 
 DefinitionParser::DefinitionParser():
@@ -487,7 +487,7 @@ void DefinitionParser::parseText(uint_t end, const DefinitionStyle* style)
     createTextElement();
 }
 
-GenericTextElement* DefinitionParser::createTextElement(const String& text, String::size_type start, String::size_type length)
+TextElement* DefinitionParser::createTextElement(const String& text, String::size_type start, String::size_type length)
 {
     String copy(text, start, length);
     bool hyperlinkIsTerm = false;
@@ -544,7 +544,7 @@ GenericTextElement* DefinitionParser::createTextElement(const String& text, Stri
     // andrzej: We no longer send HTML entity refs
     // kjk: we do, see e.g. "Chinese language" in English database
     decodeHTMLCharacterEntityRefs(copy);
-    TextPtr textElement(new GenericTextElement(copy));
+    TextPtr textElement(new TextElement(copy));
     if (!isPlainText())
         applyCurrentFormatting(textElement.get());
     else
@@ -557,9 +557,9 @@ GenericTextElement* DefinitionParser::createTextElement(const String& text, Stri
 }
 
 
-GenericTextElement* DefinitionParser::createTextElement()
+TextElement* DefinitionParser::createTextElement()
 {
-    GenericTextElement* textElement = 0;
+    TextElement* textElement = 0;
     if (lastElementStart_<lastElementEnd_)
         textElement = createTextElement(textLine_, lastElementStart_, lastElementEnd_-lastElementStart_);
     return textElement;

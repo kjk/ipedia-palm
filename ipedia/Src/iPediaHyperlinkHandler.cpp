@@ -62,9 +62,9 @@ iPediaHyperlinkHandler::iPediaHyperlinkHandler(UInt16 viewerCardNo, LocalID view
 void iPediaHyperlinkHandler::handleHyperlink(Definition& definition, DefinitionElement& element, const Point*)
 {
     assert(element.isTextElement());
-    GenericTextElement& textElement=static_cast<GenericTextElement&>(element);
+    TextElement& textElement=static_cast<TextElement&>(element);
     assert(textElement.isHyperlink());
-    const GenericTextElement::HyperlinkProperties* props=textElement.hyperlinkProperties();
+    const TextElement::HyperlinkProperties* props=textElement.hyperlinkProperties();
     assert(props!=0);
     bool makeClicked=false;
     switch (props->type) 

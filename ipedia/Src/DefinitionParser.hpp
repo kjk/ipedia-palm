@@ -14,7 +14,7 @@
 
 class DefinitionElement;
 
-class GenericTextElement;
+class TextElement;
 
 class ListNumberElement;
 
@@ -33,9 +33,9 @@ class DefinitionParser: public FieldPayloadProtocolConnection::PayloadHandler
     
     /**
      * @internal
-     * Transforms current settings in open* variables into settings of @c GenericTextElement.
+     * Transforms current settings in open* variables into settings of @c TextElement.
      */
-    void applyCurrentFormatting(GenericTextElement* element);
+    void applyCurrentFormatting(TextElement* element);
     
     typedef std::list<DefinitionElement*> ParentsStack_t;
     ParentsStack_t parentsStack_;
@@ -172,8 +172,8 @@ class DefinitionParser: public FieldPayloadProtocolConnection::PayloadHandler
     
     bool detectHyperlink(uint_t textEnd);
     
-    GenericTextElement* createTextElement();
-    GenericTextElement* createTextElement(const ArsLexis::String& text, ArsLexis::String::size_type start = 0, ArsLexis::String::size_type length = ArsLexis::String::npos);
+    TextElement* createTextElement();
+    TextElement* createTextElement(const ArsLexis::String& text, ArsLexis::String::size_type start = 0, ArsLexis::String::size_type length = ArsLexis::String::npos);
     
 public:
 
