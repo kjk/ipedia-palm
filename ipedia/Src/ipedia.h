@@ -4,13 +4,13 @@
 #include "ipedia_Rsc.h"
 
 #define appFileCreator			'iPED'
-#define appName		                "iPedia"
+#define appName		                _T("iPedia")
 #define appVersionNum			0x01
 #define appPrefID				0x00
 #define appPrefVersionNum		0x01
 
 #define appVersion                      _T("0.5")
 
-#define appPrefDatabase     appName " Prefs"
+#define appPrefDatabase     appName _T(" Prefs")
 
 #endif /* IPEDIA_H_ */
