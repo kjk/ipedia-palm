@@ -54,7 +54,9 @@ void DefinitionParser::clear()
 }
     
 DefinitionParser::~DefinitionParser()
-{}
+{
+    clear();
+}
 
 DefinitionElement* DefinitionParser::currentParent()
 {
@@ -457,7 +459,9 @@ GenericTextElement* DefinitionParser::createTextElement(const String& text, Stri
         if (copy == hyperlinkTarget_)
             copy.erase(0, colonPos+1);
         String langCode(hyperlinkTarget_, 0, colonPos);
-        const char_t* langName = GetLangNameByLangCode(langCode);
+        const char_t* langName = NULL;
+        if (langCode.length() == 2)
+            langName = GetLangNameByLangCode(langCode);
         if (NULL != langName)
             copy.append(_T(" (")).append(langName).append(1, _T(')'));
     }
