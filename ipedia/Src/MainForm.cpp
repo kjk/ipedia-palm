@@ -4,6 +4,7 @@
 #include "LookupManager.hpp"
 #include "LookupHistory.hpp"
 #include <SysUtils.hpp>
+#include <Text.hpp>
 
 #include <FormattedTextElement.hpp>
 #include <LineBreakElement.hpp>
@@ -360,46 +361,6 @@ void MainForm::handleLookupFinished(const EventType& event)
         EvtAddEventToQueue(&event);
         randomArticle();
     }        
-}
-
-
-// format number num so that they easier to read e.g. turn '10343' into '10.343'
-// i.e. insert (locale-dependent) thousand separator in apropriate places
-// put the result in buffer buf of length bufSize. Buffer must be big enough
-// for the result.
-static int formatNumber(long num, char *buf, int bufSize)
-{
-    char dontMind;
-    char thousand=',';
-
-    NumberFormatType nf=static_cast<NumberFormatType>(PrefGetPreference(prefNumberFormat));
-    LocGetNumberSeparators(nf, &thousand, &dontMind);
-    
-    char buffer[32];
-    int len = StrPrintF(buffer, "%ld", num);
-    int lenOut = len + ((len-1)/3);  // a thousand separator every 3 chars
-    assert(bufSize>=lenOut+1);
-    // copy str in buffer to output buf from the end, adding thousand separator every 3 chars
-    char *tmp = buffer+len;
-    assert( '\0' == *tmp );
-    char *out = buf+lenOut;
-    int toDot = 4; // 3 + 1 for trailing '\0'
-    while (true)
-    {
-        *out = *tmp;
-        if (tmp==buffer)
-            break;
-        --out;
-        --tmp;
-        --toDot;
-        if (0==toDot)
-        {
-            toDot = 3;
-            *out-- = thousand;  // don't put separator if this is the last number
-        }
-    }
-    assert(out==buf);
-    return lenOut;
 }
 
 void MainForm::updateArticleCountEl(long articleCount, ArsLexis::String& dbTime)

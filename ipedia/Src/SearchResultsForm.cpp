@@ -1,3 +1,4 @@
+#include <Text.hpp>
 #include "SearchResultsForm.hpp"
 #include <FormObject.hpp>
 #include "LookupManager.hpp"
@@ -10,6 +11,7 @@ using ArsLexis::List;
 using ArsLexis::Rectangle;
 using ArsLexis::Control;
 using ArsLexis::Field;
+using ArsLexis::formatNumber;
 
 void SearchResultsForm::updateSearchResults()
 {
@@ -33,7 +35,18 @@ void SearchResultsForm::updateSearchResults()
             }
         }
         if (!lookupManager->lastSearchExpression().empty())
-            setTitle(lookupManager->lastSearchExpression());
+        {
+            String title = lookupManager->lastSearchExpression();
+            size_t resultsCount = listPositions_.size();
+            char buffer[32];
+            int len = formatNumber(resultsCount, buffer, sizeof(buffer));
+            assert(len != -1 );
+            title.append(" (");
+            title.append(buffer, len);
+            title.append(" results)");
+            setTitle(title);
+        }
+
     }
     {
         List list(*this, searchResultsList);
