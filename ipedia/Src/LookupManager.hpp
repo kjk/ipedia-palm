@@ -64,7 +64,8 @@ class LookupManager: public ArsLexis::LookupManagerBase<iPediaApplication::appLo
     ArsLexis::String lastFoundTerm_;
     ArsLexis::String lastSearchExpression_;
     ArsLexis::String lastSearchResults_;
-    
+    ArsLexis::String lastReverseLinks_;
+
     enum HistoryChange
     {
         historyMoveBack,
@@ -111,7 +112,10 @@ public:
 
     const ArsLexis::String& lastInputTerm() const
     {return lastInputTerm_;}
-    
+
+    const ArsLexis::String& lastReverseLinks() const
+    {return lastReverseLinks_;}
+
     void handleLookupFinishedInForm(const LookupFinishedEventData& data);
 
     void verifyRegistrationCode(const ArsLexis::String& regCode);
@@ -127,19 +131,22 @@ private:
     void handleDefinition();
     
     void handleList();
-    
+
     void setLastSearchResults(const ArsLexis::String& sr)
     {lastSearchResults_=sr;}
     
     void setLastInputTerm(const ArsLexis::String& lit)
     {lastInputTerm_=lit;}
-    
+
     void setLastFoundTerm(const ArsLexis::String& t)
     {lastFoundTerm_=t;}
-    
+
     void setLastSearchExpression(const ArsLexis::String& se)
     {lastSearchExpression_=se;}
-    
+
+    void setLastReverseLinks(const ArsLexis::String& rl)
+    {lastReverseLinks_=rl;}
+
     friend class iPediaConnection;
 
     HistoryChange historyChange_;

@@ -509,10 +509,9 @@ verifyRegCodeLogSql = """CREATE TABLE verify_reg_code_log (
     user_id         INT(10) NOT NULL REFERENCES users(user_id),
     client_ip       VARCHAR(24) NOT NULL,
     log_date        TIMESTAMP(14) NOT NULL,
-    cookie          VARCHAR(64) NOT NULL,
+    reg_code        VARCHAR(64) NOT NULL,
     reg_code_valid_p CHAR(1) NOT NULL
 ) TYPE=MyISAM;"""
-
 
 # table contains list of valid registration codes
 regCodesSql = """CREATE TABLE reg_codes (

@@ -1097,7 +1097,7 @@ void MainForm::prepareHowToRegister()
     text->setHyperlink("http://www.arslexis.com/pda/palm.html", hyperlinkExternal);
     elems.push_back(new LineBreakElement());
 
-    elems.push_back(text=new FormattedTextElement("After obtaining registration code use menu item 'Option/Register' (or "));
+    elems.push_back(text=new FormattedTextElement("After obtaining registration code use menu item 'Options/Register' (or "));
     elems.push_back(text=new FormattedTextElement("click here"));
     // url doesn't really matter, it's only to establish a hotspot
     text->setHyperlink("", hyperlinkTerm);

@@ -14,8 +14,9 @@ iPediaConnection::iPediaConnection(LookupManager& lookupManager):
     lookupManager_(lookupManager),
     transactionId_(random((ulong_t)-1)),
     formatVersion_(0),
-    definitionParser_(0),
-    searchResultsHandler_(0),
+    definitionParser_(NULL),
+    searchResultsHandler_(NULL),
+    reverseLinksResultsHandler_(NULL),
     payloadType_(payloadNone),
     serverError_(serverErrorNone),
     notFound_(false),
@@ -29,6 +30,7 @@ iPediaConnection::~iPediaConnection()
 {
     delete definitionParser_;
     delete searchResultsHandler_;
+    delete reverseLinksResultsHandler_;
 }
 
 #define protocolVersion _T("1")
@@ -37,6 +39,7 @@ iPediaConnection::~iPediaConnection()
 #define getRandomField          _T("Get-Random-Article")
 #define articleTitleField       _T("Article-Title")
 #define articleBodyField        _T("Article-Body")
+#define reverseLinksField       _T("Reverse-Links")
 #define notFoundField           _T("Not-Found")
 #define searchField             _T("Search")
 #define searchResultsField      _T("Search-Results")
@@ -231,36 +234,48 @@ ArsLexis::status_t iPediaConnection::handleField(const String& name, const Strin
     else if (formatVersionField==name)
     {
         error=numericValue(value, numValue);
-        if (!error)
-            formatVersion_=numValue;
-        else
+        if (error)
             error=errResponseMalformed;
+        else
+            formatVersion_=numValue;
     }
     else if (articleTitleField==name)
         articleTitle_=value;
-    else if (name==articleBodyField)
+    else if (articleBodyField==name)
     {
         error=numericValue(value, numValue);
-        if (!error)
+        if (error)
+            error=errResponseMalformed;
+        else
         {
             DefinitionParser* parser=new DefinitionParser();
             startPayload(parser, numValue);
             payloadType_=payloadArticleBody;
         }
+    }
+    else if (reverseLinksField==name)
+    {
+        error=numericValue(value, numValue);
+        if (error)
+            error = errResponseMalformed;
         else
-            error=errResponseMalformed;
+        {
+            ReverseLinksResultsHandler* parser = new ReverseLinksResultsHandler();
+            startPayload(parser, numValue);
+            payloadType_ = payloadReverseLinks;
+        }
     }
     else if (searchResultsField==name)
     {
         error=numericValue(value, numValue);
-        if (!error)
+        if (error)
+            error=errResponseMalformed;
+        else
         {
             SearchResultsHandler* handler=new SearchResultsHandler();
             startPayload(handler, numValue);
             payloadType_=payloadSearchResults;
         }
-        else
-            error=errResponseMalformed;
     }
     else if (cookieField==name)
     {
@@ -338,13 +353,22 @@ ArsLexis::status_t iPediaConnection::notifyFinished()
         data.outcome=data.outcomeArticleBody;
     }
 
-    if (searchResultsHandler_!=0)
+    if (NULL!=reverseLinksResultsHandler_)
     {
+        // TODO: we don't handle Reverse-Links field yet in the client
+        assert(NULL != definitionParser_);
+        lookupManager_.setLastReverseLinks(reverseLinksResultsHandler_->reverseLinksResults());
+        
+    }
+
+    if (NULL!=searchResultsHandler_)
+    {
+        assert(NULL == definitionParser_);
         lookupManager_.setLastSearchResults(searchResultsHandler_->searchResults());
         lookupManager_.setLastSearchExpression(articleTitle_);
         data.outcome=data.outcomeList;
     }
-   
+
     if (notFound_)
         data.outcome=data.outcomeNotFound;
 
@@ -386,7 +410,12 @@ void iPediaConnection::notifyPayloadFinished()
             delete searchResultsHandler_;
             searchResultsHandler_=static_cast<SearchResultsHandler*>(releasePayloadHandler());
             break;
-            
+
+        case payloadReverseLinks:
+            delete reverseLinksResultsHandler_;
+            reverseLinksResultsHandler_=static_cast<ReverseLinksResultsHandler*>(releasePayloadHandler());
+            break;
+
         default:
             assert(false);
     }

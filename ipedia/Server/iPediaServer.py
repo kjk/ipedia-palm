@@ -94,6 +94,13 @@ articleBodyField =       "Article-Body"
 # requested by Get-Article due to redirects.
 # Value: title of the article
 articleTitleField =      "Article-Title"
+# Server sends Reverse-Links along with Article-Body and Article-Title (as a
+# response to Get-Article, Get-Random-Article). It's a '\n' separated list
+# of article titles that link to a given article. The list is limited to 200
+# - the limitation is implemented in the converter (without the limit we would
+# send a lot of data (the biggest was around 100 kB) and more wouldn't be useful anyway.
+# Value: payload, a '\n'-separated list of article titles that link to a given article.
+reverseLinksField =     "Reverse-Links"
 # Retruned by the server in response to Get-Article, if the article hasn't been
 # found.
 notFoundField =          "Not-Found"
@@ -260,9 +267,20 @@ def getUniqueCookie(cursor):
             break
     return cookie
 
+# return a blob which is a '\n'-separated list of all article titles that link
+# to a given article. Returns None if we don't have this information.
+def getReverseLinks(db,cursor,articleTitle):
+    articleTitleEscaped = db.escape_string(articleTitle)
+    cursor.execute("SELECT links_to_it FROM reverse_links WHERE title='%s';" % articleTitleEscaped)
+    row = cursor.fetchone()
+    if row:
+        return row[0]
+    else:
+        return None
+
 # return a tuple (articleId,articleTitle,articleBody) for a random
 # article from the datbase
-def getRandomArticle(db, cursor):
+def getRandomArticle(cursor):
     iterationsLeft = 10
     while True:
         cursor.execute("""SELECT min(id), max(id) FROM articles""")
@@ -465,7 +483,7 @@ class iPediaProtocol(basic.LineReceiver):
             self.error=iPediaServerError.serverFailure
         return False
 
-    # we ignore all errors from here
+    # Log all attempts to verify registration code. We ignore all errors from here
     def logRegCodeToVerify(self,userId,regCode,fRegCodeValid):
         reg_code_valid_p = 'f'
         if fRegCodeValid:
@@ -477,20 +495,19 @@ class iPediaProtocol(basic.LineReceiver):
             cursor = db.cursor()
             clientIpEscaped = db.escape_string(self.getClientIp())
             regCodeEscaped = db.escape_string(regCode)
-            cursor.execute("""INSERT INTO verify_reg_code_log 
-                    (user_id, client_ip, when,  reg_code, reg_code_valid_p) 
-             VALUES (%d,      '%s',      now(), '%s',     '%s'""" % 
-                    (userId, clientIpEscaped,regCodeEscaped, reg_code_valid_p))
+            cursor.execute("""INSERT INTO verify_reg_code_log (user_id, client_ip, log_date, reg_code, reg_code_valid_p) VALUES (%d, '%s', now(), '%s', '%s');""" % (userId, clientIpEscaped,regCodeEscaped, reg_code_valid_p))
             cursor.close()
         except _mysql_exceptions.Error, ex:
             if cursor:
                 cursor.close()        
             dumpException(ex)
 
-    def outputArticle(self, title, body):
+    def outputArticle(self, title, body, reverseLinks):
         self.outputField(formatVersionField, DEFINITION_FORMAT_VERSION)
         self.outputField(articleTitleField, title)
         self.outputPayloadField(articleBodyField, body)
+        if None != reverseLinks:
+            self.outputPayloadField(reverseLinksField, reverseLinks)
 
     def preprocessArticleBody(self, body):
         # those macros are actually removed during conversion phase, so this
@@ -530,8 +547,9 @@ class iPediaProtocol(basic.LineReceiver):
             articleTuple = findArticle(db, cursor, title)
             if articleTuple:
                 (articleId, title, body) = articleTuple
+                reverseLinks = getReverseLinks(db,cursor,title)
                 # self.preprocessArticleBody(body)
-                self.outputArticle(title,body)
+                self.outputArticle(title,body,reverseLinks)
             else:
                 termList = findFullTextMatches(db, cursor, title)
                 if 0==len(termList):
@@ -586,9 +604,10 @@ class iPediaProtocol(basic.LineReceiver):
         try:
             db = self.getArticlesDatabase()
             cursor = db.cursor()
-            (articleId, title, body) = getRandomArticle(db, cursor)
+            (articleId, title, body) = getRandomArticle(cursor)
+            reverseLinks = getReverseLinks(db,cursor,title)
             # body = self.preprocessArticleBody(body)
-            self.outputArticle(title,body)
+            self.outputArticle(title,body,reverseLinks)
             cursor.close()
         except _mysql_exceptions.Error, ex:
             dumpException(ex)
@@ -650,8 +669,7 @@ class iPediaProtocol(basic.LineReceiver):
 
         fRegCodeExists = self.fRegCodeExists(regCode)
 
-        # TODO: enable it
-        # self.logRegCodeToVerify(self.userId,regCode,fRegCodeExists)
+        self.logRegCodeToVerify(self.userId,regCode,fRegCodeExists)
 
         if not fRegCodeExists:
             self.outputField(regCodeValidField, "0")
@@ -927,7 +945,7 @@ class iPediaProtocol(basic.LineReceiver):
 
             if self.fHasField(field):
                 # duplicate field
-                self.error = iPediaServerError.requestArgumentMissing
+                self.error = iPediaServerError.malformedRequest
                 return self.answer()
 
             self.setFieldValue(field,value)

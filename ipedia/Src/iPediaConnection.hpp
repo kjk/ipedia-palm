@@ -41,14 +41,42 @@ class iPediaConnection: public ArsLexis::FieldPayloadProtocolConnection
     };
     
     SearchResultsHandler* searchResultsHandler_;
-    
+
+    // TODO: ReverseLinksResultsHandler is identical to SearchResultsHandler. Maybe we should just have
+    // one SimpleResultsHandler instead?
+    class ReverseLinksResultsHandler: public ArsLexis::FieldPayloadProtocolConnection::PayloadHandler
+    {
+        ArsLexis::String reverseLinksResults_;
+
+    public:
+
+        ReverseLinksResultsHandler()
+        {}
+        
+        ArsLexis::status_t handleIncrement(const ArsLexis::String& text, ulong_t& length, bool finish)
+        {
+            if (finish)
+                reverseLinksResults_.assign(text, 0, length);
+            else
+                length=0;                
+            return errNone;
+        }
+        
+        const ArsLexis::String& reverseLinksResults() const
+        {return reverseLinksResults_;}
+        
+    };
+
+    ReverseLinksResultsHandler* reverseLinksResultsHandler_;
+        
     void prepareRequest();
     
     enum PayloadType 
     {
         payloadNone,
         payloadArticleBody,
-        payloadSearchResults
+        payloadSearchResults,
+        payloadReverseLinks
     };
 
     enum RegCodeValidationType

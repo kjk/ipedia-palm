@@ -178,7 +178,7 @@ def parseServerResponse(response):
     result = {}
     rest = response
     while True:
-        #print "rest: '%s'" % rest
+        # print "rest: '%s'" % rest
         if 0==len(rest):
             return result
         parts = rest.split("\n",1)
@@ -192,15 +192,19 @@ def parseServerResponse(response):
         if None == field:
             print "'%s' is not a valid request line" % fld
             return None
-        if articleBodyField==field or searchResultsField==field:
+        if articleBodyField==field or searchResultsField==field or reverseLinksField==field:
             payloadLen = int(value)
             payload = rest[:payloadLen]
             result[field] = payload
+            # print "! found field '%s'" % field
             rest = rest[payloadLen:]
+            assert '\n'==rest[0]
+            rest = rest[1:]
             if 0==len(rest):
                 return result
         else:
             result[field] = value
+            # print "! found field '%s'" % field
 
         if None == rest:
             return result
@@ -265,9 +269,10 @@ def doGetRandom(fSilent=False,fDoTiming=False):
     assert rsp.hasField(transactionIdField)
     assert rsp.getField(transactionIdField) == req.transactionId
     assert rsp.hasField(articleTitleField)
+    assert rsp.hasField(articleBodyField)
+    assert rsp.hasField(reverseLinksField)
     assert rsp.hasField(formatVersionField)
     assert rsp.getField(formatVersionField) == CUR_FORMAT_VER
-    assert rsp.hasField(articleBodyField)
     if not fSilent:
         print "# response:"
         print rsp.getText()
@@ -284,18 +289,23 @@ def doGetRandomNoTiming():
     assert rsp.hasField(formatVersionField)
     assert rsp.getField(formatVersionField) == CUR_FORMAT_VER
     assert rsp.hasField(articleBodyField)
+    assert rsp.hasField(reverseLinksField)
 
-def doGetDef(term):
+def doGetDef(term,fSilent=True):
     print "term: %s" % term
     req = getRequestHandleCookie(getArticleField, term)
     rsp = Response(req.getString())
     handleCookie(rsp)
     assert rsp.hasField(transactionIdField)
     assert rsp.getField(transactionIdField) == req.transactionId
+    if not fSilent:
+        print "# response:"
+        print rsp.getText()
     if rsp.hasField(articleTitleField):        
         assert rsp.hasField(formatVersionField)
         assert rsp.getField(formatVersionField) == CUR_FORMAT_VER
         assert rsp.hasField(articleBodyField)
+        assert rsp.hasField(reverseLinksField)
     else:
         assert rsp.hasField(notFoundField)
     #print "Definition: %s" % rsp.getField(articleBodyField)
@@ -385,11 +395,11 @@ if __name__=="__main__":
             doRandomPerf(randomCount)
             sys.exit(0)
         if arsutils.fDetectRemoveCmdFlag("-getrandom"):
-            doGetRandom(False,True)
+            doGetRandom(True,True)
             sys.exit(0)
         term = arsutils.getRemoveCmdArg("-get")
         if term:
-            doGetDef(term)
+            doGetDef(term,True)
             sys.exit(0)
         term = arsutils.getRemoveCmdArg("-search")
         if term:
