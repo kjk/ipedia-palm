@@ -12,7 +12,7 @@
 #   -ping : does a ping request (to test if the server is alive)
 #   -verifyregcode $regCode : verify registration code
 import sys, string, re, socket, random, pickle, time
-import arsutils, iPediaServer
+import arsutils
 from iPediaServer import *
 
 # server string must be of form "name:port"
@@ -74,6 +74,7 @@ def socket_readAll(sock):
 class Request:
     def __init__(self):
         self.fields = []
+        self.lines = []
 
         self.protocolVer   = "1"
         self.clientVer     = "0.5"
@@ -83,18 +84,20 @@ class Request:
         self.addField(clientVersionField,   self.clientVer)
         self.addField(transactionIdField,   self.transactionId)
 
+    # we expose addLine() so that clients can also create malformed requests
+    def addLine(self,line):
+        self.lines.append(line)
+
     def addField(self,fieldName,value):
         assert ':' != fieldName[-1]
         self.fields.append( (fieldName, value) )
+        if None==value:
+            self.addLine( "%s:\n" % fieldName)
+        else:
+            self.addLine( "%s: %s\n" % (fieldName,value))
 
     def getString(self):
-        lines = []
-        for (field,value) in self.fields:
-            if None==value:
-                lines.append( "%s:\n" % field)
-            else:
-                lines.append( "%s: %s\n" % (field,value))
-        txt = string.join(lines , "" )
+        txt = string.join(self.lines , "" )
         txt += "\n"
         return txt
 
@@ -103,7 +106,7 @@ def getRequestHandleCookie(field=None,value=None):
     if getGlobalCookie():
         r.addField(cookieField, getGlobalCookie())
     else:
-        r.addField(iPediaServer.getCookieField, g_exampleDeviceInfo)
+        r.addField(getCookieField, g_exampleDeviceInfo)
     if field!=None:
         r.addField(field,value)
     return r
