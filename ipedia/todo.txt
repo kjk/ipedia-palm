@@ -3,23 +3,32 @@
 ## Huayan_Jing (linked from Huayan as "scripture of the same name) doesn't
 exist. English encyclopedia.
 
-## 1. fix converting/displaying for french and german
+## fix converting/displaying for french and german
 
-## 2. add spanish (?)
+## add spanish (?)
 
-## 5. add unit tests for new multi-langual features
+## add unit tests for new multi-langual features
 
-## 6. remove timeline in the parser e.g. "List of Federal Presidents of Austria"
+## remove timeline in the parser e.g. "List of Federal Presidents of Austria"
 
-## 7. change "trail expired" dialog to "Unregistered version expired. Please
+## change "trail expired" dialog to "Unregistered version expired. Please
 register by purchasing registration code.\nEnter registration code?
 Yes/NO". Just like in iPedia/SM
 
-## 8. add text-to-speech functions. The idea would be to either do synthesis
+## add text-to-speech functions. The idea would be to either do synthesis
 on the device (which will be tricky) or do text-to-speech on the server (see
 festival speech synthesis system for links and info related to freely available
 text-to-speech systems) and stream them to the client in speex format (speex
 is a efficient sound compression for speech).
+
+## don't use mysql for storing article body. implies doing full-text search
+using lucene. This is to decrease amount of time taken by the conversion process
+as well as use less space on disk.
+
+## create and send via e-mail every day access stats. Similar to what InfoMan
+does. Total number of requests (random/search/extended search), how many
+unique users did queries, terms searched for (can be long)
+
 
                 DONE
 
