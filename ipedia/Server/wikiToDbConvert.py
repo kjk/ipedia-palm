@@ -418,8 +418,8 @@ g_dbList = None
 # return a list of databases on the server
 def getDbList():
     global g_dbList
-    conn = getRootConnection()
     if None == g_dbList:
+        conn = getRootConnection()
         cur = conn.cursor()
         cur.execute("SHOW DATABASES;")
         dbs = []

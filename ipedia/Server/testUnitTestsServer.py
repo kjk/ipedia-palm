@@ -69,21 +69,21 @@ class ArsUtils(unittest.TestCase):
         # malformed, because there is no ":"
         self.req.addLine("malformed\n")
         self.getResponse([errorField,transactionIdField])
-        self.assertError(iPediaServerError.malformedRequest)
+        self.assertError(ServerErrors.malformedRequest)
 
     def test_MissingArgument(self):
         self.req = getRequestHandleCookie()
         # Get-Cookie requires an argument but we're not sending it
         self.req.addField(getCookieField, None)
         self.getResponse([errorField,transactionIdField])
-        self.assertError(iPediaServerError.requestArgumentMissing)
+        self.assertError(ServerErrors.requestArgumentMissing)
 
     def test_ExtraArgument(self):
         self.req = getRequestHandleCookie()
         # Get-Random-Article doesn't require an argument, but we're sending it
         self.req.addField(getRandomField, "not needed")
         self.getResponse([errorField,transactionIdField])
-        self.assertError(iPediaServerError.unexpectedRequestArgument)
+        self.assertError(ServerErrors.unexpectedRequestArgument)
 
     # check if server correctly detects missing arguments/extra arguments
     # for all possible client requests
@@ -100,14 +100,14 @@ class ArsUtils(unittest.TestCase):
                 self.req.addField(field, "not needed argument")
             self.getResponse([errorField,transactionIdField])
             if fRequiresArguments:
-                self.assertError(iPediaServerError.requestArgumentMissing)
+                self.assertError(ServerErrors.requestArgumentMissing)
             else:
-                self.assertError(iPediaServerError.unexpectedRequestArgument)
+                self.assertError(ServerErrors.unexpectedRequestArgument)
 
     def test_UnrecognizedField(self):
         self.req = getRequestHandleCookie("Foo", "blast")
         self.getResponse([errorField,transactionIdField])
-        self.assertError(iPediaServerError.invalidRequest)
+        self.assertError(ServerErrors.invalidRequest)
 
     def test_VerifyValidRegCode(self):
         self.req = getRequestHandleCookie(verifyRegCodeField, testValidRegCode)
@@ -123,12 +123,12 @@ class ArsUtils(unittest.TestCase):
         self.req = Request(protocolVer="2")
         self.req.addCookie()
         self.getResponse([errorField,transactionIdField])
-        self.assertError(iPediaServerError.invalidProtocolVersion)
+        self.assertError(ServerErrors.invalidProtocolVersion)
 
     def test_ClientInfoMalformed(self):
         self.req = Request("1", None)
         self.getResponse([errorField])
-        self.assertError(iPediaServerError.requestArgumentMissing)
+        self.assertError(ServerErrors.requestArgumentMissing)
 
     def test_ClientInfoMissing(self):
         self.req = Request()
@@ -136,7 +136,7 @@ class ArsUtils(unittest.TestCase):
         self.req.addTransactionId()
         self.req.addField(protocolVersionField,"1")
         self.getResponse([errorField,transactionIdField])
-        self.assertError(iPediaServerError.malformedRequest)
+        self.assertError(ServerErrors.malformedRequest)
 
     def test_ProtocolMissing(self):
         self.req = Request()
@@ -144,14 +144,14 @@ class ArsUtils(unittest.TestCase):
         self.req.addTransactionId()
         self.req.addField(clientInfoField,"Python test client 1.0")
         self.getResponse([errorField,transactionIdField])
-        self.assertError(iPediaServerError.malformedRequest)
+        self.assertError(ServerErrors.malformedRequest)
 
     def test_InvalidCookie(self):
         # this is guaranteed to be an invalid cookie
         self.req = Request()
         self.req.addField(cookieField,"baraba")
         self.getResponse([errorField,transactionIdField])
-        self.assertError(iPediaServerError.invalidCookie)
+        self.assertError(ServerErrors.invalidCookie)
 
     def test_Random(self):
         self.req = getRequestHandleCookie(getRandomField, None)
@@ -213,18 +213,18 @@ class ArsUtils(unittest.TestCase):
     def test_GetCookieGivesCookie(self):
         self.req = getRequestHandleCookie(cookieField, "I'm a cookie")
         self.getResponse([transactionIdField,errorField])
-        self.assertError(iPediaServerError.malformedRequest)
+        self.assertError(ServerErrors.malformedRequest)
 
     def test_GetCookieGivesRegCode(self):
         self.req = getRequestHandleCookie(regCodeField, testValidRegCode)
         self.getResponse([transactionIdField,errorField])
-        self.assertError(iPediaServerError.malformedRequest)
+        self.assertError(ServerErrors.malformedRequest)
 
     def test_DuplicateField(self):
         self.req = getRequestHandleCookie(getArticleCountField, None)
         self.req.addField(getArticleCountField, None)
         self.getResponse([transactionIdField])
-        self.assertError(iPediaServerError.malformedRequest)
+        self.assertError(ServerErrors.malformedRequest)
 
     def test_VerifyRegCodeAsFirstRequest(self):
         # this is what client sends when it sends Verify-Register-Code
@@ -247,7 +247,7 @@ class ArsUtils(unittest.TestCase):
         self.req.addField(cookieField,cookie)
         self.req.addField(getCookieField,g_exampleDeviceInfo)
         self.getResponse([transactionIdField,errorField])
-        self.assertError(iPediaServerError.malformedRequest)
+        self.assertError(ServerErrors.malformedRequest)
 
     # verify that server rejects a query with both cookieField and getCookieField
     def test_GetCookieAndRegCode(self):
@@ -255,7 +255,7 @@ class ArsUtils(unittest.TestCase):
         self.req.addField(getCookieField,g_exampleDeviceInfo)
         self.req.addField(regCodeField,testValidRegCode)
         self.getResponse([transactionIdField,errorField])
-        self.assertError(iPediaServerError.malformedRequest)
+        self.assertError(ServerErrors.malformedRequest)
 
     # test that server re-assigns the same cookie if we have a unique device info
     def test_DoubleRegistrationUniqueDeviceInfo(self):
@@ -285,7 +285,7 @@ class ArsUtils(unittest.TestCase):
             self.req.addField(getArticleField, searchTerm)
             self.getResponse([transactionIdField])
             if self.rsp.hasField(errorField):
-                self.assertError(iPediaServerError.lookupLimitReached)
+                self.assertError(ServerErrors.lookupLimitReached)
                 self.assertEqual(t,g_unregisteredLookupsLimit)
                 return
             else:
@@ -300,14 +300,14 @@ class ArsUtils(unittest.TestCase):
         self.req = Request()
         self.req.addField(getCookieField,"PL:blaha")
         self.getResponse([transactionIdField,errorField])
-        self.assertError(iPediaServerError.unsupportedDevice)
+        self.assertError(ServerErrors.unsupportedDevice)
 
     def test_InvalidDeviceInfo2(self):
         self.req = Request()
         self.req.addField(getCookieField,"PL:blaha")
         self.req.addField(getArticleField, "seattle")
         self.getResponse([transactionIdField,errorField])
-        self.assertError(iPediaServerError.unsupportedDevice)
+        self.assertError(ServerErrors.unsupportedDevice)
 
     # verify that a registered user doesn't trigger lookup limits
     def test_RegisteredNoLookupLimits(self):

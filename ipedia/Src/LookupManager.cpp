@@ -34,6 +34,7 @@ static const uint_t serverErrorToAlertMap[][2]=
 } // namespace
 
 using ArsLexis::status_t;
+using ArsLexis::sendEvent;
 
 // map errors that can be returned from the server to alerts that we display
 // in the ui for this error. 
@@ -202,7 +203,6 @@ void LookupManager::search(const ArsLexis::String& expression)
     conn->setAddress(iPediaApplication::instance().server());
     conn->enqueue();
 }
-
 
 void LookupManager::moveHistory(bool forward)
 {
