@@ -36,9 +36,10 @@ BEGIN
     BEGIN
         MENUITEM "Register"          ID registerMenuItem         "G"
         MENUITEM SEPARATOR
+        MENUITEM "Tutorial"          ID tutorialMenuItem         "T"
+        MENUITEM "Check for updates" ID checkUpdatesMenuItem     "U"
         MENUITEM "ArsLexis website"  ID arslexisWebsiteMenuItem  "W"
         MENUITEM "About"             ID aboutMenuItem            "A"
-        MENUITEM "Tutorial"          ID tutorialMenuItem         "T"
     END
 END
 

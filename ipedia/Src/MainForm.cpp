@@ -638,7 +638,13 @@ bool MainForm::handleMenuCommand(UInt16 itemId)
             break;
 
         case arslexisWebsiteMenuItem:
-            if ( errNone != WebBrowserCommand(false, 0, sysAppLaunchCmdGoToURL, "http://www.arslexis.com/pda/ipedia.html",NULL) )
+            if ( errNone != WebBrowserCommand(false, 0, sysAppLaunchCmdGoToURL, "http://www.arslexis.com/pda/palm.html",NULL) )
+                FrmAlert(noWebBrowserAlert);
+            handled = true;
+            break;
+
+        case checkUpdatesMenuItem:
+            if ( errNone != WebBrowserCommand(false, 0, sysAppLaunchCmdGoToURL, "http://www.arslexis.com/updates/palm-ipedia-1-0.html",NULL) )
                 FrmAlert(noWebBrowserAlert);
             handled = true;
             break;
