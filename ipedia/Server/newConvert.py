@@ -396,7 +396,7 @@ requestsSql = """CREATE TABLE `requests` (
   `requested_term` varchar(255) default '',
   `error` int(10) unsigned NOT NULL default '0',
   `request_date` timestamp(14) NOT NULL,
-  `definition_id` int(10) unsigned default '0',
+  `definition_for` varchar(255) default '',
   PRIMARY KEY  (`id`)
 ) TYPE=MyISAM; """
 

@@ -70,14 +70,14 @@ def _weeklyDailyStats(db, body, header, regsQuery, lookupsQuery, limit):
             body=body+"<tr>\n"
             selected=True
         if "Day"==header:
-            body=body+"  <td><a href=\"./dailyStats?date=%s\">%s</a></td>\n" % (issueDate, issueDate)
+            body=body+"  <td><a href=\"dailyStats?date=%s\">%s</a></td>\n" % (issueDate, issueDate)
         else:
             body=body+"<td>%s</td>\n" % issueDate
         
         body=body+"  <td>%d</td>\n" % regsCount
             
         if "Day"==header:
-            body=body+"  <td><a href=\"./dailyLookupsStats?date=%s\">%d</a></td>\n" % (issueDate, lookupsCount)
+            body=body+"  <td><a href=\"dailyLookupsStats?date=%s\">%d</a></td>\n" % (issueDate, lookupsCount)
         else:
             body=body+"  <td>%d</td>\n" % lookupsCount
                         
@@ -133,7 +133,7 @@ def _recentLookups(db, limit):
   <td>Title 3</td>
 </tr>"""
     limit=limit*3
-    query= "SELECT requested_term, request_date FROM requests WHERE requested_term IS NOT NULL ORDER BY request_date DESC LIMIT %d" % limit
+    query= "SELECT requested_term, request_date FROM requests WHERE requested_term IS NOT NULL AND error=0 ORDER BY request_date DESC LIMIT %d" % limit
     cursor=db.cursor()
     cursor.execute(query)
     row=cursor.fetchone()
@@ -221,10 +221,10 @@ def _showDeviceStats(db):
     
 def summary(req):
     contents=_readTemplate(req)
-    body="<b>Summary</b>&nbsp;|&nbsp;<a href=\"./activeUsers\">Active users</a><p>"
+    body="<b>Summary</b>&nbsp;|&nbsp;<a href=\"activeUsers\">Active users</a><p>"
     db=_connect()
     uniqueCookies=_singleResult(db, "SELECT COUNT(*) FROM cookies")
-    days=_singleResult(db, "SELECT TO_DAYS(MAX(request_date))-TO_DAYS(MIN(request_date)) FROM requests")
+    days=_singleResult(db, "SELECT TO_DAYS(MAX(request_date))-TO_DAYS(MIN(request_date))+1 FROM requests WHERE requested_term IS NOT NULL AND error=0")
     totalRequests=_singleResult(db, "SELECT COUNT(*) FROM requests")
     
     body=body+("iPedia has been published for %s. <br>" % _dayOrDays(days))
@@ -240,13 +240,13 @@ def summary(req):
     <tr>
         <td>"""
     regsQuery="SELECT DATE_FORMAT(issue_date, '%Y-%U') AS when_date, COUNT(*) AS regs_count FROM cookies GROUP BY when_date ORDER BY when_date DESC"
-    lookupsQuery="SELECT DATE_FORMAT(request_date, '%Y-%U') AS when_date, COUNT(*) AS lookups_count FROM requests GROUP BY when_date ORDER BY when_date DESC"
+    lookupsQuery="SELECT DATE_FORMAT(request_date, '%Y-%U') AS when_date, COUNT(*) AS lookups_count FROM requests WHERE requested_term IS NOT NULL AND error=0 GROUP BY when_date ORDER BY when_date DESC"
     body, rowsCount=_weeklyDailyStats(db, body, "Week", regsQuery, lookupsQuery, 10)
     body=body+"""
         </td>
         <td>"""
     regsQuery="SELECT DATE_FORMAT(issue_date, '%Y-%m-%d') AS when_date, COUNT(*) AS regs_count FROM cookies GROUP BY when_date ORDER BY when_date DESC"
-    lookupsQuery="SELECT DATE_FORMAT(request_date, '%Y-%m-%d') AS when_date, COUNT(*) AS lookups_count FROM requests GROUP BY when_date ORDER BY when_date DESC"
+    lookupsQuery="SELECT DATE_FORMAT(request_date, '%Y-%m-%d') AS when_date, COUNT(*) AS lookups_count FROM requests WHERE requested_term IS NOT NULL AND error=0 GROUP BY when_date ORDER BY when_date DESC"
     body, ignore=_weeklyDailyStats(db, body, "Day", regsQuery, lookupsQuery, 10)
     body=body+"""
         </td>
@@ -278,7 +278,7 @@ def summary(req):
 def activeUsers(req):
     contents=_readTemplate(req)
     body="""
-<a href="./">Summary</a>&nbsp;|&nbsp;
+<a href="summary">Summary</a>&nbsp;|&nbsp;
 <b>Active users</b>
 <p>"""
     db=_connect()
@@ -295,7 +295,7 @@ def activeUsers(req):
       <td>Lookups per day</td>
     </tr>"""
     cursor=db.cursor()
-    cursor.execute("SELECT COUNT(cookie_id) AS cnt, cookie_id, device_info_token, TO_DAYS(NOW())-TO_DAYS(issue_date) FROM requests INNER JOIN cookies ON requests.cookie_id=cookies.id GROUP BY cookie_id ORDER BY cnt DESC")
+    cursor.execute("SELECT COUNT(cookie_id) AS cnt, cookie_id, device_info_token, TO_DAYS(NOW())-TO_DAYS(issue_date)+1 FROM requests INNER JOIN cookies ON requests.cookie_id=cookies.id GROUP BY cookie_id ORDER BY cnt DESC")
     selected=False
     for row in cursor:
         totalLookupsCount=row[0]
@@ -316,7 +316,7 @@ def activeUsers(req):
         else:
             body=body+"<tr>\n"
             selected=True
-        body=body+"  <td><a href=\"./userStats?cookieId=%d\">%s</a></td>\n" % (cookieId, hsName)
+        body=body+"  <td><a href=\"userStats?cookieId=%d\">%s</a></td>\n" % (cookieId, hsName)
         body=body+"  <td>%s</td>\n" % devName
         body=body+"  <td>%d</td>\n" % reqCount
         body=body+"  <td>%d</td>\n" % daysReg
@@ -329,9 +329,9 @@ def activeUsers(req):
 def dailyStats(req, date):
     contents=_readTemplate(req)
     body="""
-<a href="./">Summary</a>&nbsp;|&nbsp;
+<a href="summary">Summary</a>&nbsp;|&nbsp;
 <b>Daily per user stats for %s</b>&nbsp;|&nbsp;
-<a href=\"./dailyLookupsStats?date=%s\">Daily lookup stats for %s&nbsp;</a>
+<a href=\"dailyLookupsStats?date=%s\">Daily lookup stats for %s&nbsp;</a>
 <p>""" % (date, date, date)
     body=body+"""
     <table id="stats" cellspacing="0">
@@ -345,7 +345,7 @@ def dailyStats(req, date):
     </tr>"""
     db=_connect()
     cursor=db.cursor()
-    query="SELECT COUNT(cookie_id) AS cnt, cookie_id, TO_DAYS(request_date)-TO_DAYS(issue_date)+1, device_info_token FROM requests INNER JOIN cookies on requests.cookie_id=cookies.id WHERE DATE_FORMAT(request_date, '%%Y-%%m-%%d')='%s' GROUP BY cookie_id ORDER BY cnt DESC" % date
+    query="SELECT COUNT(cookie_id) AS cnt, cookie_id, TO_DAYS(request_date)-TO_DAYS(issue_date)+1, device_info_token FROM requests INNER JOIN cookies on requests.cookie_id=cookies.id WHERE DATE_FORMAT(request_date, '%%Y-%%m-%%d')='%s' AND requested_term IS NOT NULL AND error=0 GROUP BY cookie_id ORDER BY cnt DESC" % date
     cursor.execute(query)
     selected = False
     for row in cursor:
@@ -358,7 +358,7 @@ def dailyStats(req, date):
         hsName="Unavailable"
         if devInfoDec.has_key("HS"):
             hsName=devInfoDec["HS"]
-        totalLookupsCount=_singleResult(db, "SELECT COUNT(*) FROM requests WHERE cookie_id=%d" % cookieId)
+        totalLookupsCount=_singleResult(db, "SELECT COUNT(*) FROM requests WHERE cookie_id=%d AND requested_term IS NOT NULL AND error=0" % cookieId)
 
         if selected:
             body=body+"<tr class=\"selected\">\n"
@@ -367,7 +367,7 @@ def dailyStats(req, date):
             body=body+"<tr>\n"
             selected=True
 
-        body=body+"  <td><a href=\"./userStats?cookieId=%d\">%s</a></td>\n" % (cookieId, hsName)
+        body=body+"  <td><a href=\"userStats?cookieId=%d\">%s</a></td>\n" % (cookieId, hsName)
         body=body+"  <td>%s</td>\n" % devName
         body=body+"  <td>%d</td>\n" % lookupsCount
         body=body+"  <td>%d</td>\n" % totalLookupsCount
@@ -377,6 +377,67 @@ def dailyStats(req, date):
     cursor.close()
     body=body+"</table>\n"
     return contents % body  
+    
+def userStats(req, cookieId):
+    contents=_readTemplate(req)
+    body="""
+<a href="summary">Summary</a>&nbsp;|&nbsp;
+<b>User info for user with cookie_id %d</b>
+<p>""" % int(cookieId)
+    return contents % body
+
+def dailyLookupsStats(req, date):
+    contents=_readTemplate(req)
+    body="""
+<a href="summary">Summary</a>&nbsp;|&nbsp;
+<a href=\"dailyStats?date=%s\">Daily per user stats for %s</a>&nbsp;|&nbsp;
+<b>Daily lookup stats for %s&nbsp;</b>
+<p>""" % (date, date, date)
+    body=body+"""
+    <table id="stats" cellspacing="0">
+    <tr class="header">
+      <td>Word requested</td>
+      <td>Word found</td>
+      <td>User</td>
+      <td>Total requests</td>
+      <td>Days registered
+      <td>Lookups per day</td>
+    </tr>"""
+    db=_connect()
+    cursor=db.cursor()
+    query="SELECT requested_term, cookie_id, TO_DAYS(request_date)-TO_DAYS(issue_date)+1, device_info_token, definition_for FROM requests INNER JOIN cookies on requests.cookie_id=cookies.id WHERE DATE_FORMAT(request_date, '%%Y-%%m-%%d')='%s' AND requested_term IS NOT NULL AND error=0" % date
+    cursor.execute(query)
+    selected=False
+    for row in cursor:
+        term=row[0]
+        cookieId=row[1]
+        daysReg=row[2]
+        devInfo=row[3]
+        defFor=row[4]
+        devInfoDec=arsutils.decodeDi(devInfo)
+        devName=devInfoDec["device_name"]
+        hsName="Unavailable"
+        if devInfoDec.has_key("HS"):
+            hsName=devInfoDec["HS"]
+        totalLookups=_singleResult(db, "SELECT COUNT(*) FROM requests WHERE cookie_id=%d AND requested_term IS NOT NULL AND error=0" % cookieId)
+        if selected:
+            body=body+"<tr class=\"selected\">\n"
+            selected=False
+        else:
+            bod=body+"<tr>\n"
+            selected=True
+        body=body+"  <td>%s</td>\n" % term
+        if not defFor:
+            defFor="[Not found]"
+        body=body+"  <td>%s</td>\n" % defFor
+        body=body+"  <td><a href=\"userStats?cookieId=%d\">%s</a></td>\n" % (cookieId, hsName)
+        body=body+"  <td>%d</td>\n" % totalLookups
+        body=body+"  <td>%d</td>\n" % daysReg
+        body=body+"  <td>%.2f</td>\n" % (float(totalLookups)/float(daysReg))
+        body=body+"</tr>\n"
+    cursor.close()
+    body=body+"</table>\n"
+    return contents % body
     
 def index(req):
     return summary(req)

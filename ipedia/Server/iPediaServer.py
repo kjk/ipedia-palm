@@ -211,13 +211,13 @@ class iPediaProtocol(basic.LineReceiver):
             reqTerm='NULL'
             if self.requestedTerm:
                 reqTerm='\''+db.escape_string(self.requestedTerm)+'\''
-            defIdStr='NULL'
-            if self.definitionId:
-                defIdStr=str(self.definitionId)
+            defFor='NULL'
+            if self.term:
+                defFor='\''+db.escape_string(self.term)+'\''
             cursor=db.cursor()
             clientIp=0
-            query=("""insert into requests (client_ip, transaction_id, has_get_cookie_field, cookie_id, has_register_field, requested_term, error, definition_id, request_date) """
-                                        """values (%d, %s, %d, %s, %d, %s, %d, %s, now())""" % (clientIp, trIdStr, hasGetCookie, cookieIdStr, hasRegister, reqTerm, self.error, defIdStr))
+            query=("""insert into requests (client_ip, transaction_id, has_get_cookie_field, cookie_id, has_register_field, requested_term, error, definition_for, request_date) """
+                                        """values (%d, %s, %d, %s, %d, %s, %d, %s, now())""" % (clientIp, trIdStr, hasGetCookie, cookieIdStr, hasRegister, reqTerm, self.error, defFor))
             cursor.execute(query)
             cursor.close()
         except _mysql_exceptions.Error, ex:
@@ -618,7 +618,7 @@ class iPediaFactory(protocol.ServerFactory):
         self.maxDefinitionId=row[2]
         cursor.execute("""SELECT COUNT(*) FROM redirects""")
         row=cursor.fetchone()
-        self.articleCount=row[0]
+        self.redirectsCount=row[0]
         print "Number of Wikipedia articles: ", self.articleCount
         print "Number of redirects: ", self.redirectsCount
         cursor.close()
