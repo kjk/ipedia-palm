@@ -27,8 +27,6 @@ class iPediaApplication: public ArsLexis::RichApplication
     
     void loadPreferences();
 
-    void savePreferences();
-    
 protected:
 
     Err normalLaunch();
@@ -55,6 +53,8 @@ public:
     LookupManager* getLookupManager(bool create=false);
     const LookupManager* getLookupManager() const
     {return lookupManager_;}
+    
+    void savePreferences();
     
     struct Preferences
     {

@@ -48,7 +48,7 @@ iPediaConnection::~iPediaConnection()
 #define getDatabaseTimeField    _T("Get-Database-Time")
 #define databaseTimeField       _T("Database-Time")
 #define verifyRegCodeField      _T("Verify-Registration-Code")
-#define regCodeValidField       _T("Registratin-Code-Valid")
+#define regCodeValidField       _T("Registration-Code-Valid")
 
 void iPediaConnection::prepareRequest()
 {
@@ -284,23 +284,16 @@ ArsLexis::status_t iPediaConnection::handleField(const String& name, const Strin
     }
     else if (regCodeValidField==name)
     {
-
         error=numericValue(value, numValue);
         if (error)
-            error=errResponseMalformed;
+            return errResponseMalformed;
+
+        if (1==numValue)
+            regCodeValid_ = regCodeTypeValid;
+        else if (0==numValue)
+            regCodeValid_ = regCodeTypeInvalid;
         else
-        {
-            if (0==numValue)
-            {
-                regCodeValid_ = regCodeTypeValid;
-            }
-            else if (1==numValue)
-            {
-                regCodeValid_ = regCodeTypeInvalid;
-            }
-            else
-                error=errResponseMalformed;
-        }
+            error=errResponseMalformed;
     }
     else 
         error=FieldPayloadProtocolConnection::handleField(name, value);

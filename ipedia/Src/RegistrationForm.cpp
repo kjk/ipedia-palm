@@ -101,12 +101,14 @@ static void RemoveNonDigits(char *buf)
 void RegistrationForm::handleLookupFinished(const EventType& event)
 {
     // setControlsState(true);
+    iPediaApplication& app = iPediaApplication::instance();
+    iPediaApplication::Preferences& prefs=app.preferences();
+
     const LookupFinishedEventData& data=reinterpret_cast<const LookupFinishedEventData&>(event.data);
     if (data.outcomeRegCodeValid==data.outcome)
     {
-        iPediaApplication::Preferences& prefs=static_cast<iPediaApplication&>(application()).preferences();
         // TODO: probably need to store the reg number somewhere instead of
-        // re-getting it from the server
+        // re-getting it from the text field
         Field field(*this, serialNumberField);
         const char* text=field.text();
         assert( (NULL!=text) && ('\0'!=*text));
@@ -118,6 +120,7 @@ void RegistrationForm::handleLookupFinished(const EventType& event)
             prefs.serialNumber=newSn;
             // TODO: get rid of serialNumberRegistered
             prefs.serialNumberRegistered=false;
+            app.savePreferences();
         }
         closePopup();
     }
@@ -131,22 +134,22 @@ void RegistrationForm::handleLookupFinished(const EventType& event)
         if (0==buttonId)
         {
             // this is "Ok" button. Clear-out registration code (since it was invalid)
-            // TODO:
-            //MemSet(appContext->prefs.regCode, sizeof(appContext->prefs.regCode), 0);
-            //SavePreferencesInoah(appContext);
+            prefs.serialNumber = "";
+            app.savePreferences();
+            closePopup();
             return;
         }
-        assert(1==buttonId);
         // this must be "Re-enter registration code" button
-        // TODO: show the dialog box again
+        assert(1==buttonId);
     }
     else
     {
-        // TODO: not sure what to do. this must mean an error
+        assert (data.outcomeError==data.outcome);
+        // an alert will be shown for server errors
         update();
     }
 
-    LookupManager* lookupManager=static_cast<iPediaApplication&>(application()).getLookupManager();
+    LookupManager* lookupManager=app.getLookupManager();
     assert(lookupManager);
     lookupManager->handleLookupFinishedInForm(data);
 }
