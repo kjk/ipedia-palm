@@ -42,6 +42,12 @@ g_fDumpPayload = False
 DEFINITION_FORMAT_VERSION = "1"
 PROTOCOL_VERSION = "1"
 
+# for some reason we count more things as articles than WikiPedia. In order
+# to not look like we have more than them, we substract ARTICLE_COUNT_DELTA
+# to the number of articles we show to people. This is just a guess - we want
+# to report less than wikipedia but not much less.
+ARTICLE_COUNT_DELTA = 3000
+
 # this is a special reg code used for testing. Clients should never sent
 # such reg code (a reg code format we use for real clients is a 12-digit number)
 testValidRegCode    = "7432"
@@ -961,7 +967,7 @@ class iPediaFactory(protocol.ServerFactory):
         cursor=db.cursor()
         cursor.execute("""SELECT COUNT(*), min(id), max(id) FROM articles""")
         row=cursor.fetchone()
-        self.articleCount=row[0]
+        self.articleCount=row[0]-ARTICLE_COUNT_DELTA
         self.minDefinitionId=row[1]
         self.maxDefinitionId=row[2]
         cursor.execute("""SELECT COUNT(*) FROM redirects""")
