@@ -18,9 +18,10 @@
 #             some of the original articles. With this flag we dump dups to stdout.
 #             Don't use if ipedia.articles isn't empty
 # -nopsyco : if used, won't use psyco
+# -revlinksonly : only do reverse links
 # fileName : convert directly from sql file, no need for enwiki.cur database
 
-import sys, os, MySQLdb
+import sys, os, string, MySQLdb
 import  arsutils, wikipediasql,articleconvert,iPediaServer
 try:
     import psyco
@@ -45,7 +46,7 @@ g_dbName = None
 MANAGEMENT_DB = 'ipedia_manage'
 
 def usageAndExit():
-    print "wikiToDbConvert.py [-verbose] [-limit n] [-showdups] [-nopsyco] [-recreatedb] [-recreatedatadb] sqlDumpName"
+    print "wikiToDbConvert.py [-verbose] [-revlinksonly] [-limit n] [-showdups] [-nopsyco] [-recreatedb] [-recreatedatadb] sqlDumpName"
     sys.exit(0)
 
 def getOneResult(conn,query):
@@ -175,14 +176,18 @@ g_redirectsWriter = None
 
 def dumpUnresolvedRedirect(visited):
     global g_redirectsWriter
-    if g_redirectsWriter:
-        g_redirectsWriter.write(visited)
+    g_redirectsWriter.write(visited)
 
 def setUnresolvedRedirectWriter(sqlDump):
     global g_redirectsWriter
     assert None == g_redirectsWriter
     g_redirectsWriter = UnresolvedRedirectsWriter(sqlDump)
     g_redirectsWriter.open()
+
+def closeUnresolvedRedirectWriter():
+    global g_redirectsWriter
+    g_redirectsWriter.close()
+    g_redirectsWriter = None
 
 class ConvertedArticle:
     def __init__(self,ns,title,txt):
@@ -223,7 +228,7 @@ def getDbNameFromFileName(sqlFileName):
 # case-sensitive but our title column in the database is not. Currently we just
 # over-write. It's ok for redirects but for real articles we need to investigate
 # how often that happens and decide what to do about that
-def convertArticles(sqlDump,dbName,articleLimit):
+def convertArticles(sqlDump,articleLimit):
     count = 0
     redirects = {}
     articleTitles = {}
@@ -242,7 +247,7 @@ def convertArticles(sqlDump,dbName,articleLimit):
             redirects[title] = article.getRedirect()
         else:
             txt = article.getText()
-            links = articleconvert.articleExtractLinks(txt)
+            #links = articleconvert.articleExtractLinks(txt)
             #articleTitles[title] = links
             articleTitles[title] = 1
         count += 1
@@ -263,8 +268,10 @@ def convertArticles(sqlDump,dbName,articleLimit):
             #print "redirect '%s' (to '%s') not resolved" % (title,redirect)
         else:
             redirectsExisting[title] = redirectResolved
+    closeUnresolvedRedirectWriter()
     print "Number of unresolved redirects: %d" % unresolvedCount
 
+    dbName = getDbNameFromFileName(sqlDump)
     ipedia_write_cur = getNamedCursor(getIpediaConnection(dbName), "ipedia_write_cur")
         
     # go over articles again (hopefully now using the cache),
@@ -288,7 +295,6 @@ def convertArticles(sqlDump,dbName,articleLimit):
             convertedArticle = ConvertedArticle(article.getNamespace(), article.getTitle(), converted)
             articleSize = len(converted)
 
-        #title = title.lower()
         if article.fRedirect():
             if redirectsExisting.has_key(title):
                 redirect = redirectsExisting[title]
@@ -339,6 +345,70 @@ def convertArticles(sqlDump,dbName,articleLimit):
         statsFo.write("%d\t\t%d\n" % (size,count))
     statsFo.close()
 
+# we want to limit how many reverse links we have. There is a small number (few
+# hundred) of heavily linked articles and there is no point of sending tens of
+# kilobytes of links, they won't display on a PDA well anyway. So we just limit
+# the number of reverse links we accumulate.
+REVERSE_LINK_LIMIT = 200
+LINK_SEPARATOR = '\n'
+def calcReverseLinks(fileName):
+    print "Calculating reverse links"
+    count = 0
+    reverseLinks = {}
+    totalLinksCount = 0
+    for article in wikipediasql.iterConvertedArticles(fileName):
+        if article.fRedirect():
+            continue
+        count += 1
+        title = article.getTitle()
+        if -1 != title.find(LINK_SEPARATOR):
+            print "rejected title '%s', has link separator (%d)" % (title, ord(LINK_SEPARATOR))
+            continue
+        body = article.getText()
+        links = articleconvert.articleExtractLinksSimple(body)
+        totalLinksCount += len(links)
+        for link in links:
+            linkLower = link.lower()
+            if reverseLinks.has_key(linkLower):
+                currentLinks = reverseLinks[linkLower]
+                if len(currentLinks)<REVERSE_LINK_LIMIT:
+                    if title not in currentLinks: # TODO: only needed because of duplicates?
+                        currentLinks.append(title)
+            else:
+                reverseLinks[linkLower] = [link,title]
+        if count % 20000 == 0:
+            sys.stderr.write("processed %d articles\n" % count)
+    print "number of articles with reverse links: %d" % len(reverseLinks)
+    avgLinksCount = float(totalLinksCount)/float(len(reverseLinks))
+    print "average number of links: %.2f" % avgLinksCount
+    # now dump them into a database
+    print "started inserting data into reverse_links table"
+    dbName = getDbNameFromFileName(fileName)
+    cur = getNamedCursor(getIpediaConnection(dbName), "rev_links_write_cur")
+    for rLinks in reverseLinks.values():
+        title = rLinks[0]
+        links = rLinks[1:]
+        assert len(links)>0
+        # need to escape the character we use for gluing the strings together
+        # client will have to un-escape
+        #body = string.join([l.replace(":", "::") for l in links],":")
+        body = string.join(links, LINK_SEPARATOR)
+        try:
+            sql = "INSERT INTO reverse_links (title,links_to_it) VALUES ('%s', '%s');" % (dbEscape(title), dbEscape(body))
+            cur.execute(sql)
+        except:
+            # assuming that the exception happend because of trying to insert
+            # item with a duplicate title (duplication due to lower-case
+            # conversion might convert 2 differnt titles into the same,
+            # lower-cased title)
+            try:
+                sql = "UPDATE reverse_links SET links_to_it='%s' WHERE title='%s';" % (dbEscape(body), dbEscape(title))
+                cur.execute(sql)
+            except:
+                # nothing we can do about it
+                sys.stderr.write("Exception in UPDATE article '%s' with body of len %d\n" % (title, len(body)))
+    print "finished inserting data into reverse_links table"
+
 g_dbList = None
 # return a list of databases on the server
 def getDbList():
@@ -354,25 +424,30 @@ def getDbList():
         g_dbList = dbs
     return g_dbList
 
-genSchemaSql = """
+articlesSql = """
 CREATE TABLE `articles` (
   `id` int(10) unsigned NOT NULL auto_increment,
   `title` varchar(255) NOT NULL,
   `body` mediumtext NOT NULL,
   PRIMARY KEY  (`id`),
   UNIQUE KEY `title_index` (`title`)
-) TYPE=MyISAM; 
+) TYPE=MyISAM;
 """
 
-genSchema2Sql = """
+redirectsSql = """
 CREATE TABLE `redirects` (
-  `id` int(10) unsigned NOT NULL auto_increment,
   `title` varchar(255) NOT NULL,
   `redirect` varchar(255) NOT NULL,
-  PRIMARY KEY  (`id`),
-  UNIQUE KEY `title_index` (`title`)
-) TYPE=MyISAM; 
+  PRIMARY KEY  (`title`)
+) TYPE=MyISAM;
+"""
 
+reverseLinksSql = """
+CREATE TABLE reverse_links (
+  title varchar(255) NOT NULL,
+  links_to_it mediumtext NOT NULL,
+  PRIMARY KEY (title)
+) TYPE=MyISAM;
 """
 
 def delDb(conn,dbName):
@@ -385,8 +460,9 @@ def createDb(conn,dbName):
     cur = conn.cursor()
     cur.execute("CREATE DATABASE %s" % dbName)
     cur.execute("USE %s" % dbName)
-    cur.execute(genSchemaSql)
-    cur.execute(genSchema2Sql)
+    cur.execute(articlesSql)
+    cur.execute(redirectsSql)
+    cur.execute(reverseLinksSql)
     cur.execute("GRANT ALL ON %s.* TO 'ipedia'@'localhost' IDENTIFIED BY 'ipedia';" % dbName)
     cur.close()
     print "Created '%s' database and granted perms to ipedia user" % dbName
@@ -489,8 +565,10 @@ def recreateDataDb(fRecreate=False):
         else:
             print "Database '%s' exists" % MANAGEMENT_DB
 
-def createIpediaDb(sqlDumpName,dbName,fRecreateDb=False,fRecreateDataDb=False):
+def createIpediaDb(sqlDumpName,fRecreateDb=False,fRecreateDataDb=False):
     connRoot = getRootConnection()
+
+    dbName = getDbNameFromFileName(sqlDump)
 
     if dbName not in getDbList():
         createDb(connRoot,dbName)
@@ -512,6 +590,18 @@ def createFtIndex():
     cur.close()
     print "finished creating full-text index"
 
+def revLinksOnly(sqlDump):
+    try:
+        connRoot = getRootConnection()
+
+        dbName = getDbNameFromFileName(sqlDump)
+
+        if dbName not in getDbList():
+            print "Database '%s' doesn't exist and we need it for -revlinksonly" % dbName
+        calcReverseLinks(sqlDump)
+    finally:
+        deinitDatabase()
+
 if __name__=="__main__":
 
     fNoPsyco = arsutils.fDetectRemoveCmdFlag("-nopsyco")
@@ -524,6 +614,7 @@ if __name__=="__main__":
     fRecreateDb = arsutils.fDetectRemoveCmdFlag("-recreatedb")
     fRecreateDataDb = arsutils.fDetectRemoveCmdFlag("-recreatedatadb")
     articleLimit = arsutils.getRemoveCmdArgInt("-limit")
+    fRevLinksOnly = arsutils.fDetectRemoveCmdFlag("-revlinksonly")
 
     # we always need to try to create it
     recreateDataDb(fRecreateDataDb)
@@ -536,16 +627,22 @@ if __name__=="__main__":
 
     sqlDump = sys.argv[1]
 
-    dbName = getDbNameFromFileName(sqlDump)
+    if fRevLinksOnly:
+        revLinksOnly(sqlDump)
+        sys.exit(0) 
+
     foLog = None
     try:
-        createIpediaDb(sqlDump,dbName,fRecreateDb,fRecreateDataDb)
+        createIpediaDb(sqlDump,fRecreateDb,fRecreateDataDb)
         timer = arsutils.Timer(fStart=True)
+
         logFileName = wikipediasql.getLogFileName(sqlDump)
-        foLog = open(logFileName, "wb")
+        # use small buffer so that we can observe changes with tail -w
+        foLog = open(logFileName, "wb", 64)
         sys.stdout = foLog
-        sys.stderr = foLog
-        convertArticles(sqlDump,dbName,articleLimit)
+        # sys.stderr = foLog
+        convertArticles(sqlDump,articleLimit)
+        calcReverseLinks(sqlDump)
         timer.stop()
         timer.dumpInfo()
         createFtIndex()

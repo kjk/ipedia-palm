@@ -268,8 +268,7 @@ class WikipediaLink:
 
 linkRe=re.compile(r'\[\[(.*?)(\|.*?)?\]\]', re.S)
 
-# extract all links from wikipedia article and return
-# them as a list
+# extract all links from wikipedia article and return them as a list of WikipediaLink
 # return None if there are no links
 def articleExtractLinks(articleTxt):
     links = []
@@ -282,6 +281,18 @@ def articleExtractLinks(articleTxt):
         links.append(wikiLink)
     if len(links)==0:
         return None
+    return links
+
+# extract all links from wikipedia article and return them as a list
+# return empty list if there are no links
+def articleExtractLinksSimple(articleTxt):
+    links = []
+    for match in linkRe.finditer(articleTxt):
+        link=match.group(1)
+        name=match.group(2)
+        if None != name:
+            name = name[1:]  # remove "|" from the beginning which is part of regexp
+        links.append(link)
     return links
 
 def fValidLink(link,redirects,articlesLinks):
