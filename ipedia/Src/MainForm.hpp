@@ -15,6 +15,7 @@ class MainForm: public iPediaForm
     Definition about_;
     Definition register_;
     Definition tutorial_;
+    Definition wikipedia_;
     GenericTextElement* articleCountElement_;
     bool forceAboutRecalculation_;    
     long articleCountSet_;
@@ -123,7 +124,8 @@ public:
         showAbout,
         showTutorial,
         showRegister,
-        showArticle
+        showArticle,
+        showWikipedia
     };
     
     DisplayMode displayMode() const
@@ -144,6 +146,8 @@ public:
     void prepareTutorial();    
 
     void prepareHowToRegister();
+
+    void prepareWikipedia();
 
 private:
     

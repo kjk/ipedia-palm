@@ -26,6 +26,8 @@ def usageAndExit():
 def findConvertedArticlesUnderThreshold(fileName,thresholdSize):
     print "looking for converted articles smaller than %d bytes" % thresholdSize
     count = 0
+    countNoComma = 0
+    totalSizeNoComma = 0
     articles = []
     for article in wikipediasql.iterConvertedArticles(fileName):
         if article.fRedirect():
@@ -34,14 +36,22 @@ def findConvertedArticlesUnderThreshold(fileName,thresholdSize):
         if len(body)<thresholdSize:
             #print "size: %d, title: '%s'" % (len(body),article.getTitle())
             articles.append(article)
+        if -1 == body.find(","):
+            countNoComma += 1
+            totalSizeNoComma += len(body)
         count += 1
         if count % 20000 == 0:
             print "processed %d articles, found %d small" % (count,len(articles))
+    print "Articles without comma in converted: %d" % countNoComma
+    avgSize = float(totalSizeNoComma)/float(countNoComma)
+    print "Average size: %.2f" % avgSize
     return articles
 
 def findOrigArticlesUnderThreshold(fileName,thresholdSize):
     print "looking for original articles smaller than %d bytes" % thresholdSize
     count = 0
+    countNoComma = 0
+    totalSizeNoComma = 0
     articles = []
     for article in wikipediasql.iterWikipediaArticles(fileName,None,fUseCache=True,fRecreateCache=False):
         if article.fRedirect():
@@ -50,9 +60,15 @@ def findOrigArticlesUnderThreshold(fileName,thresholdSize):
         if len(body)<thresholdSize:
             #print "size: %d, title: '%s'" % (len(body),article.getTitle())
             articles.append(article)
+        if -1 == body.find(","):
+            countNoComma += 1
+            totalSizeNoComma += len(body)
         count += 1
         if count % 20000 == 0:
             print "processed %d articles, found %d small" % (count,len(articles))
+    print "Articles without comma in orig: %d" % countNoComma
+    avgSize = float(totalSizeNoComma)/float(countNoComma)
+    print "Average size: %.2f" % avgSize
     return articles
 
 def dumpArticles(fileName,articles):

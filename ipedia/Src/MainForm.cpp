@@ -31,17 +31,21 @@ MainForm::MainForm(iPediaApplication& app):
     about_.setHyperlinkHandler(&app.hyperlinkHandler());
     tutorial_.setHyperlinkHandler(&app.hyperlinkHandler());
     register_.setHyperlinkHandler(&app.hyperlinkHandler());
+    wikipedia_.setHyperlinkHandler(&app.hyperlinkHandler());
     prepareAbout();    
     // TODO: make those on-demand
     prepareHowToRegister();
     prepareTutorial();
+    prepareWikipedia();
 }
 
 bool MainForm::handleOpen()
 {
-    bool result=iPediaForm::handleOpen();
+    bool fOk=iPediaForm::handleOpen();
     updateNavigationButtons();
-    return result;
+    // to prevent accidental selection of links in main About page
+    penUpsToEat_ = 1;
+    return fOk;
 }
 
 inline const LookupHistory& MainForm::getHistory() const
@@ -673,6 +677,7 @@ bool MainForm::handleMenuCommand(UInt16 itemId)
         default:
             handled=iPediaForm::handleMenuCommand(itemId);
     }
+    // to prevent accidental selection of links in main About page
     penUpsToEat_ = 1;
     return handled;
 }
@@ -828,6 +833,15 @@ void MainForm::RenderingProgressReporter::reportProgress(uint_t percent)
 #endif    
 }
 
+static void wikipediaActionCallback(void *data)
+{
+    assert(NULL!=data);
+    MainForm * mf = static_cast<MainForm*>(data);
+    assert(MainForm::showWikipedia!=mf->displayMode());
+    mf->setDisplayMode(MainForm::showWikipedia);
+    mf->update();
+}
+
 static void tutorialActionCallback(void *data)
 {
     assert(NULL!=data);
@@ -875,6 +889,8 @@ Definition& MainForm::currentDefinition()
             return register_;
         case showTutorial:
             return tutorial_;
+        case showWikipedia:
+            return wikipedia_;
         default:
             // shouldn't happen
             assert(0);
@@ -947,7 +963,9 @@ void MainForm::prepareAbout()
 
     elems.push_back(text=new FormattedTextElement("WikiPedia"));
     text->setJustification(DefinitionElement::justifyCenter);
-    text->setHyperlink("http://www.wikipedia.org", hyperlinkExternal);
+    // url doesn't really matter, it's only to establish a hotspot
+    text->setHyperlink("", hyperlinkTerm);
+    text->setActionCallback( wikipediaActionCallback, static_cast<void*>(this) );
 
     elems.push_back(new LineBreakElement());
     elems.push_back(articleCountElement_=new FormattedTextElement(" "));
@@ -989,7 +1007,7 @@ void MainForm::prepareTutorial()
     text->setActionCallback( aboutActionCallback, static_cast<void*>(this) );
     elems.push_back(new LineBreakElement(4,3));
 
-    elems.push_back(text=new FormattedTextElement("iPedia is an on-line encyclopedia. Use it to get information and facts on a number of topics."));
+    elems.push_back(text=new FormattedTextElement("iPedia is a wireless encyclopedia. Use it to get information and facts on just about anything."));
     elems.push_back(new LineBreakElement(4,3));
 
     elems.push_back(text=new FormattedTextElement("Finding an encyclopedia article."));
@@ -1000,7 +1018,7 @@ void MainForm::prepareTutorial()
 
     elems.push_back(text=new FormattedTextElement("Finding all articles with a given word."));
     text->setEffects(fxBold);
-    elems.push_back(text=new FormattedTextElement(" Let's assume you want to find all articles that mention Seattle. Enter 'Seattle' in the text field and use 'Main/Extended search' menu item. In response you'll receive a list of articles with word 'Seattle'."));
+    elems.push_back(text=new FormattedTextElement(" Let's assume you want to find all articles that mention Seattle. Enter 'Seattle' in the text field and use 'Main/Extended search' menu item. In response you'll receive a list of articles that contain word 'Seattle'."));
     text->setJustification(DefinitionElement::justifyLeft);
     elems.push_back(new LineBreakElement(4,3));
 
@@ -1012,7 +1030,7 @@ void MainForm::prepareTutorial()
 
     elems.push_back(text=new FormattedTextElement("Results of last extended search."));
     text->setEffects(fxBold);
-    elems.push_back(text=new FormattedTextElement(" At any time you can get a list of results from last extended search by using 'Main/Extended search results' menu item."));
+    elems.push_back(text=new FormattedTextElement(" At any time you can get a list of results from last extended search by using menu item 'Main/Extended search results'."));
     text->setJustification(DefinitionElement::justifyLeft);
     elems.push_back(new LineBreakElement(4,3));
 
@@ -1079,12 +1097,12 @@ void MainForm::prepareHowToRegister()
     text->setHyperlink("http://www.arslexis.com/pda/palm.html", hyperlinkExternal);
     elems.push_back(new LineBreakElement());
 
-    elems.push_back(text=new FormattedTextElement("After obtaining registration code use menu item Option/Register (or "));
+    elems.push_back(text=new FormattedTextElement("After obtaining registration code use menu item 'Option/Register' (or "));
     elems.push_back(text=new FormattedTextElement("click here"));
     // url doesn't really matter, it's only to establish a hotspot
     text->setHyperlink("", hyperlinkTerm);
     text->setActionCallback( registerActionCallback, static_cast<void*>(this) );
-    elems.push_back(text=new FormattedTextElement(") to enter registration number. "));
+    elems.push_back(text=new FormattedTextElement(") to enter registration code. "));
 
     elems.push_back(text=new FormattedTextElement("Go back to main screen."));
     text->setJustification(DefinitionElement::justifyLeft);
@@ -1095,3 +1113,33 @@ void MainForm::prepareHowToRegister()
     register_.replaceElements(elems);
 }
 
+void MainForm::prepareWikipedia()
+{
+    Definition::Elements_t elems;
+    FormattedTextElement* text;
+
+    assert( wikipedia_.empty() );
+
+    FontEffects fxBold;
+    fxBold.setWeight(FontEffects::weightBold);
+
+    elems.push_back(text=new FormattedTextElement("All the articles in iPedia come from WikiPedia project and are licensed under "));
+    elems.push_back(text=new FormattedTextElement("GNU Free Documentation License"));
+    text->setHyperlink("http://www.gnu.org/copyleft/fdl.html", hyperlinkExternal);
+    elems.push_back(text=new FormattedTextElement("."));
+    elems.push_back(new LineBreakElement());
+
+    elems.push_back(text=new FormattedTextElement("To find out more about WikiPedia project, visit "));
+    elems.push_back(text=new FormattedTextElement("wikipedia.org"));
+    text->setHyperlink("http://www.wikipedia.org", hyperlinkExternal);
+    elems.push_back(text=new FormattedTextElement(" website. "));
+    elems.push_back(new LineBreakElement());
+
+    elems.push_back(text=new FormattedTextElement("Go back to main screen."));
+    text->setJustification(DefinitionElement::justifyLeft);
+    // url doesn't really matter, it's only to establish a hotspot
+    text->setHyperlink("", hyperlinkTerm);
+    text->setActionCallback( aboutActionCallback, static_cast<void*>(this) );
+
+    wikipedia_.replaceElements(elems);
+}    
