@@ -67,44 +67,22 @@ def startsWithIgnoreCase(s1, substr):
         return True
     return False
 
-def findTarget(db, cursor, idTermDef):
-    global g_fVerbose
-    defId, term, definition=idTermDef
-    history=[]
+def findArticle(db, cursor, title):
+    term=title
     while True:
-        if not startsWithIgnoreCase(definition, redirectCommand):
-            return defId, term, definition
-        history.append(defId)
-        termStart=definition.find(termStartDelimiter)+2
-        termEnd=definition.find(termEndDelimiter)
-        term=definition[termStart:termEnd].replace('_', ' ')
-        #print "Resolving term: ", term
-        query="""SELECT id, title, body FROM articles WHERE title='%s' """ % db.escape_string(term)
+        query="""SELECT id, title, body FROM articles WHERE title='%s';""" % db.escape_string(term)
         cursor.execute(query)
         row=cursor.fetchone()
-        if not row:
-            return None
-
-        defId, term, definition=row[0], row[1], row[2]
-        if defId in history:
-            if g_fVerbose:
-                print "--------------------------------------------------------------------------------"
-                print "WARNING! Circular reference: ", term
-                print "--------------------------------------------------------------------------------"
-            logCircular(defId,term)
+        if row:
+            return (row[0], row[1], row[2])
+        query="""SELECT redirect FROM redirect WHERE title='%s';""" % db.escape_string(term)
+        cursor.execute(query)
+        row=cursor.fetchone()
+        if row:
+            term=row[0]
+        else:
             return None
         
-def findExactDefinition(db, cursor, term):
-    query="""SELECT id, title, body FROM articles WHERE title='%s';""" % db.escape_string(term)
-    cursor.execute(query)
-    row=cursor.fetchone()
-    if row:
-        definition=None
-        idTermDef=findTarget(db, cursor, (row[0], row[1], row[2]))
-        return idTermDef
-    else:
-        return None
-
 def findRandomDefinition(db, cursor):
     cursor.execute("""SELECT min(id), max(id) FROM articles""")
     row=cursor.fetchone()
@@ -114,9 +92,7 @@ def findRandomDefinition(db, cursor):
     cursor.execute(query)
     row=cursor.fetchone()
     if row:
-        definition=None
-        idTermDef=findTarget(db, cursor, (row[0], row[1], row[2]))
-        return idTermDef
+        return (row[0], row[1], row[2])
     else:
         return None
         
@@ -124,30 +100,30 @@ internalLinkRe=re.compile(r'\[\[(.*?)(\|.*?)?\]\]', re.S)
 testedLinks = {}
 validLinks = {}
 
-def validateInternalLinks(db, cursor, definition):
-    global g_fVerbose, validLinks, testedLinks
-
-    if g_fVerbose:
-        sys.stdout.write("* Validaiting internal links: ")
-    matches=[]
-    for iter in internalLinkRe.finditer(definition):
-        matches.append(iter)
-    matches.reverse()
-    for match in matches:
-        term=match.group(1)
-        if len(term)!=0 and not testedLinks.has_key(term):
-            testedLinks[term] = 1
-            idTermDef=findExactDefinition(db, cursor, term)
-            if idTermDef:
-                if g_fVerbose:
-                    sys.stdout.write("'%s' [ok], " % term)
-                validLinks[term] = 1
-        if not validLinks.has_key(term):
-            name=match.group(match.lastindex).lstrip('| ').rstrip().replace('_', ' ')
-            if g_fVerbose:
-                sys.stdout.write("'%s' => '%s', " % (term,name))
-            definition=definition[:match.start()]+name+definition[match.end():]
-    return definition
+#def validateInternalLinks(db, cursor, definition):
+#    global g_fVerbose, validLinks, testedLinks
+#
+#    if g_fVerbose:
+#        sys.stdout.write("* Validaiting internal links: ")
+#    matches=[]
+#    for iter in internalLinkRe.finditer(definition):
+#        matches.append(iter)
+#    matches.reverse()
+#    for match in matches:
+#        term=match.group(1)
+#        if len(term)!=0 and not testedLinks.has_key(term):
+#            testedLinks[term] = 1
+#            idTermDef=findExactDefinition(db, cursor, term)
+#            if idTermDef:
+#                if g_fVerbose:
+#                    sys.stdout.write("'%s' [ok], " % term)
+#                validLinks[term] = 1
+#        if not validLinks.has_key(term):
+#            name=match.group(match.lastindex).lstrip('| ').rstrip().replace('_', ' ')
+#            if g_fVerbose:
+#                sys.stdout.write("'%s' => '%s', " % (term,name))
+#            definition=definition[:match.start()]+name+definition[match.end():]
+#    return definition
 
 def findFullTextMatches(db, cursor, reqTerm):
     print "Performing full text search..."
@@ -155,42 +131,22 @@ def findFullTextMatches(db, cursor, reqTerm):
     queryStr=''
     for word in words:
         queryStr+=(' +'+word)
-    query="""SELECT id, title, body, match(title, body) AGAINST('%s') AS relevance FROM articles WHERE match(title, body) against('%s' in boolean mode) ORDER BY relevance DESC limit %d""" % (db.escape_string(reqTerm), db.escape_string(queryStr), listLengthLimit)
+    query="""SELECT id, title, match(title, body) AGAINST('%s') AS relevance FROM articles WHERE match(title, body) against('%s' in boolean mode) ORDER BY relevance DESC limit %d""" % (db.escape_string(reqTerm), db.escape_string(queryStr), listLengthLimit)
     cursor.execute(query)
     row=cursor.fetchone()
     if not row:
         print "Performing non-boolean mode search..."
-        query="""SELECT id, title, body, match(title, body) AGAINST('%s') AS relevance FROM articles WHERE match(title, body) against('%s') ORDER BY relevance DESC limit %d""" % (db.escape_string(reqTerm), db.escape_string(reqTerm), listLengthLimit)
+        query="""SELECT id, title, match(title, body) AGAINST('%s') AS relevance FROM articles WHERE match(title, body) against('%s') ORDER BY relevance DESC limit %d""" % (db.escape_string(reqTerm), db.escape_string(reqTerm), listLengthLimit)
         cursor.execute(query)
 
-    tupleList=[]
-                    
+    titleList=[]
+        
     while row:
-        tupleList.append((row[0], row[1], row[2]))
-        print row[1], row[3]
+        titleList.append(row[1])
         row=cursor.fetchone()
         
-    if not len(tupleList):
-        return None
-
-    validatedIds=[]
-    termList=[]
-    for idTermDef in tupleList:
-        defId, term, definition=idTermDef
-        print "Checking term: ", term
-        resTuple=findTarget(db, cursor, idTermDef)
-        if resTuple:
-            defId, term, definition=resTuple
-            if defId not in validatedIds:
-                validatedIds.append(defId)
-                termList.append(term)
-            else:
-                print "Discarding duplicate term: ", term
-        else:
-            print "Discarding failed redirection..."
-    
-    if not len(termList):
+    if not len(titleList):
         return None
     else:
-        return termList
+        return titleList
 

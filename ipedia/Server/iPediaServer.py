@@ -391,7 +391,7 @@ class iPediaProtocol(basic.LineReceiver):
         try:
             db=self.getArticlesDatabase()
             cursor=db.cursor()
-            idTermDef=iPediaDatabase.findExactDefinition(db, cursor, self.requestedTerm)
+            idTermDef=iPediaDatabase.findArticle(db, cursor, self.requestedTerm)
             if idTermDef:
                 self.definitionId, self.term, definition=idTermDef
             if definition:
