@@ -8,7 +8,7 @@
 #include <memory>
 #include <Utility.hpp>
 #include <Text.hpp>
-#include <Locale.hpp>
+#include <LangNames.hpp>
 
 using namespace ArsLexis;
 

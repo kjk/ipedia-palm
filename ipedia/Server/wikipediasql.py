@@ -593,7 +593,7 @@ def iterWikipediaArticles(sqlFileName, limit=None, fUseCache=False, fRecreateCac
     
     if lang in wikiToDbConvert.g_utf8Languages:
         isUtf8 = True
-        
+
     if isUtf8:
         print "performing UTF-8 to Latin-1 conversion"
     
@@ -637,8 +637,8 @@ def iterWikipediaArticles(sqlFileName, limit=None, fUseCache=False, fRecreateCac
                     # in en 2004-09-17 db we have an error in ns = int(lineParts[0]), so just ignore it
                     print "exception in iterWikipediaArticles"
                     print arsutils.exceptionAsStr(ex)
-                    print "line:"
-                    print line
+                    print "title:_%s_" % title
+                    print "line:_%s_" % line
                     print "lineParts[0]=%s" % lineParts[0]
                     continue
 

@@ -10,7 +10,7 @@
 #include <LineBreakElement.hpp>
 #include <ParagraphElement.hpp>
 
-#include <Locale.hpp>
+#include <LangNames.hpp>
 
 using namespace ArsLexis;
 
