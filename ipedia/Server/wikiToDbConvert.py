@@ -571,7 +571,7 @@ def recreateDataDb(fRecreate=False):
         else:
             print "Database '%s' exists" % MANAGEMENT_DB
 
-def createIpediaDb(sqlDumpName,fRecreateDb=False,fRecreateDataDb=False):
+def createIpediaDb(sqlDumpName,fRecreateDb=False):
     connRoot = getRootConnection()
 
     dbName = getDbNameFromFileName(sqlDump)
@@ -598,8 +598,6 @@ def createFtIndex():
 
 def revLinksOnly(sqlDump):
     try:
-        connRoot = getRootConnection()
-
         dbName = getDbNameFromFileName(sqlDump)
 
         if dbName not in getDbList():
@@ -639,7 +637,7 @@ if __name__=="__main__":
 
     foLog = None
     try:
-        createIpediaDb(sqlDump,fRecreateDb,fRecreateDataDb)
+        createIpediaDb(sqlDump,fRecreateDb)
         timer = arsutils.Timer(fStart=True)
 
         logFileName = wikipediasql.getLogFileName(sqlDump)

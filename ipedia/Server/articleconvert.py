@@ -115,7 +115,6 @@ def removeImageStr(text):
         match = imageStartRe.search(text)
         if None == match:
             return text
-        txtLen = len(text)
         posImageStart = match.start()
         curPos = posImageStart + len("[[Image:")
         assert curPos == match.end()
@@ -195,7 +194,7 @@ wikiTemplateRe=re.compile("\{\{.*\}\}", re.I)
 
 categoryRe=re.compile("\[\[Category:.*\]\]", re.I)
 
-def replaceWikiMacros(term, text):
+def replaceWikiMacros(text):
     for (macro,replacement) in wikiMacrosReplacements.items():
         text = text.replace(macro, replacement)
     text=replaceRegExp(text, wikiMacroRe, "")
@@ -218,7 +217,7 @@ def convertArticle(term, text):
         # i.e. we remember categories on the server and client can display
         # all articles in a given category
         text=replaceRegExp(text, categoryRe, '')
-        text=replaceWikiMacros(term, text)
+        text=replaceWikiMacros(text)
         # remove remaining templates. TODO: better support for templates
         # in wikipedia template text is replaced by a page from Template:
         # namespace

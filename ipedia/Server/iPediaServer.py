@@ -14,13 +14,12 @@
 #   -demon    : start in deamon mode
 
 
-import sys, os, string, re, random, time, MySQLdb, _mysql_exceptions
-import arsutils
+import sys, string, re, random, time, MySQLdb, _mysql_exceptions
 
 from twisted.internet import protocol, reactor
 from twisted.protocols import basic
 
-from arsutils import dumpException
+import arsutils
 
 try:
     import psyco
@@ -341,7 +340,8 @@ def getReverseLinks(db,cursor,articleTitle):
 # article from the datbase
 def getRandomArticle(cursor):
     iterationsLeft = 10
-    while True:
+    retVal = None
+    while iterationsLeft>0:
         cursor.execute("""SELECT min(id), max(id) FROM articles""")
         row = cursor.fetchone()
         (minId, maxId) = row[0], row[1]
@@ -350,32 +350,34 @@ def getRandomArticle(cursor):
         cursor.execute(query)
         row = cursor.fetchone()
         if row:
-            return (row[0], row[1], row[2])
+            retVal = (row[0], row[1], row[2])
+            break
         iterationsLeft -= 1
-        if 0 == iterationsLeft:
-            return None
+    return retVal
+
 
 # return a tuple (articleId,articleTitle,articleBody) for an article with a
 # given title (or None if article with such title doesn't exists)
 def findArticle(db, cursor, title):
     # ifninite cycles shouldn't happen, but just in case we're limiting number of re-directs
     redirectsLeft = 10
-    while True:
+    retVal = None
+    while redirectsLeft>0:
         titleEscaped = db.escape_string(title)
         query = """SELECT id, title, body FROM articles WHERE title='%s';""" % titleEscaped
         cursor.execute(query)
         row = cursor.fetchone()
         if row:
-            return (row[0], row[1], row[2])
+            retVal = (row[0], row[1], row[2])
+            break
         query = """SELECT redirect FROM redirects WHERE title='%s';""" % titleEscaped
         cursor.execute(query)
         row = cursor.fetchone()
         if not row:
-            return None
+            break
         title=row[0]
         redirectsLeft -= 1
-        if 0 == redirectsLeft:
-            return None
+    return retVal
 
 listLengthLimit = 200
 
@@ -524,7 +526,7 @@ class iPediaProtocol(basic.LineReceiver):
             cursor.execute(sql)
             cursor.close()
         except _mysql_exceptions.Error, ex:
-            dumpException(ex)
+            arsutils.dumpException(ex)
             if cursor:
                 cursor.close()
 
@@ -584,7 +586,7 @@ class iPediaProtocol(basic.LineReceiver):
         except _mysql_exceptions.Error, ex:
             if cursor:
                 cursor.close()        
-            dumpException(ex)
+            arsutils.dumpException(ex)
             self.error=iPediaServerError.serverFailure
         return False
 
@@ -602,7 +604,7 @@ class iPediaProtocol(basic.LineReceiver):
         except _mysql_exceptions.Error, ex:
             if cursor:
                 cursor.close()        
-            dumpException(ex)
+            arsutils.dumpException(ex)
         
     # Log all attempts to verify registration code. We ignore all errors from here
     def logRegCodeToVerify(self,userId,regCode,fRegCodeValid):
@@ -621,7 +623,7 @@ class iPediaProtocol(basic.LineReceiver):
         except _mysql_exceptions.Error, ex:
             if cursor:
                 cursor.close()        
-            dumpException(ex)
+            arsutils.dumpException(ex)
 
     def outputArticle(self, title, body, reverseLinks):
         self.outputField(formatVersionField, DEFINITION_FORMAT_VERSION)
@@ -634,7 +636,7 @@ class iPediaProtocol(basic.LineReceiver):
     def preprocessArticleBody(self, body):
         # those macros are actually removed during conversion phase, so this
         # code is disabled. I'll leave it for now if we decide to revive it
-        assert 0
+        return body
         # perf: we could improve this by marking articles that need this conversion
         # in the database and only do this if it's marked as such. but maybe
         # the overhead of storing/retrieving this info will be bigger than code
@@ -663,7 +665,6 @@ class iPediaProtocol(basic.LineReceiver):
         title = self.getFieldValue(getArticleField)
         #print "handleGetArticleRequest for '%s'" % title
         cursor = None
-        definition = None
         try:
             db = self.getArticlesDatabase()
             cursor = db.cursor()
@@ -682,7 +683,7 @@ class iPediaProtocol(basic.LineReceiver):
                     self.outputPayloadField(searchResultsField, string.join(termList, "\n"))
             cursor.close()
         except _mysql_exceptions.Error, ex:
-            dumpException(ex)
+            arsutils.dumpException(ex)
             if cursor:
                 cursor.close()
             self.error=iPediaServerError.serverFailure
@@ -709,7 +710,7 @@ class iPediaProtocol(basic.LineReceiver):
                 self.outputPayloadField(searchResultsField, string.join(termList, "\n"))
             cursor.close()
         except _mysql_exceptions.Error, ex:
-            dumpException(ex)
+            arsutils.dumpException(ex)
             if cursor:
                 cursor.close()
             self.error=iPediaServerError.serverFailure
@@ -733,7 +734,7 @@ class iPediaProtocol(basic.LineReceiver):
             self.outputArticle(title,body,reverseLinks)
             cursor.close()
         except _mysql_exceptions.Error, ex:
-            dumpException(ex)
+            arsutils.dumpException(ex)
             if cursor:
                 cursor.close()
             self.error=iPediaServerError.serverFailure
@@ -767,7 +768,7 @@ class iPediaProtocol(basic.LineReceiver):
                     fOverLimit=True
             cursor.close()
         except _mysql_exceptions.Error, ex:
-            dumpException(ex)
+            arsutils.dumpException(ex)
             if cursor:
                 cursor.close()
             self.error=iPediaServerError.serverFailure
@@ -816,7 +817,7 @@ class iPediaProtocol(basic.LineReceiver):
             self.outputField(regCodeValidField, "1")
             return True
         except _mysql_exceptions.Error, ex:
-            dumpException(ex)
+            arsutils.dumpException(ex)
             if cursor:
                 cursor.close()
             self.error=iPediaServerError.serverFailure
@@ -853,7 +854,7 @@ class iPediaProtocol(basic.LineReceiver):
                 self.error = iPediaServerError.invalidRegCode
                 return False
         except _mysql_exceptions.Error, ex:
-            dumpException(ex)
+            arsutils.dumpException(ex)
             if cursor:
                 cursor.close()
             self.error = iPediaServerError.serverFailure
@@ -891,7 +892,7 @@ class iPediaProtocol(basic.LineReceiver):
                 self.error = iPediaServerError.invalidCookie
                 return False
         except _mysql_exceptions.Error, ex:
-            dumpException(ex)
+            arsutils.dumpException(ex)
             if cursor:
                 cursor.close()
             self.error = iPediaServerError.serverFailure
@@ -946,7 +947,7 @@ class iPediaProtocol(basic.LineReceiver):
             cursor.close()
 
         except _mysql_exceptions.Error, ex:
-            dumpException(ex)
+            arsutils.dumpException(ex)
             if cursor:
                 cursor.close()
             self.error=iPediaServerError.serverFailure
@@ -1036,7 +1037,7 @@ class iPediaProtocol(basic.LineReceiver):
                 self.outputField(databaseTimeField, self.factory.dbTime)
 
         except Exception, ex:
-            dumpException(ex)
+            arsutils.dumpException(ex)
             self.error=iPediaServerError.serverFailure
  
         self.finish()
@@ -1082,7 +1083,7 @@ class iPediaProtocol(basic.LineReceiver):
             self.setFieldValue(field,value)
 
         except Exception, ex:
-            dumpException(ex)
+            arsutils.dumpException(ex)
             self.error=iPediaServerError.serverFailure
             self.answer()
 
@@ -1165,7 +1166,7 @@ class iPediaTelnetProtocol(basic.LineReceiver):
                 self.transport.write( "%s (%d articles)\r\n" % (name,articleCount))
             self.transport.write("currently using: %s\r\n" % self.factory.iPediaFactory.dbName)
         except _mysql_exceptions.Error, ex:
-            dumpException(ex)
+            arsutils.dumpException(ex)
             txt = arsutils.exceptionAsStr(ex)
             self.transport.write("exception: %s \r\n" % txt)
 
@@ -1178,7 +1179,7 @@ class iPediaTelnetProtocol(basic.LineReceiver):
         try:
             dbsInfo = getIpediaDbs()
         except _mysql_exceptions.Error, ex:
-            dumpException(ex)
+            arsutils.dumpException(ex)
             txt = arsutils.exceptionAsStr(ex)
             self.transport.write("exception: %s \r\n" % txt)
             return
