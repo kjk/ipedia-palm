@@ -185,7 +185,7 @@ class iPediaServerError:
     # (e.g. exception has been thrown that shouldn't have). Usually it means
     # there's a bug in our code
     serverFailure = 1
-    # unsupportedDevice - not used
+    # return unsupportedDevice if device info sent with Get-Cookie is not valid
     unsupportedDevice = 2
     # return invalidRegCode if the reg code is invalid
     invalidRegCode = 3
@@ -279,7 +279,7 @@ def decodeDeviceInfo(deviceInfo):
     return result
 
 # TODO: add Smartphone/Pocket PC tags
-validTags = ["PL", "PN", "SN", "HN", "OC", "OD", "HS"]
+validTags = ["PL", "PN", "SN", "HN", "OC", "OD", "HS", "IM"]
 def fValidDeviceInfo(deviceInfo):
     deviceInfoDecoded = decodeDeviceInfo(deviceInfo)
     if None == deviceInfoDecoded:
@@ -302,10 +302,13 @@ def fValidDeviceInfo(deviceInfo):
 #   PN (phone number)
 #   SN (serial number)
 #   HN (handspring serial number)
+#   IM (Treo IMEI number)
 def fDeviceInfoUnique(deviceInfo):
     deviceInfoDecoded = decodeDeviceInfo(deviceInfo)
+    if None == deviceInfoDecoded:
+        return False
     tags = deviceInfoDecoded.keys()
-    if ("PN" in tags) or ("SN" in tags) or ("HN" in tags):
+    if ("PN" in tags) or ("SN" in tags) or ("HN" in tags) or ("IM" in tags):
         return True
     return False
 
@@ -760,6 +763,7 @@ class iPediaProtocol(basic.LineReceiver):
                 assert None != row
                 todayLookups = row[0]
                 if todayLookups >= g_unregisteredLookupsDailyLimit:
+                    self.error=iPediaServerError.lookupLimitReached
                     fOverLimit=True
             cursor.close()
         except _mysql_exceptions.Error, ex:
@@ -1017,7 +1021,6 @@ class iPediaProtocol(basic.LineReceiver):
             if self.fHasField(getArticleField):
                 if not self.fRegisteredUser:
                     if self.fOverUnregisteredLookupsLimit(self.userId):
-                        self.error=iPediaServerError.lookupLimitReached
                         return self.finish()
 
                 if not self.handleGetArticleRequest():

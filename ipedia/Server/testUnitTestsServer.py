@@ -294,6 +294,19 @@ class ArsUtils(unittest.TestCase):
         # didn't find response with an error so far, so there's a bug in the server
         self.assertEqual(True,False)
 
+    def test_InvalidDeviceInfo(self):
+        self.req = Request()
+        self.req.addField(getCookieField,"PL:blaha")
+        self.getResponse([transactionIdField,errorField])
+        self.assertError(iPediaServerError.unsupportedDevice)
+
+    def test_InvalidDeviceInfo2(self):
+        self.req = Request()
+        self.req.addField(getCookieField,"PL:blaha")
+        self.req.addField(getArticleField, "seattle")
+        self.getResponse([transactionIdField,errorField])
+        self.assertError(iPediaServerError.unsupportedDevice)
+
     # verify that a registered user doesn't trigger lookup limits
     def test_RegisteredNoLookupLimits(self):
         # TODO:
