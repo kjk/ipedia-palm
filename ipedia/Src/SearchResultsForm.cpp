@@ -142,11 +142,10 @@ void SearchResultsForm::handleControlSelect(const EventType& event)
         
         case cancelButton:
             {
-                closePopup();
                 MainForm* form=static_cast<MainForm*>(application().getOpenForm(mainForm));
                 assert(form);
-                if (form)
-                    form->update();
+                form->update();
+                closePopup();
             }
             break;
         
