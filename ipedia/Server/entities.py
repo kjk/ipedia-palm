@@ -526,3 +526,10 @@ def convertNumberedEntities23(term, text):
         else:
             text=text[:match.start()]+chr(num)+text[match.end():]
     return text
+
+def convertEntities(text, term = None):
+    if term is None:
+        term = text
+    text = convertNamedEntities(term, text)
+    text = convertNumberedEntities(term, text)
+    return text

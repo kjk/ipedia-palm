@@ -446,6 +446,8 @@ void MainForm::updateAfterLookup()
 bool MainForm::handleKeyPress(const EventType& event)
 {
     bool handled = false;
+    if (fiveWayCenterPressed(&event))
+        lastPenDownTimestamp_ = TimGetTicks();
 
     switch (event.data.keyDown.chr)
     {
@@ -455,6 +457,7 @@ bool MainForm::handleKeyPress(const EventType& event)
             searchButton_.hit();
             handled = true;
             break;
+            
     }
     return handled;
 }
