@@ -1,0 +1,1 @@
+c:\Python22\python.exe C:\kjk\src\mine\ipedia\tools\dl_wikipedia.py
