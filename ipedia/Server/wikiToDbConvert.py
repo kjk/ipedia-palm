@@ -381,12 +381,20 @@ cookiesSql = """CREATE TABLE `cookies` (
   UNIQUE KEY `cookie_unique` (`cookie`)
 ) TYPE=MyISAM;"""
 
+regCodesSql = """CREATE TABLE
+    reg_code    VARCHAR(64) NOT NULL,
+    purpose     VARCHAR(255) NOT NULL,
+    when_entered TIMESTAMP NOT NULL
+    disabled_p   CHAR(1) NOT NULL DEFAULT 'f' -- is it disabled?, 't' or 'f'
 
-regusersSql = """CREATE TABLE `registered_users` (
+    PRIMARY_KEY (reg_code)
+) TYPE=MyISAM;""";
+
+regUsersSql = """CREATE TABLE `registered_users` (
   `id` int(10) unsigned NOT NULL auto_increment,
   `cookie_id` int(10) unsigned default '0',
   `user_name` varchar(255) default '',
-  `serial_number` varchar(255) binary NOT NULL default '',
+  `reg_code` varchar(255) binary NOT NULL default '',
   `registration_date` timestamp(14) NOT NULL,
   PRIMARY KEY  (`id`)
 ) TYPE=MyISAM;"""
@@ -416,7 +424,8 @@ def createDataDb(conn):
     cur.execute("CREATE DATABASE %s" % MANAGEMENT_DB)
     cur.execute("USE %s" % MANAGEMENT_DB)
     cur.execute(cookiesSql)
-    cur.execute(regusersSql)
+    cur.execute(regCodesSql)
+    cur.execute(regUsersSql)
     cur.execute(requestsSql)
     cur.execute("GRANT ALL ON %s.* TO 'ipedia'@'localhost' IDENTIFIED BY 'ipedia';" % MANAGEMENT_DB)
     cur.close()

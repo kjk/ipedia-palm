@@ -23,23 +23,22 @@ void RegistrationForm::resize(const ArsLexis::Rectangle& screenBounds)
 bool RegistrationForm::handleOpen()
 {
     bool handled=iPediaForm::handleOpen();
-    
     Field field(*this, serialNumberField);
 
     iPediaApplication::Preferences& prefs=static_cast<iPediaApplication&>(application()).preferences();
     MemHandle handle=MemHandleNew(prefs.serialNumberLength+1);
-    if (handle)
+    if (!handle)
+        return handled;
+
+    char* text=static_cast<char*>(MemHandleLock(handle));
+    if (text)
     {
-        char* text=static_cast<char*>(MemHandleLock(handle));
-        if (text)
-        {
-            assert(prefs.serialNumber.length()<=prefs.serialNumberLength);
-            StrNCopy(text, prefs.serialNumber.data(), prefs.serialNumber.length());
-            text[prefs.serialNumber.length()]=chrNull;
-            MemHandleUnlock(handle);
-        }
-        field.setText(handle);        
+        assert(prefs.serialNumber.length()<=prefs.serialNumberLength);
+        StrNCopy(text, prefs.serialNumber.data(), prefs.serialNumber.length());
+        text[prefs.serialNumber.length()]=chrNull;
+        MemHandleUnlock(handle);
     }
+    field.setText(handle);        
     
     field.focus();
     return handled;
@@ -47,20 +46,23 @@ bool RegistrationForm::handleOpen()
 
 void RegistrationForm::handleControlSelect(const EventType& event)
 {
-    if (okButton==event.data.ctlSelect.controlID)
+    if (okButton!=event.data.ctlSelect.controlID)
     {
-        Field field(*this, serialNumberField);
-        const char* text=field.text();
-        if (NULL==text)
-            text="";
-        iPediaApplication::Preferences& prefs=static_cast<iPediaApplication&>(application()).preferences();
-        ArsLexis::String newSn(text);
-        if (newSn!=prefs.serialNumber)
-        {
-            assert(newSn.length()<=prefs.serialNumberLength);
-            prefs.serialNumber=newSn;
-            prefs.serialNumberRegistered=false;
-        }
+        closePopup();
+        return;
+    }
+
+    Field field(*this, serialNumberField);
+    const char* text=field.text();
+    if (NULL==text)
+        text="";
+    iPediaApplication::Preferences& prefs=static_cast<iPediaApplication&>(application()).preferences();
+    ArsLexis::String newSn(text);
+    if (newSn!=prefs.serialNumber)
+    {
+        assert(newSn.length()<=prefs.serialNumberLength);
+        prefs.serialNumber=newSn;
+        prefs.serialNumberRegistered=false;
     }
     closePopup();
 }

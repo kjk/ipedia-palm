@@ -51,6 +51,7 @@ resultsForField =       "Results-For"
 notFoundField =         "Not-Found"
 errorField =            "Error"
 registerField =         "Register"
+regCodeField =          "Registration-Code"
 protocolVersionField =  "Protocol-Version"
 clientVersionField =    "Client-Version"
 searchField =           "Search"
@@ -88,7 +89,7 @@ class iPediaProtocol(basic.LineReceiver):
         self.cookie=None
         self.cookieId=None
         self.userId=None
-        self.serialNumber=None
+        self.regCode=None
         self.definitionId=None
         self.getRandom=None
         self.linesCount=0
@@ -138,7 +139,7 @@ class iPediaProtocol(basic.LineReceiver):
             if self.cookieId:
                 cookieIdStr=str(self.cookieId)
             hasRegister=0
-            if self.serialNumber:
+            if self.regCode:
                 hasRegister=1
             reqTerm='NULL'
             if self.requestedTerm:
@@ -226,11 +227,32 @@ class iPediaProtocol(basic.LineReceiver):
                 cursor.close()
             self.error=iPediaServerError.serverFailure
             return False;
-            
+
+    def fRegCodeExists(self,regCode):
+        cursor=None
+        try:
+            db=self.getManagementDatabase()
+            cursor=db.cursor()
+            cursor.execute("""SELECT reg_code FROM reg_codes WHERE reg_code='%s' AND disabled_p=='f'""" % db.escape_string(regCode))
+            row=cursor.fetchone()
+            if row:
+                return True
+        except _mysql_exceptions.Error, ex:
+            dumpException(ex)
+            self.error=iPediaServerError.serverFailure
+        finally:
+            if cursor:
+                cursor.close()        
+        return False;
+
     def handleRegisterRequest(self):
         if not self.cookieId:
             self.error=iPediaServerError.malformedRequest
             return False
+
+        fRegCodeExists = self.fRegCodeExists(self.regCode)
+        if not fRegCodeExists:
+            
 
         cursor=None
         try:
@@ -246,8 +268,8 @@ class iPediaProtocol(basic.LineReceiver):
             userName=arsutils.extractHotSyncName(self.deviceInfoToken)
             if not userName:
                 userName="[no hotsync name]"
-            
-            cursor.execute("""SELECT id, cookie_id FROM registered_users WHERE serial_number='%s'""" % db.escape_string(self.serialNumber))
+
+            cursor.execute("""SELECT id, cookie_id FROM registered_users WHERE reg_code='%s'""" % db.escape_string(self.regCode))
             row=cursor.fetchone()
             if row:
                 currentCookieId=row[1]
@@ -279,7 +301,7 @@ class iPediaProtocol(basic.LineReceiver):
             try:
                 db=self.getManagementDatabase()
                 cursor=db.cursor()
-                cursor.execute("""select cookies.id as cookieId, registered_users.id as userId from cookies left join registered_users on cookies.id=registered_users.cookie_id where cookie='%s'""" % db.escape_string(self.cookie))
+                cursor.execute("""SELECT cookies.id AS cookieId, registered_users.id AS userId FROM cookies LEFT JOIN registered_users ON cookies.id=registered_users.cookie_id WHERE cookie='%s'""" % db.escape_string(self.cookie))
                 row=cursor.fetchone()
                 if row:
                     self.cookieId=row[0]
@@ -457,9 +479,9 @@ class iPediaProtocol(basic.LineReceiver):
                 self.error=iPediaServerError.malformedRequest
                 return self.finish()
                 
-            if self.serialNumber and not self.handleRegisterRequest():
+            if self.regCode and not self.handleRegisterRequest():
                 return self.finish()
-                
+
             if self.term and not self.userId and self.fOverUnregisteredLookupsLimit():
                 return self.finish()
             
@@ -523,7 +545,7 @@ class iPediaProtocol(basic.LineReceiver):
                     self.requestedTerm=self.term=self.extractFieldValue(request)
                 
                 elif request.startswith(registerField):
-                    self.serialNumber=self.extractFieldValue(request)
+                    self.regCode=self.extractFieldValue(request)
     
                 elif request.startswith(getRandomField):
                     self.getRandom = True

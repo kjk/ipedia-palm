@@ -78,7 +78,10 @@ void iPediaConnection::prepareRequest()
             appendField(request, getDefinitionField, term_);
     }
 
-    registering_=!(app.preferences().serialNumberRegistered || chrNull==app.preferences().serialNumber[0]);
+    registering_ = true;
+    if (app.preferences().serialNumberRegistered || chrNull==app.preferences().serialNumber[0])
+        registering_ = false;
+
     if (registering_)
         appendField(request, registerField, app.preferences().serialNumber);
 
@@ -277,40 +280,42 @@ ArsLexis::status_t iPediaConnection::handleField(const String& name, const Strin
 ArsLexis::status_t iPediaConnection::notifyFinished()
 {
     ArsLexis::status_t error=FieldPayloadProtocolConnection::notifyFinished();
-    if (!error)
-    {
-        LookupFinishedEventData data;
-        if (!serverError_)
-        {
-            iPediaApplication& app=iPediaApplication::instance();
-            if (definitionParser_!=0)
-            {
-                std::swap(definitionParser_->elements(), lookupManager_.lastDefinitionElements());
-                lookupManager_.setLastFoundTerm(resultsFor_);
-                if (getRandom_)
-                    lookupManager_.setLastInputTerm(resultsFor_);
-                data.outcome=data.outcomeDefinition;
-            }
-            if (searchResultsHandler_!=0)
-            {
-                lookupManager_.setLastSearchResults(searchResultsHandler_->searchResults());
-                lookupManager_.setLastSearchExpression(resultsFor_);
-                data.outcome=data.outcomeList;
-            }
+    if (error)
+        return error;
 
-            if (registering_ && !serverError_)
-                app.preferences().serialNumberRegistered=true;
-            
-            if (notFound_)
-                data.outcome=data.outcomeNotFound;
-        }
-        else
-        {
-            data.outcome=data.outcomeServerError;
-            data.serverError=serverError_;
-        }
+    LookupFinishedEventData data;
+    if (serverError_)
+    {
+        data.outcome=data.outcomeServerError;
+        data.serverError=serverError_;
         ArsLexis::sendEvent(LookupManager::lookupFinishedEvent, data);
     }
+    else
+    {
+        iPediaApplication& app=iPediaApplication::instance();
+        if (definitionParser_!=0)
+        {
+            std::swap(definitionParser_->elements(), lookupManager_.lastDefinitionElements());
+            lookupManager_.setLastFoundTerm(resultsFor_);
+            if (getRandom_)
+                lookupManager_.setLastInputTerm(resultsFor_);
+            data.outcome=data.outcomeDefinition;
+        }
+        if (searchResultsHandler_!=0)
+        {
+            lookupManager_.setLastSearchResults(searchResultsHandler_->searchResults());
+            lookupManager_.setLastSearchExpression(resultsFor_);
+            data.outcome=data.outcomeList;
+        }
+
+        if (registering_ && !serverError_)
+            app.preferences().serialNumberRegistered=true;
+        
+        if (notFound_)
+            data.outcome=data.outcomeNotFound;
+        ArsLexis::sendEvent(LookupManager::lookupFinishedEvent, data);
+    }
+    assert( errNone == error );
     return error;        
 }
 
