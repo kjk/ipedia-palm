@@ -298,9 +298,9 @@ class iPediaProtocol(basic.LineReceiver):
             cookieIdStr='NULL'
             if self.cookieId:
                 cookieIdStr=str(self.cookieId)
-            hasRegister=0
+            regCodeToLog=''
             if self.regCode:
-                hasRegister=1
+                regCodeToLog=self.regCode
             reqTerm='NULL'
             if self.requestedTerm:
                 reqTerm='\''+db.escape_string(self.requestedTerm)+'\''
@@ -309,8 +309,8 @@ class iPediaProtocol(basic.LineReceiver):
                 defFor='\''+db.escape_string(self.term)+'\''
             cursor=db.cursor()
             clientIp=0
-            query=("""INSERT INTO requests (client_ip, has_get_cookie_field, cookie_id, has_register_field, requested_term, error, definition_for, request_date) """
-                                        """VALUES (%d, %d, %s, %d, %s, %d, %s, now())""" % (clientIp, hasGetCookie, cookieIdStr, hasRegister, reqTerm, self.error, defFor))
+            query=("""INSERT INTO requests (client_ip, has_get_cookie_field, cookie_id, reg_code, requested_term, error, definition_for, request_date) """
+                                        """VALUES (%d, %d, %s, %d, %s, %d, %s, now())""" % (clientIp, hasGetCookie, cookieIdStr, regCodeToLog, reqTerm, self.error, defFor))
             cursor.execute(query)
             cursor.close()
         except _mysql_exceptions.Error, ex:

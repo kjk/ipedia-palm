@@ -404,7 +404,7 @@ requestsSql = """CREATE TABLE `requests` (
   `client_ip` int(10) unsigned NOT NULL default '0',
   `has_get_cookie_field` tinyint(1) NOT NULL default '0',
   `cookie_id` int(10) unsigned default '0',
-  `has_register_field` tinyint(1) NOT NULL default '0',
+  reg_code VARCHAR(64) NULL default '',
   `requested_term` varchar(255) default '',
   `error` int(10) unsigned NOT NULL default '0',
   `request_date` timestamp(14) NOT NULL,
