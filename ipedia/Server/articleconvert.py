@@ -5,7 +5,7 @@
 #  Convert the body of wikipedia article from original wikipedia
 #  format to our format
 
-import sys,traceback,re,unicodedata,entities
+import sys,traceback,re,unicodedata,entities, string
 
 def stripBlocks(text, startPattern, endPattern):
     opened=0
@@ -47,6 +47,19 @@ def replaceTagList(text, tagList, repl):
     for tag in tagList:
         text=replaceRegExp(text, re.compile(r'<(/)?%s(\s+.*?)?>' % tag, re.I), repl)
     return text
+
+# this is a hack to change "&sup2" entities without trailing ";" into "&sup2;"
+# wikipedia renders "&sup2" (incorrectly ?) as "&sup2;" so we should too
+def fixSup2(text):
+    parts = text.split("&sup2;")
+    if 1==len(parts):
+        # optimization for a special case of lacking "&sup2;"
+        return text.replace("&sup2", "&sup2;")
+    outArr = []
+    for p in parts:
+        outArr.append(p.replace("&sup2","&sup2;"))
+    outTxt = string.join(outArr,"&sup2;")
+    return outTxt
 
 commentRe=re.compile("<!--.*?-->", re.S)
 divRe=re.compile("<div.*?</div>", re.I+re.S)
@@ -96,7 +109,6 @@ wikiTemplateRe=re.compile("\{\{.*\}\}", re.I)
 categoryRe=re.compile("\[\[Category:.*\]\]", re.I)
 
 def replaceWikiMacros(term, text):
-
     for (macro,replacement) in wikiMacrosReplacements.items():
         text = text.replace(macro, replacement)
     text=replaceRegExp(text, wikiMacroRe, "")
@@ -113,6 +125,7 @@ def dumpException(e):
 def convertArticle(term, text):
     try:
         text=text.replace('__NOTOC__', '')
+        text=fixSup2(text)
         text=replaceRegExp(text, imageRe, '')
         # remove categories. TODO: provide a better support for categories
         # i.e. we remember categories on the server and client can display

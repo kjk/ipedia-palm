@@ -101,3 +101,6 @@ end
 @21
 [[Image:Seattlepikeplace2002.JPG|right|thumb|[[Pike Place Market]]]] 
 @
+@s22 &sup2;*²
+@s23 re&sup2bla*re²bla
+@s24 &sup2;&sup2&sup2;*²²²
