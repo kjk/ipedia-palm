@@ -69,9 +69,11 @@ void iPediaConnection::prepareRequest()
 
 #if defined(_PALM_OS)
     appendField(request, clientInfoField, _T("Palm 1.0"));
-#elif defined(PPC2)
+#endif
+#if defined(WIN32_PLATFORM_PSPC)
     appendField(request, clientInfoField, _T("PocketPC 1.0"));
-#else
+#endif
+#if defined(WIN32_PLATFORM_WFSP)
     appendField(request, clientInfoField, _T("Smartphone 1.0"));
 #endif
 
@@ -230,7 +232,9 @@ ArsLexis::status_t iPediaConnection::handleField(const String& name, const Strin
             error=errResponseMalformed;
     }
     else if (notFoundField==name)
+    {
         notFound_=true;
+    }
     else if (formatVersionField==name)
     {
         error=numericValue(value, numValue);
@@ -240,7 +244,9 @@ ArsLexis::status_t iPediaConnection::handleField(const String& name, const Strin
             formatVersion_=numValue;
     }
     else if (articleTitleField==name)
+    {
         articleTitle_=value;
+    }
     else if (articleBodyField==name)
     {
         error=numericValue(value, numValue);
