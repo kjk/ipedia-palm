@@ -34,7 +34,7 @@
 #    - don't generate multiple special codes for the same special thing
 #
 # Usage:
-#  -special who: a special code. the idea is to give out codes to some people
+#  -s who: a special code. the idea is to give out codes to some people
 #                (like reviewers) and be able to track what they do with the
 #                software
 # or:
@@ -45,11 +45,13 @@
 #     - 'h' for Handango
 #     - 'pg' for PalmGear
 #     - 'es' for eSellerate
+#     - 'sn' for smartphone.net
 
 #
 # History:
 #  2004-04-15  created
 #  2004-06-20  more work done
+#  2004-08-22  support for smartphone.net
 
 import sys,os,random,time,string,StringIO
 
@@ -98,6 +100,9 @@ MIN_PG_CODES = 500
 # TODO: check MIN_H_CODES limit
 # minimum number of per-file codes for Handango
 MIN_H_CODES = 500
+
+# minimum number of per-file codes for smartphone.net
+MIN_SN_CODES = 100
 
 # given argument name in argName, tries to return argument value
 # in command line args and removes those entries from sys.argv
@@ -165,6 +170,8 @@ def getHandangoFileName():
     return getUniqueDatedFileName("h-")
 def getPalmGearFileName():
     return getUniqueDatedFileName("pg-")
+def getSmartphoneFileName():
+    return getUniqueDatedFileName("sn-")
 
 # we need to read previous csv data in order to avoid generating duplicate codes
 def readPreviousCodes():
@@ -253,6 +260,25 @@ def createHandangoFile(codes):
     fo.write("\n")
     fo.close()
 
+# smartphone.net: comma separated list of registration codes. They don't support
+# uploading files, you have to copy&paste reg codes into a text field.
+# FireFox 0.9.1 doesn't show such a long text in text field (although it's there).
+# IE 6 works better.
+def createSmartphoneFile(codes):
+    fileName = getSmartphoneFileName()
+    assert not fFileExists(fileName)
+    assert len(codes)>=MIN_SN_CODES
+    fo = open(fileName, "wb")
+    fFirst = True
+    for code in codes.keys():
+        if fFirst:
+            fo.write("%s" % code)
+            fFirst=False
+        else:
+            fo.write( ",%s" % code )
+    fo.write("\n")
+    fo.close()
+
 # PalmGear. From their site:
 # Text only
 # One code per line
@@ -275,6 +301,8 @@ def createPalmGearFile(codes):
 
 def main():
     specialName = getRemoveCmdArg("-special")
+    if None == specialName:
+        specialName = getRemoveCmdArg("-s")
     if specialName:
         if len(sys.argv) != 1:
             print "no other arguments allowed when using -special"
@@ -288,7 +316,7 @@ def main():
         if len(sys.argv) != 3:
             usageAndExit()
         purpose = sys.argv[1]
-        if purpose not in ["pg", "h", "es"]:
+        if purpose not in ["pg", "h", "es", "sn"]:
             print 'purpose cannot be %s. Must be "pg", "h" or "es"' % purpose
             usageAndExit()
         regCodesCount = int(sys.argv[2])
@@ -309,6 +337,11 @@ def main():
                 print "When generating PalmGear codes, the minium number of codes is %d" % MIN_PG_CODES
                 usageAndExit()
 
+        if "sn" == purpose:
+            if regCodesCount < MIN_SN_CODES:
+                print "When generating Smartphone.net codes, the minium number of codes is %d" % MIN_SN_CODES
+                usageAndExit()
+
     print "reading previous codes"
     prevCodes = readPreviousCodes()
     print "read %d old codes" % len(prevCodes)
@@ -324,6 +357,8 @@ def main():
             createHandangoFile(newCodes)
         if "pg" == purpose:
             createPalmGearFile(newCodes)
+        if "sn" == purpose:
+            createSmartphoneFile(newCodes)
     print "generated %d new codes" % len(newCodes)
     
     saveNewCodesToCsv(newCodes)
