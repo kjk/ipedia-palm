@@ -14,16 +14,38 @@
 
 import sys,string,re,time,urllib2,os,os.path,process
 
+# this is the whole text that was logged during this session
+g_logTotal = ""
+
 g_workingDir = "g:\\wikipedia\\"
+
+# Which mail server to use when sending an e-mail
+MAILHOST = None
+# list of e-mail addresses to which send the e-mail
+TO_LIST = ["krzysztofk@pobox.com", "kkowalczyk@gmail.com"]
+
+g_machine = ""
 
 if sys.platform == "linux2":
     # this is our rackshack server
     g_workingDir = "/ipedia/wikipedia"
+    MAILHOST = "localhost"
+    g_machine = "ipedia.arslexis.com"
 else:
     # this must be windows
     if "KJKLAP1"==os.getenv("USERDOMAIN"):
         # this must be my laptop
         g_workingDir = "c:\\wikipedia\\"
+        # this will only work when I'm connected to nwlink.com
+        MAILHOST = "mail.nwlink.com"
+        g_machine = "KJKLAP1"
+    if "DVD"==os.getenv("USERDOMAIN"):
+        # this must be my desktop machine
+        g_workingDir = "g:\\wikipedia\\"
+        # this will only work when I'm connected to nwlink.com
+        MAILHOST = "mail.nwlink.com"
+        g_machine = "DVD"
+
 #print "Working dir: %s" % g_workingDir
 
 g_logFileName = os.path.join(g_workingDir,"log.txt")
@@ -51,6 +73,8 @@ def closeLogFile():
         g_foLog.close()
 
 def logEvent(txtToLog):
+    global g_logTotal
+    g_logTotal = "%s\n%s" % (g_logTotal,txtToLog)
     #print txtToLog
     fo = openLogFileIfNotOpen()
     fo.write("  " + txtToLog + "\n")
@@ -151,6 +175,8 @@ def downloadUrl(url):
     os.chdir(g_workingDir)
     (fileNameGzipped, fileNameUngzipped) = fileNamesFromUrl(url)
 
+    # don't remove '-q' option! if it's removed, the download hangs at 2.30 MB
+    # (for whatever wicked reason)
     p = process.ProcessOpen(['wget', '-q', '-c', url, '--output-document', fileNameGzipped])
 
     res_stdout = p.stdout.read()                                     
@@ -174,9 +200,31 @@ def downloadDb(url):
     else:
         downloadUrl(url)
 
+def mailLog():
+    global g_logTotal, MAILHOST, TO_LIST, g_machine
+    if None == MAILHOST:
+        return
+    import smtplib
+    FROM = "ipedia-dl-bot@arslexis.com"
+    TO = string.join(TO_LIST, "; ")
+    curDate = time.strftime( "%Y-%m-%d", time.localtime() )
+    SUBJECT = "ipedia db download status %s (%s)" % (curDate,g_machine)
+    BODY = g_logTotal
+    body = string.join((
+        "From: %s" % FROM,
+        "To: %s" % TO,
+        "Subject: %s" % SUBJECT,
+        "",
+        BODY), "\r\n")
+    #print body
+    #print "SERVER: %s" % MAILHOST
+    server = smtplib.SMTP(MAILHOST)
+    server.sendmail(FROM, TO, body)
+    server.quit()
+ 
 if __name__=="__main__":
     getCurrentFileUrls()
     downloadDb(g_frUrlToDownload)
     downloadDb(g_deUrlToDownload)
     downloadDb(g_enUrlToDownload)
-
+    mailLog()
