@@ -118,7 +118,6 @@ Err MainForm::renderDefinition(Definition& def, ArsLexis::Graphics& graphics, co
     return def.render(graphics, rect, renderingPreferences(), fForceRecalculate);
 }
 
-
 void MainForm::drawDefinition(Graphics& graphics, const ArsLexis::Rectangle& bounds)
 {
     Definition& def=currentDefinition();
@@ -190,9 +189,11 @@ void MainForm::draw(UInt16 updateCode)
     }
 
     iPediaApplication& app=static_cast<iPediaApplication&>(application());
-    LookupManager* lookupManager=app.getLookupManager();
-    if (lookupManager && lookupManager->lookupInProgress())
-        lookupManager->showProgress(graphics, progressArea);
+    if (app.fLookupInProgress())
+    {
+        app.getLookupManager()->showProgress(graphics, progressArea);
+    }
+
     if (enableInputFieldAfterUpdate_)
     {
         enableInputFieldAfterUpdate_=false;
@@ -499,12 +500,19 @@ void MainForm::updateNavigationButtons()
     Control control(*this, backButton);
     bool enabled=history.hasPrevious();
     control.setEnabled(enabled);
-    control.setGraphics(enabled?backBitmap:backDisabledBitmap);
+    if (enabled)
+        control.setGraphics(backBitmap);
+    else
+        control.setGraphics(backDisabledBitmap);
         
     control.attach(forwardButton);
     enabled=history.hasNext();
     control.setEnabled(enabled);
-    control.setGraphics(enabled?forwardBitmap:forwardDisabledBitmap);
+    if (enabled)
+        control.setGraphics(forwardBitmap);
+    else
+        control.setGraphics(forwardDisabledBitmap);
+
 }
 
 void MainForm::updateAfterLookup()

@@ -55,6 +55,7 @@ public:
     LookupManager* getLookupManager(bool create=false);
     const LookupManager* getLookupManager() const
     {return lookupManager_;}
+    bool fLookupInProgress(); const
     
     void savePreferences();
     

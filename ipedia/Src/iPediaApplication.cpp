@@ -80,6 +80,13 @@ Err iPediaApplication::normalLaunch()
     return errNone;
 }
 
+bool iPediaApplication::fLookupInProgress() const
+{
+    if (NULL==lookupManager_)
+        return false;
+    return lookupManager_->lookupInProgress();
+}
+
 LookupManager* iPediaApplication::getLookupManager(bool create)
 {
     if (!lookupManager_ && create)

@@ -121,7 +121,7 @@ void iPediaConnection::prepareRequest()
         app.fArticleCountChecked = true; // or do it later, when we process the response
     }
 
-    request+='\n';
+    request += '\n';
     NarrowString req;
     TextToByteStream(request, req);
     setRequest(req); 
