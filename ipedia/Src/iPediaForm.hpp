@@ -1,22 +1,12 @@
 #ifndef __IPEDIAFORM_HPP__
 #define __IPEDIAFORM_HPP__
 
-#include <Form.hpp>
-#include "iPediaApplication.hpp"
+#include <RichForm.hpp>
 
+class iPediaApplication;
 
-class iPediaForm: public ArsLexis::Form
+class iPediaForm: public ArsLexis::RichForm
 {
-protected:
-
-    bool handleEvent(EventType& event);
-    
-    virtual void resize(const ArsLexis::Rectangle&)
-    {}
-
-    WindowFormatType windowFormat() const
-    {return static_cast<const iPediaApplication&>(application()).hasHighDensityFeatures()?nativeFormat:screenFormat;}
-    
 public:
 
     enum RedrawCode
@@ -26,12 +16,9 @@ public:
         redrawFirstAvailable
     };
     
-    iPediaForm(iPediaApplication& app, UInt16 formId):
-        Form(app, formId)
-    {}
-    
-    Err initialize();
-    
+    iPediaForm(iPediaApplication& app, uint_t formId);
+
+    ~iPediaForm();    
 };
 
 #endif

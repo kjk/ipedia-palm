@@ -2,6 +2,7 @@
 #define __REGISTRATION_FORM_HPP__
 
 #include "iPediaForm.hpp"
+#include "iPediaApplication.hpp"
 
 class RegistrationForm: public iPediaForm
 {

@@ -15,22 +15,18 @@ IMPLEMENT_APPLICATION_CREATOR(appFileCreator)
 using namespace ArsLexis;
 
 iPediaApplication::iPediaApplication():
-    log_("root"),
     history_(0),
-    diaNotifyRegistered_(false),
-    ticksPerSecond_(SysTicksPerSecond()),
     lookupManager_(0),
     server_(serverLocalhost),
-    stressMode_(false),
-    hasHighDensityFeatures_(false)
+    stressMode_(false)
 {
 #ifdef INTERNAL_BUILD
 # ifndef NDEBUG    
-    log_.addSink(new MemoLogSink(), log_.logDebug);
-    log_.addSink(new HostFileLogSink("\\var\\log\\iPedia.log"), log_.logEverything);
-    log_.addSink(new DebuggerLogSink(), log_.logWarning);
+    log().addSink(new MemoLogSink(), Logger::logDebug);
+    log().addSink(new HostFileLogSink("\\var\\log\\iPedia.log"), Logger::logEverything);
+    log().addSink(new DebuggerLogSink(), Logger::logWarning);
 # else
-    log_.addSink(new MemoLogSink(), log_.logError);
+    log().addSink(new MemoLogSink(), Logger::logError);
 # endif
 #endif
 }
@@ -49,39 +45,24 @@ inline void iPediaApplication::detectViewer()
 
 Err iPediaApplication::initialize()
 {
-    Err error=Application::initialize();
-    if (!error)
-    {
-        if (diaSupport_ && notifyManagerPresent()) 
-        {
-            error=registerNotify(diaSupport_.notifyType());
-            if (!error)
-                diaNotifyRegistered_=true;
-        }
-    }
-    
+    Err error=RichApplication::initialize();
     detectViewer();
-       
     return error;
 }
 
 iPediaApplication::~iPediaApplication()
 {
-    if (diaNotifyRegistered_) 
-        unregisterNotify(diaSupport_.notifyType());
-    
     if (lookupManager_)
         delete lookupManager_;
 
     if (history_)
         delete history_;
+    server_.clear();
 }
 
 
 Err iPediaApplication::normalLaunch()
 {
-    hasHighDensityFeatures_=highDensityFeaturesPresent();
-    
     history_=new LookupHistory();
     loadPreferences();
 #ifdef INTERNAL_BUILD
@@ -95,14 +76,6 @@ Err iPediaApplication::normalLaunch()
     gotoForm(mainForm);
     runEventLoop();
     savePreferences();
-    return errNone;
-}
-
-Err iPediaApplication::handleSystemNotify(SysNotifyParamType& notify)
-{
-    const ArsLexis::DIA_Support& dia=getDIASupport();
-    if (dia && dia.notifyType()==notify.notifyType)
-        dia.handleNotify();
     return errNone;
 }
 
@@ -124,14 +97,14 @@ void iPediaApplication::waitForEvent(EventType& event)
     if (manager && manager->active())
     {
         setEventTimeout(0);
-        Application::waitForEvent(event);
+        RichApplication::waitForEvent(event);
         if (nilEvent==event.eType)
-            manager->manageConnectionEvents(ticksPerSecond_/20);
+            manager->manageConnectionEvents(ticksPerSecond()/20);
     }
     else
     {
         setEventTimeout(evtWaitForever);
-        Application::waitForEvent(event);
+        RichApplication::waitForEvent(event);
     }        
 }
 
@@ -161,29 +134,10 @@ Form* iPediaApplication::createForm(UInt16 formId)
 bool iPediaApplication::handleApplicationEvent(EventType& event)
 {
     bool handled=false;
-    if (appDisplayAlertEvent==event.eType)
-    {
-        DisplayAlertEventData& data=reinterpret_cast<DisplayAlertEventData&>(event.data);
-        if (!inStressMode())
-            FrmAlert(data.alertId);
-        else
-            log().debug()<<"Alert: "<<data.alertId;
-    }
-    else if (appDisplayCustomAlertEvent==event.eType)
-    {
-        assert(!customAlerts_.empty());            
-        DisplayAlertEventData& data=reinterpret_cast<DisplayAlertEventData&>(event.data);
-        if (!inStressMode())
-            FrmCustomAlert(data.alertId, customAlerts_.front().c_str(), "", "");
-        else
-            log().debug()<<"Custom alert: "<<data.alertId<<'['<<customAlerts_.front()<<']';
-        customAlerts_.pop_front();
-    }
-    
     if (lookupManager_ && appLookupEventFirst<=event.eType && appLookupEventLast>=event.eType)
         lookupManager_->handleLookupEvent(event);
     else
-        handled=Application::handleApplicationEvent(event);
+        handled=RichApplication::handleApplicationEvent(event);
     return handled;
 }
 
@@ -262,10 +216,4 @@ void iPediaApplication::savePreferences()
 OnError:
     //! @todo Diplay alert that saving failed?
     return;
-}
-
-void iPediaApplication::sendDisplayCustomAlertEvent(UInt16 alertId, const ArsLexis::String& text1)
-{
-    customAlerts_.push_back(text1);
-    sendEvent(appDisplayCustomAlertEvent, DisplayAlertEventData(alertId));
 }

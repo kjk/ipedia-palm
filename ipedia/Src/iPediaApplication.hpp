@@ -2,9 +2,7 @@
 #define __IPEDIA_APPLICATION_HPP__
 
 #include "ipedia.h"
-#include <Application.hpp>
-#include <DynamicInputAreas.hpp>
-#include <Logging.hpp>
+#include <RichApplication.hpp>
 #include "RenderingPreferences.hpp"
 #include "iPediaHyperlinkHandler.hpp"
 #include <SysUtils.hpp>
@@ -16,19 +14,13 @@ class LookupHistory;
 //#define serverLocalhost    "192.168.0.1:9000"
 #define serverDictPcArslexis   "dict-pc.arslexis.com:9000"
 
-class iPediaApplication: public ArsLexis::Application 
+class iPediaApplication: public ArsLexis::RichApplication 
 {
-    mutable ArsLexis::RootLogger log_;
-    ArsLexis::DIA_Support diaSupport_;
-    UInt16 ticksPerSecond_;
     iPediaHyperlinkHandler hyperlinkHandler_;
     LookupHistory* history_;
     LookupManager* lookupManager_;
     ArsLexis::String server_;
     
-    typedef std::list<ArsLexis::String> CustomAlerts_t;
-    CustomAlerts_t customAlerts_;
-
     void detectViewer();
     
     void loadPreferences();
@@ -37,8 +29,6 @@ class iPediaApplication: public ArsLexis::Application
     
 protected:
 
-    Err handleSystemNotify(SysNotifyParamType& notify);
-    
     Err normalLaunch();
 
     void waitForEvent(EventType& event);
@@ -54,9 +44,6 @@ public:
     static const UInt16 notEnoughMemoryAlertId=notEnoughMemoryAlert;
     static const UInt16 romIncompatibleAlertId=romIncompatibleAlert;
     
-    const ArsLexis::DIA_Support& getDIASupport() const
-    {return diaSupport_;}
-
     iPediaApplication();
     
     ~iPediaApplication();
@@ -66,9 +53,6 @@ public:
     LookupManager* getLookupManager(bool create=false);
     const LookupManager* getLookupManager() const
     {return lookupManager_;}
-    
-    UInt16 ticksPerSecond() const
-    {return ticksPerSecond_;}
     
     struct Preferences
     {
@@ -104,36 +88,15 @@ public:
     const RenderingPreferences& renderingPreferences() const
     {return preferences().renderingPreferences;}
     
-    const ArsLexis::DIA_Support& diaSupport() const
-    {return diaSupport_;}
-    
     static const uint_t reservedLookupEventsCount=3;
     
     enum Event
     {
-        appDisplayAlertEvent=appFirstAvailableEvent,
-        appDisplayCustomAlertEvent,
-        appLookupEventFirst,
+        appLookupEventFirst=appFirstAvailableEvent,
         appLookupEventLast=appLookupEventFirst+reservedLookupEventsCount,
         appGetArticlesCountEvent,
         appFirstAvailableEvent
     };
-    
-    struct DisplayAlertEventData
-    {
-        UInt16 alertId;
-        
-        DisplayAlertEventData(UInt16 aid):
-            alertId(aid) {}
-    };
-    
-    static void sendDisplayAlertEvent(UInt16 alertId)
-    {ArsLexis::sendEvent(appDisplayAlertEvent, DisplayAlertEventData(alertId));}
-    
-    void sendDisplayCustomAlertEvent(UInt16 alertId, const ArsLexis::String& text1);
-    
-    ArsLexis::Logger& log() const
-    {return log_;}
     
     void setServer(const ArsLexis::String& server)
     {server_=server;}
@@ -148,7 +111,10 @@ public:
     {return stressMode_;}
     
     void toggleStressMode(bool enable)
-    {stressMode_=enable;}
+    {
+        toggleShowAlerts(!enable);
+        stressMode_=enable;
+    }
     
     const LookupHistory& history() const
     {
@@ -156,19 +122,13 @@ public:
         return *history_;
     }
     
-    bool hasHighDensityFeatures() const
-    {return hasHighDensityFeatures_;}
-
     iPediaHyperlinkHandler& hyperlinkHandler()
     {return hyperlinkHandler_;}    
     
 private:
     
     Preferences preferences_;
-
-    bool diaNotifyRegistered_:1;
     bool stressMode_:1;
-    bool hasHighDensityFeatures_:1;
     
 };
 

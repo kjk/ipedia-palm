@@ -3,6 +3,7 @@
 
 #include "iPediaForm.hpp"
 #include "Definition.hpp"
+#include "iPediaApplication.hpp"
 
 class LookupHistory;
 class RenderingPreferences;

@@ -4,6 +4,10 @@
 #include <PrefsStore.hpp>
 #endif
 
+#ifdef __MWERKS__
+# pragma far_code
+#endif
+
 using ArsLexis::String;
 using ArsLexis::status_t;
 
@@ -11,6 +15,9 @@ LookupHistory::LookupHistory():
     historyPosition_(termHistory_.end())
 {
 }
+
+LookupHistory::~LookupHistory()
+{}
 
 void LookupHistory::replaceAllNext(const ArsLexis::String& term)
 {
