@@ -112,7 +112,7 @@ def convertArticle(term, text):
         # remove remaining templates. TODO: better support for templates
         # in wikipedia template text is replaced by a page from Template:
         # namespace
-        #text=replaceRegExp(text, wikiTemplateRe, '')
+        text=replaceRegExp(text, wikiTemplateRe, '')
         text=text.replace('\r','')
         text=replaceRegExp(text, commentRe, '')     # This should be safe, as it's illegal in html to nest comments
 

@@ -94,3 +94,8 @@ start
 end
 @s18 bu{{Washington}}ha*buha
 @s19 al  {{reo{gla}}blas*al  blas
+@20
+[[Image:Seattle from kerry park.jpg|right|frame|The [[Space Needle]] and the [[Downtown, Seattle, Washington|Downtown Seattle]] skyline]]
+[[Image:Seattlepikeplace2002.JPG|right|thumb|[[Pike Place Market]]]] 
+[[image:SeattleMap.jpg|right|thumb|Map of Seattle ''(See also: [http://www.topozone.com/map.asp?lat=47.60639&lon=-122.33083 Interactive topo map])'']]
+@
