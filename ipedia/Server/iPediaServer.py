@@ -308,7 +308,9 @@ class iPediaProtocol(basic.LineReceiver):
             if self.term:
                 defFor='\''+db.escape_string(self.term)+'\''
             cursor=db.cursor()
-            clientIp=0
+            peerInfo = self.transport.getPeer()
+            print "connection from: ", peerInfo
+            clientIp = peerInfo[0]
             query=("""INSERT INTO requests (client_ip, has_get_cookie_field, cookie_id, reg_code, requested_term, error, definition_for, request_date) """
                                         """VALUES (%d, %d, %s, %d, %s, %d, %s, now())""" % (clientIp, hasGetCookie, cookieIdStr, regCodeToLog, reqTerm, self.error, defFor))
             cursor.execute(query)
