@@ -11,15 +11,15 @@ MENU ID mainMenuBar
 BEGIN
     PULLDOWN "Main"
     BEGIN
-         MENUITEM "Search" ID searchMenuItem "S"
-         MENUITEM "Extended search" ID extendedSearchMenuItem "T"
-         MENUITEM "Extended search results" ID searchResultsMenuItem  "L"
+         MENUITEM "Search" ID searchMenuItem                          "S"
+         MENUITEM "Extended search" ID extendedSearchMenuItem         "T"
+         MENUITEM "Extended search results" ID searchResultsMenuItem  "X"
          MENUITEM SEPARATOR ID AUTOID
-         MENUITEM "Random article" ID randomMenuItem  "R"
+         MENUITEM "Random article" ID randomMenuItem                  "R"
          MENUITEM SEPARATOR ID AUTOID
-         MENUITEM "Copy to clipboard" ID copyMenuItem "C"
+         MENUITEM "Copy to clipboard" ID copyMenuItem                 "C"
          MENUITEM SEPARATOR ID AUTOID
-         MENUITEM "Change language" ID changeDatabaseMenuItem "D"
+         MENUITEM "Change language" ID changeDatabaseMenuItem         "D"
 #ifdef  INTERNAL_BUILD
          MENUITEM SEPARATOR ID AUTOID
          MENUITEM "localhost" ID useLocalhostMenuItem  
@@ -30,21 +30,21 @@ BEGIN
 
     PULLDOWN "Go"
     BEGIN
-        MENUITEM "Forward" ID forwardMenuItem  "F"
-        MENUITEM "Back"    ID backMenuItem  "B"
-        MENUITEM "History" ID historyMenuItem "H"
-        //MENUITEM "Linked articles" ID linkedArticlesMenuItem "L"
-        //MENUITEM "Linking articles" ID linkingArticlesMenuItem "I"
+        MENUITEM "Forward" ID forwardMenuItem                         "F"
+        MENUITEM "Back"    ID backMenuItem                            "B"
+        MENUITEM "History" ID historyMenuItem                         "H"
+        //MENUITEM "Linked articles" ID linkedArticlesMenuItem        "L"
+        //MENUITEM "Linking articles" ID linkingArticlesMenuItem      "I"
     END
 
     PULLDOWN "Options"
     BEGIN
-        MENUITEM "Register"          ID registerMenuItem         "G"
+        MENUITEM "Register"          ID registerMenuItem
         MENUITEM SEPARATOR
-        MENUITEM "Tutorial"          ID tutorialMenuItem         "T"
-        MENUITEM "Check for updates" ID checkUpdatesMenuItem     "U"
-        MENUITEM "ArsLexis website"  ID arslexisWebsiteMenuItem  "W"
-        MENUITEM "About"             ID aboutMenuItem            "A"
+        MENUITEM "Tutorial"          ID tutorialMenuItem
+        MENUITEM "Check for updates" ID checkUpdatesMenuItem          "U"
+        MENUITEM "ArsLexis website"  ID arslexisWebsiteMenuItem       "W"
+        MENUITEM "About"             ID aboutMenuItem                 "A"
     END
 END
 
@@ -317,9 +317,9 @@ FORM ID mainForm AT (0 0 160 160)
     MENUID mainMenuBar DEFAULTBTNID searchButton  
 BEGIN
     TITLE "iPedia"
-    GADGET ID infoRenderer AT (2 17 148 124)
-    GADGET ID articleRenderer AT (2 17 148 124)
-    SCROLLBAR       ID definitionScrollBar  AT (151 17 7 124) USABLE VALUE 50 MIN 0 MAX 100 PAGESIZE 10
+    GADGET ID infoRenderer    AT (0 17 152 124)
+    GADGET ID articleRenderer AT (0 17 152 124)
+    SCROLLBAR       ID definitionScrollBar  AT (153 17 7 124) USABLE VALUE 50 MIN 0 MAX 100 PAGESIZE 10
     BUTTON ""       ID backButton      AT (0 146 10 11) FONT 4 NOFRAME BITMAPID backDisabledBitmap GRAPHICAL    
     BUTTON ""       ID forwardButton   AT (8 146 10 11) FONT 4 NOFRAME BITMAPID forwardDisabledBitmap GRAPHICAL 
     FIELD           ID termInputField  AT (22 146 88 Auto) MAXCHARS 255 EDITABLE UNDERLINED      

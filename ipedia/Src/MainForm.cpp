@@ -125,10 +125,10 @@ void MainForm::resize(const ArsLexis::Rectangle& screenBounds)
         return;
 
     setBounds(screenBounds);
-    
-    infoRenderer_.anchor(screenBounds, anchorRightEdge, 12, anchorBottomEdge, 36);
-    articleRenderer_.anchor(screenBounds, anchorRightEdge, 12, anchorBottomEdge, 36);
-    scrollBar_.anchor(screenBounds, anchorLeftEdge, 9, anchorBottomEdge, 36);
+
+    infoRenderer_.anchor(screenBounds, anchorRightEdge, 8, anchorBottomEdge, 36);
+    articleRenderer_.anchor(screenBounds, anchorRightEdge, 8, anchorBottomEdge, 36);
+    scrollBar_.anchor(screenBounds, anchorLeftEdge, 7, anchorBottomEdge, 36);
     termInputField_.anchor(screenBounds, anchorRightEdge, 72, anchorTopEdge, 14);
 
     searchButton_.anchor(screenBounds, anchorLeftEdge, 34, anchorTopEdge, 14);

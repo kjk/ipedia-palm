@@ -1,3 +1,30 @@
+## bug: 5-way left still wraps-around links when at the top
+
+## bug: sometimes rendering of centered text is broken e.g. about page for 
+French encyclopedia updated on 4/12/09 has:
+
+   65,167 articles. French encyclo
+ nclyclopedia last updated on
+      004-12-09
+
+While it should be:
+
+   65,167 articles. French
+ encyclopedia last updated
+      on 04-12-09
+
+## instead of prev/next buttons, do a popup button showing a history
+in a popup list, just like blazer on 650 does it.
+
+
+Release 1.3
+
+## enable those menu items:
+        //MENUITEM "Linked articles" ID linkedArticlesMenuItem        "L"
+        //MENUITEM "Linking articles" ID linkingArticlesMenuItem      "I"
+
+Release 1.4
+
 ## create and send via e-mail every day access stats. Similar to what InfoMan
 does. Total number of requests (random/search/extended search), how many
 unique users did queries, terms searched for (can be long)
