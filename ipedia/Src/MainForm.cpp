@@ -611,6 +611,9 @@ void MainForm::doLinkingArticles()
     doLookupSelectedTerm(sel);    
 }
 
+// this will be called either as a result of invoking menu item
+// or getAvailableLangs() query to the server (which we issue ourselves,
+// so it's kind of a recursion)
 void MainForm::changeDatabase()
 {
     String availableLangs = app().preferences().availableLangs;
