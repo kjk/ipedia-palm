@@ -209,11 +209,14 @@ class ConvertedArticleRedirect:
     def fRedirect(self): return True
     def getRedirect(self): return self.redirect
     def getNamespace(self): return self.ns
+    
+g_supportedLanguages = ["en", "fr", "de"]
+g_utf8Languages = ["fr", "de"]
 
 def getDbNameFromFileName(sqlFileName):
     base = os.path.basename(sqlFileName)
     lang = base[0:2]
-    assert lang in ["en", "fr", "de"]
+    assert lang in g_supportedLanguages
     baseFileName = wikipediasql.getBaseFileName(base)
     pos = baseFileName.find("_cur_table")
     date = baseFileName[3:pos]
@@ -231,7 +234,8 @@ def getDbNameFromFileName(sqlFileName):
 # case-sensitive but our title column in the database is not. Currently we just
 # over-write. It's ok for redirects but for real articles we need to investigate
 # how often that happens and decide what to do about that
-def convertArticles(sqlDump,articleLimit):
+def convertArticles(sqlDump, articleLimit):
+
     count = 0
     redirects = {}
     articleTitles = {}
@@ -242,7 +246,8 @@ def convertArticles(sqlDump,articleLimit):
     else:
         fUseCache = True
         fRecreateCache = False
-    for article in wikipediasql.iterWikipediaArticles(sqlDump,articleLimit,fUseCache,fRecreateCache):
+        
+    for article in wikipediasql.iterWikipediaArticles(sqlDump, articleLimit, fUseCache, fRecreateCache):
         # we only convert article from the main namespace
         assert article.getNamespace() == wikipediasql.NS_MAIN
         title = article.getTitle()
@@ -284,14 +289,14 @@ def convertArticles(sqlDump,articleLimit):
     count = 0
     convWriter = wikipediasql.ConvertedArticleCacheWriter(sqlDump)
     convWriter.open()
-    for article in wikipediasql.iterWikipediaArticles(sqlDump,articleLimit,True,False):
+    for article in wikipediasql.iterWikipediaArticles(sqlDump, articleLimit, True, False):
         title = article.getTitle()
         articleSize = 0 # 0 is for redirects, which we don't log
         if article.fRedirect():
             convertedArticle = ConvertedArticleRedirect(article.getNamespace(), title, article.getRedirect())
         else:
             txt = article.getText()
-            converted = articleconvert.convertArticle(title,txt)
+            converted = articleconvert.convertArticle(title, txt)
             try:
                 noLinks = articleconvert.removeInvalidLinks(converted,redirects,articleTitles)
             except:

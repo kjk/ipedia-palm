@@ -36,12 +36,22 @@ def stripBlocks(text, startPattern, endPattern):
 def stripTagBlocks(text, blockElem):
     return stripBlocks(text, '<%s.*?>' % blockElem, '</%s>' % blockElem)
 
-def replaceRegExp(text, regExp, repl):
+def replaceRegExp(text, regExp, repl, exceptionRe = None):
     match=regExp.search(text)
     while match:
-        #print "Replacing: ", text[match.start():match.end()], " with: ", repl
-        text=text[0:match.start()]+repl+text[match.end():]
-        match=regExp.search(text)
+        pos = match.end()
+        
+        if (exceptionRe is None) or not exceptionRe.match(match.group()):
+#            print "Replacing: ", match.group(), " with: ", repl
+            text=text[0:match.start()]+repl+text[match.end():]
+            matchLength = pos - match.start()
+            replLength = len(repl)
+            pos += (replLength - matchLength)
+        else:
+            print "Not replacing link: ", match.group()
+                
+        match=regExp.search(text, pos)
+        
     return text
 
 def replaceTagList(text, tagList, repl):
@@ -163,11 +173,27 @@ def removeImageStr(text):
         if not fChanged:
             return text
 
+g_supportedLanguagesRe = None
+
+def supportedLanguagesRe():
+    import wikiToDbConvert
+    global g_supportedLanguagesRe
+    if g_supportedLanguagesRe is None:
+        reText = "\[\[("
+        first = True
+        for lang in wikiToDbConvert.g_supportedLanguages:
+            if not first:
+               reText += "|"
+            else:
+                first = False
+            reText += ("(" + lang + ")")
+        reText += "):.*?\]\]"
+        g_supportedLanguagesRe = re.compile(reText, re.I + re.S)
+    return g_supportedLanguagesRe
+
 commentRe=re.compile("<!--.*?-->", re.S)
 scriptRe=re.compile("<script.*?</script>", re.I+re.S)
-badLinkRe=re.compile(r"\[\[((\w\w\w?(-\w\w)?)|(simple)|(image)|(media)):.*?\]\]", re.I+re.S)
-# most links to other-language version are caught by badLinkRe, but not "tokipona"
-tokiponaRe=re.compile(r"\[\[tokipona:.*?\]\]", re.I+re.S)
+badLinkRe=re.compile(r"\[\[((\w\w\w?(-\w\w)?)|(simple)|(image)|(media)|(tokipona)):.*?\]\]", re.I+re.S)
 
 multipleLinesRe=re.compile("\n{3,100}")
 # replace multiple (1+) empty lines with just one empty line.
@@ -237,13 +263,12 @@ def convertArticle(term, text):
         text=replaceTagList(text, ['hr'], '----')
         text=replaceTagList(text, ['p'], '<br>')
         text=replaceTagList(text, ['dfn', 'code', 'samp', 'kbd', 'var', 'abbr', 'acronym', 'blockquote', 'q', 'pre', 'ins', 'del', 'dir', 'menu', 'img', 'object', 'big', 'span', 'applet', 'font', 'basefont', 'tr', 'td', 'table', 'center', 'div'], '')
-        text=replaceRegExp(text, badLinkRe, '')
-        text=replaceRegExp(text, tokiponaRe, '')
+        text=replaceRegExp(text, badLinkRe, '', supportedLanguagesRe())
         text=entities.convertNamedEntities(term, text)
         text=entities.convertNumberedEntities(term, text)
         text=stripMultipleNewLines(text)
         text=text.strip()
-        text+='\n'
+        #text+='\n'
         return text
     except Exception, ex:
         print "Exception while converting term: ", term

@@ -64,13 +64,43 @@ def fInvalidRedirect(row):
         if not redirect:
             return True
     return False
+    
+import codecs
+    
+def utf8ToLatin1(text):
+    isShort = False # (30 >= len(text))
+    decoded = text
+    try:
+        if isShort:
+            sys.stderr.write("decoding: %s\n" % text)
+        decoded = text.decode("utf_8")
+        if isShort:
+            sys.stderr.write("decoded:  %s\n" % text)
+
+    except ValueError, ex:
+        sys.stderr.write("exception while decoding utf-8\n")
+        sys.stderr.write("%s\n" % arsutils.exceptionAsStr(ex))
+    
+    try:
+        encoded = decoded.encode("latin_1", 'xmlcharrefreplace')
+    except ValueError, ex:
+        sys.stderr.write("exception while encoding latin-1\n")
+        sys.stderr.write("%s\n" % arsutils.exceptionAsStr(ex))
+
+    if isShort:
+        sys.stderr.write("encoded:  %s\n" % text)
+    return encoded
 
 class WikipediaArticleFromSql:
-    def __init__(self,row):
+    def __init__(self, row, isUtf8 = False):
         self.row = row
         assert not fInvalidRedirect(row)
         self.md5Hash = None
         txt = row[CUR_TEXT]
+        if isUtf8:
+            txt = utf8ToLatin1(txt)
+            self.row[CUR_TITLE] = utf8ToLatin1(self.row[CUR_TITLE])
+            
         #redirectNum = int(row[CUR_IS_REDIRECT])
         #assert redirectNum==0 or redirectNum==1
         self.redirect = None
@@ -147,7 +177,7 @@ def getConvertedTxt(sqlFileName,txtOff,txtLen):
     return txt
 
 class WikipediaArticleRedirect:
-    def __init__(self,title,redirect):
+    def __init__(self, title, redirect):
         self.title = title.strip()
         self.redirect = redirect.strip()
     def getTitle(self): return self.title
@@ -156,7 +186,7 @@ class WikipediaArticleRedirect:
     def getNamespace(self): return NS_MAIN
 
 class WikipediaArticleFromCache:
-    def __init__(self,sqlFileName,title,ns,txtOffset,txtLen,md5Hash,viewCount):
+    def __init__(self, sqlFileName, title, ns, txtOffset, txtLen, md5Hash, viewCount):
         self.sqlFileName = sqlFileName
         self.title = title
         self.ns = ns
@@ -532,7 +562,7 @@ def iterConvertedArticles(sqlFileName):
 # If fUseCache is True, then uses (if exists) or creates *.txt cache files
 #TODO: split this into smaller functions. However, don't know how to do it
 #  and be able to use yield as well
-def iterWikipediaArticles(sqlFileName,limit=None,fUseCache=False,fRecreateCache=False):
+def iterWikipediaArticles(sqlFileName, limit=None, fUseCache=False, fRecreateCache=False):
     #if limit:
     #    assert fUseCache==False
     print "fUseCache %d, fRecreateCache=%d" % (fUseCache, fRecreateCache)
@@ -548,6 +578,17 @@ def iterWikipediaArticles(sqlFileName,limit=None,fUseCache=False,fRecreateCache=
             cacheWriter = ArticleCacheWriter(sqlFileName)
             cacheWriter.open()
 
+    lang = os.path.basename(sqlFileName)[:2]
+    print "database dump language: ", lang
+    isUtf8 = False
+    import wikiToDbConvert
+    
+    if lang in wikiToDbConvert.g_utf8Languages:
+        isUtf8 = True
+        
+    if isUtf8:
+        print "performing UTF-8 to Latin-1 conversion"
+    
     if fReallyUseCache:
         fileName = getIdxFileName(sqlFileName)
         print "getting articles from cache %s" % fileName
@@ -632,7 +673,7 @@ def iterWikipediaArticles(sqlFileName,limit=None,fUseCache=False,fRecreateCache=
                     print "rejected '%s' as invalid (len==0) title" % args[CUR_TEXT]
                     args = []
                     continue
-                article = WikipediaArticleFromSql(args)
+                article = WikipediaArticleFromSql(args, isUtf8)
                 if cacheWriter:
                     cacheWriter.write(article)
                 yield article
