@@ -48,7 +48,7 @@ void iPediaRenderingProgressReporter::reportProgress(uint_t percent)
         return;
 
     Graphics graphics(form_.windowHandle());
-    Rectangle bounds = form_.bounds();
+    ArsRectangle bounds = form_.bounds();
     bounds.explode(2, 17, -12, -37);
 
     ActivateGraphics act(graphics);
@@ -63,7 +63,7 @@ void iPediaRenderingProgressReporter::reportProgress(uint_t percent)
     graphics.drawCenteredText(buffer, rect.topLeft, rect.width());
 #else
     uint_t height = 10;
-    Rectangle rect(bounds.x()+16, bounds.y()+(bounds.height()-height)/2, bounds.width()-22, height);
+    ArsRectangle rect(bounds.x()+16, bounds.y()+(bounds.height()-height)/2, bounds.width()-22, height);
     PatternType oldPattern = WinGetPatternType();
     WinSetPatternType(blackPattern);
     RectangleType nativeRec = toNative(rect);
