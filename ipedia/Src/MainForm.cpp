@@ -602,12 +602,12 @@ bool MainForm::handleMenuCommand(UInt16 itemId)
     {
 #ifdef  INTERNAL_BUILD    
         case useDictPcMenuItem:
-            switchServer(serverOfficial);
+            switchServer(SERVER_OFFICIAL);
             handled=true;
             break;
             
         case useLocalhostMenuItem:
-            switchServer(serverLocalhost);
+            switchServer(SERVER_LOCALHOST);
             handled=true;
             break;
 

@@ -266,7 +266,7 @@ class WikipediaLink:
     def dump(self):
         print "'%s':'%s'" % (self.link,self.name)
 
-linkRe=re.compile(r'\[\[(.*?)(\|.*?)?\]\]', re.S)
+linkRe=re.compile(r'\[\[([^\n]*?)(\|.*?)?\]\]', re.S)
 
 # extract all links from wikipedia article and return them as a list of WikipediaLink
 # return None if there are no links

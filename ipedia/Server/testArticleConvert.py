@@ -136,6 +136,8 @@ def testTests(fileName):
         print "expe: '%s'" % test.expected
 
 def runTests(fileName):
+    redirects = {}
+    articleTitles = {}
     testCount = 0
     failedCount = 0
     for test in iterTests(fileName):
@@ -151,6 +153,7 @@ def runTests(fileName):
             sys.stdout.write("-")
         else:
             sys.stdout.write(".")
+        noLinks = articleconvert.removeInvalidLinks(converted,redirects,articleTitles)
         testCount += 1
     print
     print "Total  tests: %d" % testCount

@@ -17,7 +17,7 @@ using namespace ArsLexis;
 iPediaApplication::iPediaApplication():
     history_(0),
     lookupManager_(0),
-    server_(defaultServer),
+    server_(SERVER_TO_USE),
     stressMode_(false),
     fArticleCountChecked(false)
 {
@@ -71,7 +71,7 @@ Err iPediaApplication::normalLaunch()
     // if running on Treo 600 set the default server to my server
     if (isTreo600())
     {
-        server_ = serverOfficial;
+        server_ = SERVER_OFFICIAL;
     }
 #endif
     gotoForm(mainForm);

@@ -203,8 +203,8 @@ ArsLexis::status_t iPediaConnection::notifyProgress()
     lookupManager_.setStatusText(_T("Downloading article..."));
 #endif
     uint_t progress=LookupManager::percentProgressDisabled;
-    if (inPayload())
-        progress=((payloadLength()-payloadLengthLeft())*100L)/payloadLength();
+    if (inPayload_)
+        progress = ((payloadLength()-payloadLengthLeft())*100L)/payloadLength();
     lookupManager_.setPercentProgress(progress);
     ArsLexis::sendEvent(LookupManager::lookupProgressEvent);
     return error;
@@ -227,7 +227,7 @@ ArsLexis::status_t iPediaConnection::handleField(const String& name, const Strin
         error=numericValue(value, numValue, 16);
         assert(errNone==error);
         if (error || ((ulong_t)numValue!=transactionId_))
-            error=errResponseMalformed;
+            error = errResponseMalformed;
     }
     else if (notFoundField==name)
     {
@@ -238,7 +238,7 @@ ArsLexis::status_t iPediaConnection::handleField(const String& name, const Strin
         error=numericValue(value, numValue);
         assert(errNone==error);
         if (errNone!=error)
-            error=errResponseMalformed;
+            error = errResponseMalformed;
         else
             formatVersion_=numValue;
     }
@@ -251,7 +251,7 @@ ArsLexis::status_t iPediaConnection::handleField(const String& name, const Strin
         error=numericValue(value, numValue);
         assert(errNone==error);
         if (errNone!=error)
-            error=errResponseMalformed;
+            error = errResponseMalformed;
         else
         {
             DefinitionParser* parser=new DefinitionParser();
@@ -277,7 +277,7 @@ ArsLexis::status_t iPediaConnection::handleField(const String& name, const Strin
         error=numericValue(value, numValue);
         assert(errNone==error);
         if (error)
-            error=errResponseMalformed;
+            error = errResponseMalformed;
         else
         {
             SearchResultsHandler* handler=new SearchResultsHandler();
@@ -287,9 +287,9 @@ ArsLexis::status_t iPediaConnection::handleField(const String& name, const Strin
     }
     else if (cookieField==name)
     {
-        assert(value.length()==iPediaApplication::Preferences::cookieLength);
+        assert(value.length()<=iPediaApplication::Preferences::cookieLength);
         if (value.length()>iPediaApplication::Preferences::cookieLength)
-            error=errResponseMalformed;
+            error = errResponseMalformed;
         else
             app.preferences().cookie=value;
     }
@@ -302,7 +302,10 @@ ArsLexis::status_t iPediaConnection::handleField(const String& name, const Strin
         if (numValue>=serverErrorFirst && numValue<=serverErrorLast)
             serverError_=static_cast<iPediaServerError>(numValue);
         else
-            error=errResponseMalformed;
+        {
+            assert(false);
+            error = errResponseMalformed;
+        }
     }
     else if (articleCountField==name)
     {
@@ -323,17 +326,16 @@ ArsLexis::status_t iPediaConnection::handleField(const String& name, const Strin
         assert(errNone==error);
         if (error)
             return errResponseMalformed;
-
         assert((0==numValue) || (1==numValue));
         if (1==numValue)
             regCodeValid_ = regCodeTypeValid;
         else if (0==numValue)
             regCodeValid_ = regCodeTypeInvalid;
         else
-            error=errResponseMalformed;
+            error = errResponseMalformed;
     }
     else
-        error=FieldPayloadProtocolConnection::handleField(name, value);
+        error = FieldPayloadProtocolConnection::handleField(name, value);
     return error;
 }
 
@@ -401,7 +403,7 @@ ArsLexis::status_t iPediaConnection::notifyFinished()
 
     ArsLexis::sendEvent(LookupManager::lookupFinishedEvent, data);
 
-    assert( errNone == error );
+    assert(errNone == error);
     return error;        
 }
 

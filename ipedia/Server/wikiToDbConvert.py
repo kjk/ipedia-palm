@@ -292,7 +292,15 @@ def convertArticles(sqlDump,articleLimit):
         else:
             txt = article.getText()
             converted = articleconvert.convertArticle(title,txt)
-            noLinks = articleconvert.removeInvalidLinks(converted,redirects,articleTitles)
+            try:
+                noLinks = articleconvert.removeInvalidLinks(converted,redirects,articleTitles)
+            except:
+                print "exception in articleconvert.removeInvalidLinks"
+                print "title: _%s_" % title
+                print "txt:\n_%s_" % txt
+                print "converted:\n_%s_" % converted
+
+                raise
             if noLinks:
                 converted = noLinks
             convertedArticle = ConvertedArticle(article.getNamespace(), article.getTitle(), converted)

@@ -10,13 +10,13 @@
 class LookupManager;
 class LookupHistory;
 
-//#define serverLocalhost        "127.0.0.1:9000"
-#define serverLocalhost        "dict-pc.arslexis.com:9000"
+#define SERVER_LOCALHOST     "127.0.0.1:9000"
+#define SERVER_DICT_PC       "dict-pc.arslexis.com:9000"
+#define SERVER_LOCALHOST_2   "192.168.0.1:9000"
+#define SERVER_OFFICIAL      "ipedia.arslexis.com:9000"
 
-//#define serverLocalhost    "192.168.0.1:9000"
-#define serverOfficial   "ipedia.arslexis.com:9000"
-
-#define defaultServer serverOfficial
+#define SERVER_TO_USE SERVER_DICT_PC
+//#define SERVER_TO_USE SERVER_OFFICIAL
 
 class iPediaApplication: public ArsLexis::RichApplication 
 {
