@@ -74,18 +74,18 @@ def startsWithIgnoreCase(s1, substr):
     return False
 
 def findArticle(db, cursor, title):
-    term=title
+    # TODO: add detection of circles? shouldn't happen but you never know
     while True:
-        query="""SELECT id, title, body FROM articles WHERE title='%s';""" % db.escape_string(term)
+        query="""SELECT id, title, body FROM articles WHERE title='%s';""" % db.escape_string(title)
         cursor.execute(query)
         row=cursor.fetchone()
         if row:
             return (row[0], row[1], row[2])
-        query="""SELECT redirect FROM redirects WHERE title='%s';""" % db.escape_string(term)
+        query="""SELECT redirect FROM redirects WHERE title='%s';""" % db.escape_string(title)
         cursor.execute(query)
         row=cursor.fetchone()
         if row:
-            term=row[0]
+            title=row[0]
         else:
             return None
         

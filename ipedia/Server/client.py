@@ -12,6 +12,7 @@
 #   -ping : does a ping request (to test if the server is alive)
 #   -verifyregcode $regCode : verify registration code
 #   -invalidcookie : send a request with invalid cookie
+#   -malformed : send malformed request
 import sys, string, re, socket, random, pickle, time
 import arsutils
 from iPediaServer import *
@@ -134,49 +135,35 @@ def getResponseFromServer(req):
 # the format we expect)
 def parseServerResponse(response):
     result = {}
-    defTxt = ""
-    defLenLeft = 0
+    payloadTxt = ""
+    payloadLenLeft = 0
+    payloadField = None
     fWasEmptyLine = False
     for fld in response.split("\n"):
-        if 0==len(fld) and 0==defLenLeft:
+        if 0==len(fld) and 0==payloadLenLeft:
             #assert not fWasEmptyLine
             fWasEmptyLine = True
             continue
         #print "line: _%s_" % fld
-        if defLenLeft > 0:
+        if payloadLenLeft > 0:
             # this is a part of definitionField part of the response
-            defTxt += fld + "\n"
-            defLenLeft -= (len(fld) + 1)
-            if 0 == defLenLeft:
-                result[definitionField] = defTxt
-            #print "*** defLenLeft=%d" % defLenLeft
+            payloadTxt += fld + "\n"
+            payloadLenLeft -= (len(fld) + 1)
+            if 0 == payloadLenLeft:
+                result[payloadField] = payloadTxt
+            #print "*** payloadLenLeft=%d" % payloadLenLeft
             continue
-        keyPos = fld.find(":")
-        if keyPos == -1:
-            print "*** didn't find ':' in " + fld
+        (field,value) = parseRequestLine(fld)
+        if None == field:
+            print "'%s' is not a valid request line" % fld
             return None
-        key = fld[:keyPos]
-        if fld[keyPos+1] != ' ':
-            print "'%s' and not ' ' is at pos %d in '%s'" % (fld[keyPos+1], keyPos+1, fld)
-            return None
-        value = fld[keyPos+2:]
-        #print "key: _%s_" % key
-        #print "val: _%s_" % value
-        if key == definitionField:
-            defLenLeft = int(value)
-            #print "*** defLenLeft=%d" % defLenLeft
+        if definitionField==field or searchResultsField==field:
+            payloadLenLeft = int(value)
+            payloadField = field
+            #print "*** payloadLenLeft=%d" % payloadLenLeft
         else:
-            result[key] = value
+            result[field] = value
     return result
-
-# if a string field contains ":" at the end, return a string with ":" removed
-# otherwise return original string
-def removeTrailingColon(field):
-    if 0==len(field):
-        return field
-    if ':' == field[-1]:
-        return field[:-1]
-    return field
 
 class Response:
     def __init__(self,request):
@@ -220,6 +207,7 @@ def doGetRandomDef(fSilent=False,fDoTiming=False):
     timer.stop()
     handleCookie(rsp)
     assert rsp.hasField(transactionIdField)
+    assert rsp.getField(transactionIdField) == req.transactionId
     assert rsp.hasField(resultsForField)
     assert rsp.hasField(formatVersionField)
     assert rsp.getField(formatVersionField) == CUR_FORMAT_VER
@@ -235,6 +223,7 @@ def doGetRandomDefNoTiming():
     rsp = Response(req.getString())
     handleCookie(rsp)
     assert rsp.hasField(transactionIdField)
+    assert rsp.getField(transactionIdField) == req.transactionId
     assert rsp.hasField(resultsForField)
     assert rsp.hasField(formatVersionField)
     assert rsp.getField(formatVersionField) == CUR_FORMAT_VER
@@ -246,10 +235,13 @@ def doGetDef(term):
     rsp = Response(req.getString())
     handleCookie(rsp)
     assert rsp.hasField(transactionIdField)
-    assert rsp.hasField(resultsForField)
-    assert rsp.hasField(formatVersionField)
-    assert rsp.getField(formatVersionField) == CUR_FORMAT_VER
-    assert rsp.hasField(definitionField)
+    assert rsp.getField(transactionIdField) == req.transactionId
+    if rsp.hasField(resultsForField):        
+        assert rsp.hasField(formatVersionField)
+        assert rsp.getField(formatVersionField) == CUR_FORMAT_VER
+        assert rsp.hasField(definitionField)
+    else:
+        assert rsp.hasField(notFoundField)
     #print "Definition: %s" % rsp.getField(definitionField)
 
 def doGetArticleCount():
@@ -257,6 +249,7 @@ def doGetArticleCount():
     rsp = Response(req.getString())
     handleCookie(rsp)
     assert rsp.hasField(transactionIdField)
+    assert rsp.getField(transactionIdField) == req.transactionId
     assert rsp.hasField(articleCountField)
     print "Article count: %s" % rsp.getField(articleCountField)
 
@@ -284,6 +277,14 @@ def doRandomPerf(count):
     timer.dumpInfo()
     print "Number of runs: %d" % count
 
+def doMalformed():
+    req = getRequestHandleCookie()
+    # malformed, because there is no ":"
+    req.addLine("malformed\n")
+    print req.getString()
+    rsp = Response(req)
+    print rsp.getText()
+
 def doPing():
     req = getRequestHandleCookie()
     rsp = Response(req)
@@ -300,7 +301,7 @@ def doInvalidCookie():
     assert rsp.getField(transactionIdField) == req.transactionId
 
 def usageAndExit():
-    print "client.py [-showtiming] [-perfrandom N] [-getrandom] [-get term] [-articlecount] [-dbtime] [-ping] [-verifyregcode $regCode]"
+    print "client.py [-showtiming] [-perfrandom N] [-getrandom] [-get term] [-articlecount] [-dbtime] [-ping] [-verifyregcode $regCode] [-malformed]"
 
 if __name__=="__main__":
     g_fShowTiming = arsutils.fDetectRemoveCmdFlag("-showtiming")
@@ -333,6 +334,9 @@ if __name__=="__main__":
             sys.exit(0)
         if arsutils.fDetectRemoveCmdFlag("-invalidcookie"):
             doInvalidCookie()
+            sys.exit(0)
+        if arsutils.fDetectRemoveCmdFlag("-malformed"):
+            doMalformed()
             sys.exit(0)
         usageAndExit()
     finally:

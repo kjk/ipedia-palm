@@ -168,7 +168,7 @@ validClientFields = {
   verifyRegCodeField     : True
  }
 
-definitionFormatVersion = "1"
+DEFINITION_FORMAT_VERSION = "1"
 PROTOCOL_VERSION = "1"
 
 requestLinesCountLimit = 20
@@ -224,7 +224,7 @@ fieldSeparator =    ": "
 # (field,value). If request has no parameters, value is None
 # If there was an error parsing the line (it doesn't correspond to our strict
 # format), field is None
-def parseClientRequestLine(line):
+def parseRequestLine(line):
     parts = line.split(":", 1)
     if 1==len(parts):
         # there was no ":" so this is invalid request
@@ -279,10 +279,10 @@ class iPediaProtocol(basic.LineReceiver):
 
     def outputField(self, name, value=None):
         global g_fVerbose
-        field=name
         if value:
-            field+=fieldSeparator+value
-        field+=lineSeparator
+            field = "%s: %s%s" % (name, value, lineSeparator)
+        else:
+            field = "%s:%s" % (name, lineSeparator)
         self.transport.write(field)
         if g_fVerbose:
             print field
@@ -367,7 +367,7 @@ class iPediaProtocol(basic.LineReceiver):
         if not self.validateDeviceInfo():
             self.error=iPediaServerError.unsupportedDevice
             return False
-            
+
         cursor=None
         try:
             db=self.getManagementDatabase()
@@ -507,7 +507,7 @@ class iPediaProtocol(basic.LineReceiver):
             return False;
             
     def outputDefinition(self, definition):
-        self.outputField(formatVersionField, definitionFormatVersion)
+        self.outputField(formatVersionField, DEFINITION_FORMAT_VERSION)
         self.outputField(resultsForField, self.term)
         self.outputPayloadField(definitionField, definition)
         
@@ -664,6 +664,9 @@ class iPediaProtocol(basic.LineReceiver):
                 self.error=iPediaServerError.malformedRequest
                 return self.finish()
 
+            if self.error:
+                return self.finish()
+
             assert self.protocolVersion            
             if PROTOCOL_VERSION != self.protocolVersion:
                 self.error = iPediaServerError.invalidProtocolVersion
@@ -675,10 +678,10 @@ class iPediaProtocol(basic.LineReceiver):
             if None!=self.regCodeToVerify and not self.handleVerifyRegistrationCodeRequest():
                 return self.finish()
 
-            if self.term and not self.userId and self.fOverUnregisteredLookupsLimit():
+            if self.requestedTerm and not self.userId and self.fOverUnregisteredLookupsLimit():
                 return self.finish()
 
-            if self.term and not self.handleDefinitionRequest():
+            if self.requestedTerm and not self.handleDefinitionRequest():
                 return self.finish()
 
             if self.searchExpression and not self.handleSearchRequest():
@@ -707,13 +710,17 @@ class iPediaProtocol(basic.LineReceiver):
                 self.error=iPediaServerError.malformedRequest
                 return self.answer()
 
+            if request == "":
+                # empty line marks end of request
+                return self.answer()
+
             if self.error:
                 return self.answer()
 
             if g_fVerbose:
                 print request
 
-            (field,value) = parseClientRequestLine(request)
+            (field,value) = parseRequestLine(request)
             if None == field:
                 self.error = iPediaServerError.malformedRequest
                 return self.answer()
