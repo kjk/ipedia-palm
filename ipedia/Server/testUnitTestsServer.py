@@ -10,7 +10,7 @@ import client
 from client import getRequestHandleCookie, Response, Request
 from iPediaServer import *
 
-invalidRegCode = "0000"
+invalidRegCodeNumber = "0000"
 
 def searchResultsCount(resultTxt):
     parts = resultTxt.split("\n")
@@ -21,13 +21,15 @@ class ArsUtils(unittest.TestCase):
 
     def assertFieldExists(self,response,field):
         if not response.hasField(field):
-            print "field '%s' doesn't exist in response" % field
+            print "\nfield '%s' doesn't exist in response" % field
             print "all fields: %s" % string.join(response.getFields(),",")
+            if response.hasField(errorField):
+                print "Error: %s" % response.getField(errorField)
         self.assertEqual(response.hasField(field),True)
 
     def assertFieldDoesntExist(self,response,field):
         if response.hasField(field):
-            print "field '%s' exist in response" % field
+            print "\nfield '%s' exist in response" % field
             print "all fields: %s" % string.join(response.getFields(),",")
         self.assertEqual(response.hasField(field),False)
 
@@ -47,55 +49,41 @@ class ArsUtils(unittest.TestCase):
             value = "%d" % value
         self.assertEqual(response.getField(field),value)
 
+    def getResponse(self,requiredFields=[]):
+        self.rsp = Response(self.req)
+        self.assertFieldsExist(self.rsp,requiredFields)
+        if self.rsp.hasField(transactionIdField):
+            self.assertEqual(self.rsp.getField(transactionIdField), self.req.transactionId)
+
+    def assertError(self,expectedError):
+        self.assertFieldEqual(self.rsp, errorField, expectedError)
+
     def test_Ping(self):
         # this is the simplest valid requests - only sends transaction id
         # in response server sends the same transaction id
-        req = getRequestHandleCookie()
-        rsp = Response(req)
-        self.assertFieldsExist(rsp,[cookieField,transactionIdField])
-        self.assertEqual(rsp.getField(transactionIdField), req.transactionId)
+        self.req = getRequestHandleCookie()
+        self.getResponse([cookieField,transactionIdField])
 
-    # a format of a request accepted by a server is very strict:
-    # validClientRequest = validClientField ":" fieldValue? "\n"
-    # fieldValue = " " string
-    # validClientField = "Get-Cookie" | "Protocol-Version" etc.
-    # In other words:
-    #  - if request has no parameters, then it must be a requestField immediately
-    #    followed by a colon and a newline
-    #  - if request has parameters, then it must be a requestField immediately
-    #    followed by a colon, space, arbitrary string which is an argument and newline
-    # Tests below test if the server correctly detects and rejects malformed requests
-    def test_MalformedRequestOne(self):
-        req = getRequestHandleCookie()
-        # malformed, because there should be no space
-        req.addLine("Get-Cookie: \n")
-        rsp = Response(req)
-        self.assertFieldsExist(rsp,[errorField,transactionIdField])
-        self.assertFieldEqual(rsp,errorField,iPediaServerError.malformedRequest)
-
-    def test_MalformedRequestTwo(self):
-        req = getRequestHandleCookie()
+    def test_MalformedRequest(self):
+        self.req = getRequestHandleCookie()
         # malformed, because there is no ":"
-        req.addLine("malformed\n")
-        rsp = Response(req)
-        self.assertFieldsExist(rsp,[errorField,transactionIdField])
-        self.assertFieldEqual(rsp,errorField,iPediaServerError.malformedRequest)
+        self.req.addLine("malformed\n")
+        self.getResponse([errorField,transactionIdField])
+        self.assertError(iPediaServerError.malformedRequest)
 
     def test_MissingArgument(self):
-        req = getRequestHandleCookie()
+        self.req = getRequestHandleCookie()
         # Get-Cookie requires an argument but we're not sending it
-        req.addField(getCookieField, None)
-        rsp = Response(req)
-        self.assertFieldsExist(rsp,[errorField,transactionIdField])
-        self.assertFieldEqual(rsp,errorField,iPediaServerError.requestArgumentMissing)
+        self.req.addField(getCookieField, None)
+        self.getResponse([errorField,transactionIdField])
+        self.assertError(iPediaServerError.requestArgumentMissing)
 
     def test_ExtraArgument(self):
-        req = getRequestHandleCookie()
+        self.req = getRequestHandleCookie()
         # Get-Random-Article doesn't require an argument, but we're sending it
-        req.addField(getRandomField, "not needed")
-        rsp = Response(req)
-        self.assertFieldsExist(rsp,[errorField,transactionIdField])
-        self.assertFieldEqual(rsp,errorField,iPediaServerError.unexpectedRequestArgument)
+        self.req.addField(getRandomField, "not needed")
+        self.getResponse([errorField,transactionIdField])
+        self.assertError(iPediaServerError.unexpectedRequestArgument)
 
     def test_ArgumentCorrectness(self):
         # check if server correctly detects missing arguments/extra arguments
@@ -103,18 +91,17 @@ class ArsUtils(unittest.TestCase):
         # Note: since server uses validClientFields as well to check for this,
         # we might not always detect a bug here
         for (field,fRequiresArguments) in validClientFields.items():
-            req = getRequestHandleCookie()
+            self.req = getRequestHandleCookie()
             # do the exact opposite of what's expected
             if fRequiresArguments:
-                req.addField(field, None)
+                self.req.addField(field, None)
             else:
-                req.addField(field, "not needed argument")
-            rsp = Response(req)
-            self.assertFieldsExist(rsp,[errorField,transactionIdField])
+                self.req.addField(field, "not needed argument")
+            self.getResponse([errorField,transactionIdField])
             if fRequiresArguments:
-                self.assertFieldEqual(rsp,errorField,iPediaServerError.requestArgumentMissing)
+                self.assertError(iPediaServerError.requestArgumentMissing)
             else:
-                self.assertFieldEqual(rsp,errorField,iPediaServerError.unexpectedRequestArgument)
+                self.assertError(iPediaServerError.unexpectedRequestArgument)
 
     def test_UnrecognizedField(self):
         req = getRequestHandleCookie("Foo", "blast")
@@ -131,7 +118,7 @@ class ArsUtils(unittest.TestCase):
         self.assertFieldEqual(rsp,regCodeValidField,1)
 
     def test_RegistrationInvalidRegCode(self):
-        req = getRequestHandleCookie(verifyRegCodeField, invalidRegCode)
+        req = getRequestHandleCookie(verifyRegCodeField, invalidRegCodeNumber)
         rsp = Response(req)
         self.assertFieldsExist(rsp,[cookieField,transactionIdField,regCodeValidField])
         self.assertFieldEqual(rsp,transactionIdField, req.transactionId)
@@ -202,15 +189,15 @@ class ArsUtils(unittest.TestCase):
         self.assertFieldEqual(rsp, transactionIdField, req.transactionId)
         self.assertFieldEqual(rsp, formatVersionField, DEFINITION_FORMAT_VERSION)
 
-    # TODO: this one doesn't work
-    def disable_test_GetSeattleWithValidRegcode(self):
+    def test_GetSeattleWithValidRegcode(self):
         title = "seattle"
-        req = getRequestHandleCookie(getArticleField, title)
+        req = Request()
+        req.addField(getArticleField,title)
         req.addField(regCodeField,testValidRegCode)
         #print req.getString()
         rsp = Response(req)
         #print rsp.getText()
-        self.assertFieldsExist(rsp,[transactionIdField,cookieField,articleTitleField,formatVersionField])
+        self.assertFieldsExist(rsp,[transactionIdField,articleTitleField,formatVersionField])
         self.assertFieldEqual(rsp, transactionIdField, req.transactionId)
         self.assertFieldEqual(rsp, formatVersionField, DEFINITION_FORMAT_VERSION)
 
@@ -262,6 +249,22 @@ class ArsUtils(unittest.TestCase):
         # date is in format YYYYMMDD
         date = rsp.getField(databaseTimeField)
         assert 8==len(date)
+
+    def test_GetCookieGivesCookie(self):
+        self.req = getRequestHandleCookie(cookieField, "I'm a cookie")
+        self.getResponse([transactionIdField,errorField])
+        self.assertError(iPediaServerError.malformedRequest)
+
+    def test_GetCookieGivesRegCode(self):
+        self.req = getRequestHandleCookie(regCodeField, testValidRegCode)
+        self.getResponse([transactionIdField,errorField])
+        self.assertError(iPediaServerError.malformedRequest)
+
+    def test_DuplicateField(self):
+        self.req = getRequestHandleCookie(getArticleCountField, None)
+        #self.req.addField(getArticleCountField, None)
+        self.getResponse([transactionIdField])
+        #self.assertError(iPediaServerError.malformedRequest)
 
     def test_GetCookieNoDeviceInfo(self):
         # TODO:

@@ -95,7 +95,7 @@ def _recentRegistrations(db, limit):
   <td>Name</td>
   <td>Device</td>
 </tr>"""
-    query="SELECT cookie, device_info_token, DATE_FORMAT(issue_date, '%%Y-%%m-%%d') AS when_created, registered_users.id FROM cookies LEFT JOIN registered_users on cookies.id=registered_users.cookie_id ORDER BY when_created DESC LIMIT %d" % limit
+    query="SELECT cookie, device_info, DATE_FORMAT(issue_date, '%%Y-%%m-%%d') AS when_created, registered_users.id FROM cookies LEFT JOIN registered_users on cookies.id=registered_users.cookie_id ORDER BY when_created DESC LIMIT %d" % limit
     cursor=db.cursor()
     cursor.execute(query)
     row=cursor.fetchone()
@@ -179,7 +179,7 @@ def _statsCmp(a, b):
     
 def _getDeviceStats(db):
     cursor=db.cursor()
-    query="SELECT DISTINCT device_info_token FROM cookies"
+    query="SELECT DISTINCT device_info FROM cookies"
     cursor.execute(query)
     statsDict=dict()
     for row in cursor:
@@ -295,7 +295,7 @@ def activeUsers(req):
       <td>Lookups per day</td>
     </tr>"""
     cursor=db.cursor()
-    cursor.execute("SELECT COUNT(cookie_id) AS cnt, cookie_id, device_info_token, TO_DAYS(NOW())-TO_DAYS(issue_date)+1 FROM requests INNER JOIN cookies ON requests.cookie_id=cookies.id GROUP BY cookie_id ORDER BY cnt DESC")
+    cursor.execute("SELECT COUNT(cookie_id) AS cnt, cookie_id, device_info, TO_DAYS(NOW())-TO_DAYS(issue_date)+1 FROM requests INNER JOIN cookies ON requests.cookie_id=cookies.id GROUP BY cookie_id ORDER BY cnt DESC")
     selected=False
     for row in cursor:
         totalLookupsCount=row[0]
@@ -345,7 +345,7 @@ def dailyStats(req, date):
     </tr>"""
     db=_connect()
     cursor=db.cursor()
-    query="SELECT COUNT(cookie_id) AS cnt, cookie_id, TO_DAYS(request_date)-TO_DAYS(issue_date)+1, device_info_token FROM requests INNER JOIN cookies on requests.cookie_id=cookies.id WHERE DATE_FORMAT(request_date, '%%Y-%%m-%%d')='%s' AND requested_term IS NOT NULL AND error=0 GROUP BY cookie_id ORDER BY cnt DESC" % date
+    query="SELECT COUNT(cookie_id) AS cnt, cookie_id, TO_DAYS(request_date)-TO_DAYS(issue_date)+1, device_info FROM requests INNER JOIN cookies on requests.cookie_id=cookies.id WHERE DATE_FORMAT(request_date, '%%Y-%%m-%%d')='%s' AND requested_term IS NOT NULL AND error=0 GROUP BY cookie_id ORDER BY cnt DESC" % date
     cursor.execute(query)
     selected = False
     for row in cursor:
@@ -405,7 +405,7 @@ def dailyLookupsStats(req, date):
     </tr>"""
     db=_connect()
     cursor=db.cursor()
-    query="SELECT requested_term, cookie_id, TO_DAYS(request_date)-TO_DAYS(issue_date)+1, device_info_token, definition_for FROM requests INNER JOIN cookies on requests.cookie_id=cookies.id WHERE DATE_FORMAT(request_date, '%%Y-%%m-%%d')='%s' AND requested_term IS NOT NULL AND error=0" % date
+    query="SELECT requested_term, cookie_id, TO_DAYS(request_date)-TO_DAYS(issue_date)+1, device_info, definition_for FROM requests INNER JOIN cookies on requests.cookie_id=cookies.id WHERE DATE_FORMAT(request_date, '%%Y-%%m-%%d')='%s' AND requested_term IS NOT NULL AND error=0" % date
     cursor.execute(query)
     selected=False
     for row in cursor:

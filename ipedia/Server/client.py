@@ -7,6 +7,7 @@
 # Usage:
 #   -perfrandom $n : do a performance test for Get-Random-Article by issuing $n requests
 #   -get tittle : get article for a given title
+#   -search titel : do a full-text search
 #   -getrandom
 #   -articlecount
 #   -ping : does a ping request (to test if the server is alive)
@@ -139,7 +140,7 @@ def getResponseFromServer(req):
 # names of fields e.g. like formatVersionField, cookieField and values their values
 # returns None if there was an error parsing (the response didn't follow
 # the format we expect)
-def parseServerResponse(response):
+def parseServerResponse2(response):
     result = {}
     payloadTxt = ""
     payloadLenLeft = 0
@@ -152,7 +153,7 @@ def parseServerResponse(response):
             continue
         #print "line: _%s_" % fld
         if payloadLenLeft > 0:
-            # this is a part of articleBodyField part of the response
+            # this is a part of payload part of the response
             payloadTxt += fld + "\n"
             payloadLenLeft -= (len(fld) + 1)
             if 0 == payloadLenLeft:
@@ -162,6 +163,7 @@ def parseServerResponse(response):
         (field,value) = parseRequestLine(fld)
         if None == field:
             print "'%s' is not a valid request line" % fld
+            print "*** payloadLenLeft=%d" % payloadLenLeft
             return None
         if articleBodyField==field or searchResultsField==field:
             payloadLenLeft = int(value)
@@ -170,6 +172,37 @@ def parseServerResponse(response):
         else:
             result[field] = value
     return result
+
+def parseServerResponse(response):
+    result = {}
+    rest = response
+    while True:
+        #print "rest: '%s'" % rest
+        if 0==len(rest):
+            return result
+        parts = rest.split("\n",1)
+        fld = parts[0]
+        rest = None
+        if len(parts)>1:
+            rest = parts[1]
+        if 0==len(fld):
+            return result
+        (field,value) = parseRequestLine(fld)
+        if None == field:
+            print "'%s' is not a valid request line" % fld
+            return None
+        if articleBodyField==field or searchResultsField==field:
+            payloadLen = int(value)
+            payload = rest[:payloadLen]
+            result[field] = payload
+            rest = rest[payloadLen:]
+            if 0==len(rest):
+                return result
+        else:
+            result[field] = value
+
+        if None == rest:
+            return result
 
 class Response:
     def __init__(self,request):
@@ -246,6 +279,19 @@ def doGetDef(term):
         assert rsp.hasField(formatVersionField)
         assert rsp.getField(formatVersionField) == CUR_FORMAT_VER
         assert rsp.hasField(articleBodyField)
+    else:
+        assert rsp.hasField(notFoundField)
+    #print "Definition: %s" % rsp.getField(articleBodyField)
+
+def doSearch(term):
+    print "full-text search for: %s" % term
+    req = getRequestHandleCookie(searchField, term)
+    rsp = Response(req.getString())
+    handleCookie(rsp)
+    assert rsp.hasField(transactionIdField)
+    assert rsp.getField(transactionIdField) == req.transactionId
+    if rsp.hasField(articleTitleField):        
+        assert rsp.hasField(searchResultsField)
     else:
         assert rsp.hasField(notFoundField)
     #print "Definition: %s" % rsp.getField(articleBodyField)
@@ -327,6 +373,10 @@ if __name__=="__main__":
         term = arsutils.getRemoveCmdArg("-get")
         if term:
             doGetDef(term)
+            sys.exit(0)
+        term = arsutils.getRemoveCmdArg("-search")
+        if term:
+            doSearch(term)
             sys.exit(0)
         if arsutils.fDetectRemoveCmdFlag("-articlecount"):
             doGetArticleCount()

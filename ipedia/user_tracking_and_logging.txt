@@ -82,18 +82,20 @@ CREATE TABLE users (
   device_info       VARCHAR(255) NOT NULL,
   cookie_issue_date TIMESTAMP(14) NOT NULL,
   reg_code          VARCHAR(64) NULL,
-  registration_date TIMESTAMP(14) NOT NULL,
-  disabled_p        CHAR(1) NOT NULL default 'f'
-  PRIMARY KEY(id)
+  registration_date TIMESTAMP(14) NULL,
+  disabled_p        CHAR(1) NOT NULL default 'f',
+
+  PRIMARY KEY(user_id),
+  UNIQUE (cookie)
+
 ) TYPE=MyISAM;
 
 CREATE TABLE request_log (
-    user_id          INT(10) NOT NULL REFERENCES users(user_id)
+    user_id          INT(10) NOT NULL REFERENCES users(user_id),
     client_ip        VARCHAR(24) NOT NULL,
-    -- when a request has been made
-    when             TIMESTAMP(14) NOT NULL,
+    log_date         TIMESTAMP(14) NOT NULL,
 
-    if not NULL, this is a SEARCH request
+    -- if not NULL, this is a SEARCH request
     search_term  VARCHAR(255) NULL,
     -- if not NULL, this is EXTENDED SEARCH request. search_term and
     -- extended_search_title can't be both NULL or not NULL
@@ -103,23 +105,35 @@ CREATE TABLE request_log (
     error            INT(10) NULL,
     -- if not NULL, this is the article that was returned for SEARCH request
     -- (taking redirects into account)
-    article_title    VARCHAR(255) NULL,
+    article_title    VARCHAR(255) NULL
 ) TYPE=MyISAM;
 
 CREATE TABLE get_cookie_log (
     user_id         INT(10) NOT NULL REFERENCES users(user_id),
     client_ip       VARCHAR(24) NOT NULL,
-    when            TIMESTAME(14) NOT NULL,
+    log_date        TIMESTAMP(14) NOT NULL,
     cookie          VARCHAR(64) NOT NULL
 ) TYPE=MyISAM;
 
 CREATE TABLE verify_reg_code_log (
     user_id         INT(10) NOT NULL REFERENCES users(user_id),
     client_ip       VARCHAR(24) NOT NULL,
-    when            TIMESTAME(14) NOT NULL,
+    log_date        TIMESTAMP(14) NOT NULL,
     reg_code        VARCHAR(64) NULL,
     reg_code_valid_p CHAR(1) NOT NULL
 ) TYPE=MyISAM;
+
+-- table contains list of valid registration codes
+CREATE TABLE reg_codes (
+  reg_code      VARCHAR(64) NOT NULL,
+  purpose       VARCHAR(255) NOT NULL,
+  when_entered  TIMESTAMP NOT NULL,
+  disabled_p    CHAR(1) NOT NULL DEFAULT 'f',
+
+  PRIMARY KEY (reg_code)
+) TYPE=MyISAM;
+
+
 
 ** Scenarios to watch out for (and test):
 

@@ -10,8 +10,6 @@ redirectCommand =    "#REDIRECT"
 termStartDelimiter = "[["
 termEndDelimiter =   "]]"
 
-listLengthLimit = 200
-
 g_fVerbose=False
 
 # if true we'll log terms that redirect to themselves to a file
@@ -73,35 +71,6 @@ def startsWithIgnoreCase(s1, substr):
         return True
     return False
 
-def findArticle(db, cursor, title):
-    # TODO: add detection of circles? shouldn't happen but you never know
-    while True:
-        query="""SELECT id, title, body FROM articles WHERE title='%s';""" % db.escape_string(title)
-        cursor.execute(query)
-        row=cursor.fetchone()
-        if row:
-            return (row[0], row[1], row[2])
-        query="""SELECT redirect FROM redirects WHERE title='%s';""" % db.escape_string(title)
-        cursor.execute(query)
-        row=cursor.fetchone()
-        if row:
-            title=row[0]
-        else:
-            return None
-        
-def getRandomArticle(db, cursor):
-    cursor.execute("""SELECT min(id), max(id) FROM articles""")
-    row=cursor.fetchone()
-    minId, maxId=row[0], row[1]
-    term_id = random.randint(minId, maxId)
-    query="""SELECT id, title, body FROM articles WHERE id=%d;""" % term_id
-    cursor.execute(query)
-    row=cursor.fetchone()
-    if row:
-        return (row[0], row[1], row[2])
-    else:
-        return None
-        
 internalLinkRe=re.compile(r'\[\[(.*?)(\|.*?)?\]\]', re.S)
 testedLinks = {}
 validLinks = {}
@@ -130,29 +99,4 @@ validLinks = {}
 #                sys.stdout.write("'%s' => '%s', " % (term,name))
 #            definition=definition[:match.start()]+name+definition[match.end():]
 #    return definition
-
-def findFullTextMatches(db, cursor, reqTerm):
-    print "Performing full text search..."
-    words=reqTerm.split()
-    queryStr=''
-    for word in words:
-        queryStr+=(' +'+word)
-    query="""SELECT id, title, match(title, body) AGAINST('%s') AS relevance FROM articles WHERE match(title, body) against('%s' in boolean mode) ORDER BY relevance DESC limit %d""" % (db.escape_string(reqTerm), db.escape_string(queryStr), listLengthLimit)
-    cursor.execute(query)
-    row=cursor.fetchone()
-    if not row:
-        print "Performing non-boolean mode search..."
-        query="""SELECT id, title, match(title, body) AGAINST('%s') AS relevance FROM articles WHERE match(title, body) against('%s') ORDER BY relevance DESC limit %d""" % (db.escape_string(reqTerm), db.escape_string(reqTerm), listLengthLimit)
-        cursor.execute(query)
-
-    titleList=[]
-        
-    while row:
-        titleList.append(row[1])
-        row=cursor.fetchone()
-        
-    if not len(titleList):
-        return None
-    else:
-        return titleList
 

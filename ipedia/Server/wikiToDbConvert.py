@@ -21,7 +21,7 @@
 # fileName : convert directly from sql file, no need for enwiki.cur database
 
 import sys, os, MySQLdb
-import  arsutils, wikipediasql,articleconvert
+import  arsutils, wikipediasql,articleconvert,iPediaServer
 try:
     import psyco
     g_fPsycoAvailable = True
@@ -397,18 +397,19 @@ usersSql = """CREATE TABLE users (
   device_info       VARCHAR(255) NOT NULL,
   cookie_issue_date TIMESTAMP(14) NOT NULL,
   reg_code          VARCHAR(64) NULL,
-  registration_date TIMESTAMP(14) NOT NULL,
-  disabled_p        CHAR(1) NOT NULL default 'f'
-  PRIMARY KEY(id)
+  registration_date TIMESTAMP(14) NULL,
+  disabled_p        CHAR(1) NOT NULL default 'f',
+
+  PRIMARY KEY(user_id),
+  UNIQUE (cookie)
+
 ) TYPE=MyISAM;"""
 
 requestLogSql = """CREATE TABLE request_log (
-    user_id          INT(10) NOT NULL REFERENCES users(user_id)
+    user_id          INT(10) NOT NULL REFERENCES users(user_id),
     client_ip        VARCHAR(24) NOT NULL,
-    -- when a request has been made
-    when             TIMESTAMP(14) NOT NULL,
+    log_date         TIMESTAMP(14) NOT NULL,
 
-    if not NULL, this is a SEARCH request
     search_term  VARCHAR(255) NULL,
     -- if not NULL, this is EXTENDED SEARCH request. search_term and
     -- extended_search_title can't be both NULL or not NULL
@@ -418,22 +419,33 @@ requestLogSql = """CREATE TABLE request_log (
     error            INT(10) NULL,
     -- if not NULL, this is the article that was returned for SEARCH request
     -- (taking redirects into account)
-    article_title    VARCHAR(255) NULL,
+    article_title    VARCHAR(255) NULL
 ) TYPE=MyISAM;"""
 
 getCookieLogSql = """CREATE TABLE get_cookie_log (
     user_id         INT(10) NOT NULL REFERENCES users(user_id),
     client_ip       VARCHAR(24) NOT NULL,
-    when            TIMESTAME(14) NOT NULL,
+    log_date        TIMESTAMP(14) NOT NULL,
     cookie          VARCHAR(64) NOT NULL,
 ) TYPE=MyISAM;"""
 
 verifyRegCodeLogSql = """CREATE TABLE verify_reg_code_log (
     user_id         INT(10) NOT NULL REFERENCES users(user_id),
     client_ip       VARCHAR(24) NOT NULL,
-    when            TIMESTAME(14) NOT NULL
-    cookie          VARCHAR(64) NOT NULL
+    log_date        TIMESTAMP(14) NOT NULL,
+    cookie          VARCHAR(64) NOT NULL,
     reg_code_valid_p CHAR(1) NOT NULL
+) TYPE=MyISAM;"""
+
+
+# table contains list of valid registration codes
+regCodesSql = """CREATE TABLE reg_codes (
+  reg_code      VARCHAR(64) NOT NULL,
+  purpose       VARCHAR(255) NOT NULL,
+  when_entered  TIMESTAMP NOT NULL,
+  disabled_p    CHAR(1) NOT NULL DEFAULT 'f',
+
+  PRIMARY KEY (reg_code)
 ) TYPE=MyISAM;"""
 
 def delDataDb(conn):
@@ -442,7 +454,16 @@ def delDataDb(conn):
     cur.close()
     print "Database '%s' deleted" % MANAGEMENT_DB
 
+def insertRegCode(cur,regCode,fEnabled):
+    disabled_p = 'f'
+    if not fEnabled:
+        disabled_p = 't'
+    query = """INSERT INTO reg_codes (reg_code, purpose, when_entered, disabled_p) VALUES ('%s', 'test', now(), '%s');""" % (regCode,disabled_p)
+    cur.execute(query)
+
 def createDataDb(conn):
+    print "creating '%s' database" % MANAGEMENT_DB
+
     cur = conn.cursor()
     cur.execute("CREATE DATABASE %s" % MANAGEMENT_DB)
     cur.execute("USE %s" % MANAGEMENT_DB)
@@ -450,7 +471,10 @@ def createDataDb(conn):
     cur.execute(requestLogSql)
     cur.execute(getCookieLogSql)
     cur.execute(verifyRegCodeLogSql)
+    cur.execute(regCodesSql)
     cur.execute("GRANT ALL ON %s.* TO 'ipedia'@'localhost' IDENTIFIED BY 'ipedia';" % MANAGEMENT_DB)
+    insertRegCode(cur, iPediaServer.testValidRegCode, True)
+    insertRegCode(cur, iPediaServer.testDisabledRegCode, False)
     cur.close()
     print "Created '%s' database and granted perms to ipedia user" % MANAGEMENT_DB
 
