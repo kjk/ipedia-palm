@@ -108,10 +108,7 @@ public:
     
     static iPediaApplication& instance()
     {return static_cast<iPediaApplication&>(Application::instance());}
-
-    static void sendFinishedLookupEvent(uint_t event, LookupFinishedEventData& data)
-    { ArsLexis::sendEvent(event, data); }
-    
+   
     bool inStressMode() const
     {return stressMode_;}
     
