@@ -15,16 +15,7 @@ class iPediaConnection: public ArsLexis::FieldPayloadProtocolConnection
     uint_t formatVersion_;
     ArsLexis::String resultsFor_;
     DefinitionParser* definitionParser_;
-    
-    enum StatusString
-    {
-        statusStringResolvingAddress,
-        statusStringOpeningConnection,
-        statusStringSendingRequest,
-        statusStringWaitingForAnswer,
-        statusStringRetrievingResponse
-    };        
-    
+
     class SearchResultsHandler: public ArsLexis::FieldPayloadProtocolConnection::PayloadHandler
     {
         ArsLexis::String searchResults_;

@@ -95,19 +95,14 @@ ArsLexis::status_t iPediaConnection::enqueue()
         return error;
 
 #ifdef INTERNAL_BUILD
-    String status;
-    getResource(connectionStatusStrings, statusStringOpeningConnection, status);
+    lookupManager_.setStatusText(_T("Opening connection..."));
 #else
-    // I don't really see the value of storing strings in resuources (if we don't
-    // have localizations for different languages)
-    String status = _T("Downloading article");
+    lookupManager_.setStatusText(_T("Downloading article"));
 #endif
-    lookupManager_.setStatusText(status);
     lookupManager_.setPercentProgress(LookupManager::percentProgressDisabled);
     ArsLexis::sendEvent(LookupManager::lookupStartedEvent);
     return errNone;
 }
-
 
 ArsLexis::status_t iPediaConnection::open()
 {
@@ -118,11 +113,13 @@ ArsLexis::status_t iPediaConnection::open()
         return error;
 
     String status;
-    #if defined(_PALM_OS)        
-        getResource(connectionStatusStrings, statusStringSendingRequest, status);
-    #else
-        status=_T("Opening connection to server...");
-    #endif
+#ifdef INTERNAL_BUILD
+    // we want to see detailed info about the connection stages
+    // in internal build, but for users we simplify as much as possible
+    status=_T("Sending requests...");
+#else
+    status=+T("Downloading article");
+#endif
 
     lookupManager_.setStatusText(status);
     ArsLexis::sendEvent(LookupManager::lookupProgressEvent);
@@ -147,25 +144,29 @@ ArsLexis::status_t iPediaConnection::open()
 ArsLexis::status_t iPediaConnection::notifyProgress()
 {
     ArsLexis::status_t error=FieldPayloadProtocolConnection::notifyProgress();
-    if (!error)
-    {
-        String status;
-        StatusString index=statusStringSendingRequest;
-        if (!sending())
-            index=(response().empty()?statusStringWaitingForAnswer:statusStringRetrievingResponse);
-        #if defined(_PALM_OS)        
-            getResource(connectionStatusStrings, index, status);
-        #else
-            status=_T("Receiving...");
-        #endif
+    if (error)
+        return error;
 
-        lookupManager_.setStatusText(status);
-        uint_t progress=LookupManager::percentProgressDisabled;
-        if (inPayload())
-            progress=((payloadLength()-payloadLengthLeft())*100L)/payloadLength();
-        lookupManager_.setPercentProgress(progress);
-        ArsLexis::sendEvent(LookupManager::lookupProgressEvent);
+#ifdef INTERNAL_BUILD
+    String status;
+    if (sending())
+        status = _T("Sending request...");
+    else
+    {
+        if (response().empty())
+            status = _T("Waiting for server\'s answer...");
+        else
+            status = _T("Downloading article...");
     }
+    lookupManager_.setStatusText(status);
+#else
+    lookupManager_.setStatusText(_T("Downloading article..."));
+#endif
+    uint_t progress=LookupManager::percentProgressDisabled;
+    if (inPayload())
+        progress=((payloadLength()-payloadLengthLeft())*100L)/payloadLength();
+    lookupManager_.setPercentProgress(progress);
+    ArsLexis::sendEvent(LookupManager::lookupProgressEvent);
     return error;
 }
 

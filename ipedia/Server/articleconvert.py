@@ -5,7 +5,7 @@
 #  Convert the body of wikipedia article from original wikipedia
 #  format to our format
 
-import re,unicodedata,entities
+import sys,traceback,re,unicodedata,entities
 
 def stripBlocks(text, startPattern, endPattern):
     opened=0
@@ -89,6 +89,12 @@ def replaceWikiMacros(term, text):
     text=replaceRegExp(text, wikiMacroRe, "")
     return text
 
+def dumpException(e):
+    print str(e)
+    print sys.exc_info()[0]
+    print sys.exc_info()[1]
+    print traceback.print_tb(sys.exc_info()[2])
+
 # main function: given the text of wikipedia article in original wikipedia
 # format, return the article in our own format
 def convertArticle(term, text):
@@ -97,13 +103,13 @@ def convertArticle(term, text):
         text=replaceWikiMacros(term, text)
         text=text.replace('\r','')
         text=replaceRegExp(text, commentRe, '')     # This should be safe, as it's illegal in html to nest comments
-    
+
         text=stripTagBlocks(text, 'div')
         text=stripTagBlocks(text, 'table')
         text=stripBlocks(text, r'\{\|', r'\|\}')
-    
+
         text=replaceRegExp(text, scriptRe, '')
-    
+
         text=replaceTagList(text, ['b', 'strong'], "'''")
         text=replaceTagList(text, ['em', 'i', 'cite'], "''")
         text=replaceTagList(text, ['hr'], '----')
@@ -116,8 +122,9 @@ def convertArticle(term, text):
         text=text.strip()
         text+='\n'
         return text
-    except:
+    except Exception, ex:
         print "Exception while converting term: ", term
+        dumpException(ex)
         return ''
 
 class WikipediaLink:
