@@ -33,7 +33,7 @@ iPediaConnection::~iPediaConnection()
 
 #define protocolVersion _T("1")
 
-#define getDefinitionField      _T("Get-Definition")
+#define getArticleField         _T("Get-Article")
 #define getRandomField          _T("Get-Random-Article")
 #define resultsForField         _T("Results-For")
 #define definitionField         _T("Definition")
@@ -83,7 +83,7 @@ void iPediaConnection::prepareRequest()
         if (performFullTextSearch_)
             appendField(request, searchField, term_);
         else
-            appendField(request, getDefinitionField, term_);
+            appendField(request, getArticleField, term_);
     }
 
     if (!regCodeToVerify.empty())

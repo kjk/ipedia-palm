@@ -231,7 +231,7 @@ def doGetRandomNoTiming():
 
 def doGetDef(term):
     print "term: %s" % term
-    req = getRequestHandleCookie(getDefinitionField, term)
+    req = getRequestHandleCookie(getArticleField, term)
     rsp = Response(req.getString())
     handleCookie(rsp)
     assert rsp.hasField(transactionIdField)

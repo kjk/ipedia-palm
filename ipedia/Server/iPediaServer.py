@@ -72,16 +72,14 @@ getCookieField =        "Get-Cookie"
 # Value: cookie
 # Response: none
 cookieField =           "Cookie"
-# Client uses Get-Definition to request an article for a given text
+# Client uses Get-Article to request an article for a given title
 # Value: term for which we want the article (e.g. "seattle")
-# Response: Results-For or Not-Found or Search-Results (TODO: not sure about Search-Results)
+# Response: Results-For or Not-Found or Search-Results
 #  With Results-For server also returns Definition and Format-Version
-# TODO: change that to "Get-Article-With-Title" to maintain consistent terminology
-getDefinitionField =    "Get-Definition"
+getArticleField =       "Get-Article"
 # Client uses Get-Random-Article to get a random article
 # Value: none
 # Response: Results-For
-# TODO: change that to "Get-Random-Article" to maintain consistent terminology
 getRandomField =        "Get-Random-Article"
 # Sent by server along with Definition. Describes the format of Definition.
 # Allows us to future-proof the design.
@@ -89,18 +87,18 @@ getRandomField =        "Get-Random-Article"
 #   with 1 and will be increased by one every time we change the format.
 #   Currently we only have one format (Format-Version is 1)
 formatVersionField =    "Format-Version"
-# Sent by server in response to Get-Definition, Get-Random-Article. It's the
+# Sent by server in response to Get-Article, Get-Random-Article. It's the
 # article body text.
 # Value: size of definition followed by text of definition itself.
 # TODO: change to Article-Body to improve terminology
 definitionField =       "Definition"
-# Sent by server in response to Get-Definition, Get-Random-Article. It's the
+# Sent by server in response to Get-Article, Get-Random-Article. It's the
 # title of the article we're sending. Note: it might be different than title
-# requested by "Get-Definition" due to redirects.
+# requested by Get-Article due to redirects.
 # Value: title of the article
 # TODO: change to Article-Title to improve termionology
 resultsForField =       "Results-For"
-# Retruned by the server in response to Get-Definition, if the article hasn't been
+# Retruned by the server in response to Get-Article, if the article hasn't been
 # found.
 notFoundField =         "Not-Found"
 # Error is returned by the server if there was an error.
@@ -157,7 +155,7 @@ validClientFields = {
   transactionIdField     : True,
   cookieField            : True,
   getCookieField         : True,
-  getDefinitionField     : True,
+  getArticleField        : True,
   getRandomField         : False,
   regCodeField           : True,
   searchField            : True,
@@ -755,7 +753,7 @@ class iPediaProtocol(basic.LineReceiver):
                 self.deviceInfoToken = value
             elif cookieField == field:
                 self.cookie = value
-            elif getDefinitionField == field:
+            elif getArticleField == field:
                 self.requestedTerm = value
             elif regCodeField == field:
                 self.regCode = value

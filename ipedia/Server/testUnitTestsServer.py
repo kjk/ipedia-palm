@@ -167,7 +167,7 @@ class ArsUtils(unittest.TestCase):
 
     def test_GetSeattle(self):
         title = "seattle"
-        req = getRequestHandleCookie(getDefinitionField, title)
+        req = getRequestHandleCookie(getArticleField, title)
         #print req.getString()
         rsp = Response(req)
         #print rsp.getText()
@@ -178,7 +178,7 @@ class ArsUtils(unittest.TestCase):
     # TODO: this one doesn't work
     def disable_test_GetSeattleWithValidRegcode(self):
         title = "seattle"
-        req = getRequestHandleCookie(getDefinitionField, title)
+        req = getRequestHandleCookie(getArticleField, title)
         req.addField(regCodeField,testValidRegCode)
         #print req.getString()
         rsp = Response(req)
@@ -190,7 +190,7 @@ class ArsUtils(unittest.TestCase):
     def test_NotFound(self):
         # Ok, so I can't really guarantee that a given field doesn't exist
         # but this is a really good guess
-        req = getRequestHandleCookie(getDefinitionField, "asdfasdflkj324;l1kjasd13214aasdf341l324")
+        req = getRequestHandleCookie(getArticleField, "asdfasdflkj324;l1kjasd13214aasdf341l324")
         rsp = Response(req)
         self.assertFieldsExist(rsp,[transactionIdField,cookieField,notFoundField])
         self.assertFieldEqual(rsp, transactionIdField, req.transactionId)
