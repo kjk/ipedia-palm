@@ -219,6 +219,10 @@ def getDbNameFromFileName(sqlFileName):
 #   - extract link from articles
 # Second pass: do the conversion, including veryfing links and put
 # converted articles in the database.
+# TODO: do something about case-insensitivity. Article titles in Wikipedia are
+# case-sensitive but our title column in the database is not. Currently we just
+# over-write. It's ok for redirects but for real articles we need to investigate
+# how often that happens and decide what to do about that
 def convertArticles(sqlDump,dbName,articleLimit):
     count = 0
     redirects = {}
@@ -285,16 +289,12 @@ def convertArticles(sqlDump,dbName,articleLimit):
         if article.fRedirect():
             if redirectsExisting.has_key(title):
                 redirect = redirectsExisting[title]
-                #print "INSERT REDIRECT '%s' => '%s' (article.getRedirect()='%s',convertedArticle.getRedirect()='%s'" % (title,redirect,article.getRedirect(),convertedArticle.getRedirect())
                 try:
                     title = title.replace("_", " ")
                     redirect = redirect.replace("_", " ")
                     ipedia_write_cur.execute("""INSERT INTO redirects (title, redirect) VALUES ('%s', '%s')""" % (dbEscape(title), dbEscape(redirect)))
                 except:
-                    print "REDERICT for '%s' => '%s' failed. Shouldn't happen" % (title, redirect)
-                    raise
-            #else:
-            #    print "NO REDIRECT '%s' => '%s' (convertedArticle.getRedirect='%s')" % (title, article.getRedirect(), convertedArticle.getRedirect())
+                    print "REDERICT for '%s' => '%s' failed (probably due to case-insensitivity)" % (title, redirect)
         else:
             print "ARTICLE '%s'" % title
             title = title.replace("_", " ")
@@ -310,6 +310,7 @@ def convertArticles(sqlDump,dbName,articleLimit):
                     print "dup: " + title
                 if g_fVerbose:
                     log_txt += "Update existing record"
+                print "DUP ARTICLE: '%s'" % title
                 ipedia_write_cur.execute("""UPDATE articles SET body='%s' WHERE title='%s'""" % (dbEscape(converted), dbEscape(title)))
             if g_fVerbose:
                 print log_txt
