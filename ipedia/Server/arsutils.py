@@ -3,7 +3,7 @@
 #
 # Collect routines frequently used in other places
 
-import os,sys,time
+import os,sys,time, traceback
 try:
     import process
 except:
@@ -378,3 +378,9 @@ def extractHotSyncName(deviceInfo):
         return di["HS"]
     return None
     
+def dumpException(e):
+    print str(e)
+    print sys.exc_info()[0]
+    print sys.exc_info()[1]
+    print traceback.print_tb(sys.exc_info()[2])
+
