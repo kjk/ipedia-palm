@@ -535,10 +535,14 @@ class iPediaProtocol(basic.LineReceiver):
         elif self.fHasField(getRandomField):
             self.logRandomSearchRequest(self.userId,self.searchResult,self.error)
 
-    def finish(self):
+    # the last stage of processing a request: if there was an error, append
+    # errorField to the response, send the response to the client and
+    # log the request
+    def finish(self, error):
         global g_fVerbose
-        if None != self.error:
-            self.outputField(errorField, str(self.error))
+
+        if None != error:
+            self.outputField(errorField, str(error))
         self.transport.loseConnection()
 
         self.logRequest()
@@ -977,7 +981,6 @@ class iPediaProtocol(basic.LineReceiver):
         global g_fVerbose, validClientFields
 
         assert None == self.error
-        self.error = error
 
         try:
             if g_fVerbose:
@@ -988,28 +991,25 @@ class iPediaProtocol(basic.LineReceiver):
                 self.outputField(transactionIdField, self.getFieldValue(transactionIdField))
 
             # exit if there was an error during request parsing
-            if None != self.error:
-                return self.finish()
+            if None != error:
+                return self.finish(error)
 
             if not self.fHasField(transactionIdField):
-                self.error = iPediaServerError.malformedRequest
-                return self.finish()
+                return self.finish(iPediaServerError.malformedRequest)
 
             # protocolVersion and clientInfo must exist
             if not self.fHasField(protocolVersionField):
-                self.error = iPediaServerError.malformedRequest
-                return self.finish()
+                return self.finish(iPediaServerError.malformedRequest)
 
             if not self.fHasField(clientInfoField):
-                self.error = iPediaServerError.malformedRequest
-                return self.finish()
+                return self.finish(iPediaServerError.malformedRequest)
 
             if PROTOCOL_VERSION != self.getFieldValue(protocolVersionField):
-                self.error = iPediaServerError.invalidProtocolVersion
-                return self.finish()
+                return self.finish(iPediaServerError.invalidProtocolVersion)
 
             if not self.computeUserId():
-                return self.finish()
+                assert None != self.error 
+                return self.finish(self.error)
 
             assert self.userId
 
@@ -1020,7 +1020,8 @@ class iPediaProtocol(basic.LineReceiver):
                 if None != fieldHandleProc:
                     ret = fieldHandleProc(self)
                     if not ret:
-                        return self.finish()
+                        assert None != self.error 
+                        return self.finish(self.error)
 
             # too simple to warrant functions
             if self.fHasField(getArticleCountField):
@@ -1031,9 +1032,9 @@ class iPediaProtocol(basic.LineReceiver):
 
         except Exception, ex:
             arsutils.dumpException(ex)
-            self.error=iPediaServerError.serverFailure
+            return self.finish(iPediaServerError.serverFailure)
  
-        self.finish()
+        self.finish(None)
 
     def lineReceived(self, request):
         try:
