@@ -244,7 +244,7 @@ class iPediaProtocol(basic.LineReceiver):
         self.dbManagement=None
         self.dbArticles=None
         self.error=0
-        self.clientVersion=None
+        self.clientInfo=None
         self.protocolVersion=None
         self.requestedTerm=None
         self.term=None
@@ -287,6 +287,11 @@ class iPediaProtocol(basic.LineReceiver):
         self.transport.write(lineSeparator)
         if g_fVerbose:
             print payload
+
+    def getClientIp(self):
+        peerInfo = self.transport.getPeer()
+        clientIp = peerInfo.host
+        return clientIp
         
     def logRequest(self):
         cursor=None
@@ -308,12 +313,10 @@ class iPediaProtocol(basic.LineReceiver):
             if self.term:
                 defFor='\''+db.escape_string(self.term)+'\''
             cursor=db.cursor()
-            peerInfo = self.transport.getPeer()
-            print "connection from: ", peerInfo
-            clientIp = peerInfo[0]
-            query=("""INSERT INTO requests (client_ip, has_get_cookie_field, cookie_id, reg_code, requested_term, error, definition_for, request_date) """
-                                        """VALUES (%d, %d, %s, %d, %s, %d, %s, now())""" % (clientIp, hasGetCookie, cookieIdStr, regCodeToLog, reqTerm, self.error, defFor))
-            cursor.execute(query)
+            clientIp = self.getClientIp()
+            #query=("""INSERT INTO requests (client_ip, has_get_cookie_field, cookie_id, reg_code, requested_term, error, definition_for, request_date) """
+            #                            """VALUES (%d, %d, %s, %d, %s, %d, %s, now())""" % (clientIp, hasGetCookie, cookieIdStr, regCodeToLog, reqTerm, self.error, defFor))
+            #cursor.execute(query)
             cursor.close()
         except _mysql_exceptions.Error, ex:
             dumpException(ex)
@@ -407,6 +410,24 @@ class iPediaProtocol(basic.LineReceiver):
             self.error=iPediaServerError.serverFailure
         return False;
 
+    # we ignore all errors from here
+    def logRegCodeToVerify(self,userId,regCode,fRegCodeValid):
+        reg_code_valid_p = 'f'
+        if fRegCodeValid:
+            reg_code_valid_p = 't'
+
+        cursor=None
+        try:
+            db=self.getManagementDatabase()
+            cursor=db.cursor()
+            cursor.execute("""INSERT INTO verify_reg_code_log (user_id, client_ip, when, reg_code, reg_code_valid_p) VALUES (%d, '%s', now()), '%s', '%s'""" % 
+                            (userId, db.esacape_string(self.getClientIp()),db.escape_string(regCode), reg_code_valid_p))
+            cursor.close()
+        except _mysql_exceptions.Error, ex:
+            if cursor:
+                cursor.close()        
+            dumpException(ex)
+
     def handleVerifyRegistrationCodeRequest(self):
         if not self.cookieId:
             self.error=iPediaServerError.malformedRequest
@@ -416,6 +437,8 @@ class iPediaProtocol(basic.LineReceiver):
             self.outputField(regCodeValidField, "1")
         else:
             self.outputField(regCodeValidField, "0")
+        # TODO: get user ID
+        self.logRegCodeToVerify(userId,self.regCodeToVerify,fRegCodeExists)
         return True
 
     def handleRegistrationCodeRequest(self):
@@ -607,8 +630,6 @@ class iPediaProtocol(basic.LineReceiver):
         
     def fOverUnregisteredLookupsLimit(self):
         global g_unregisteredLookupsDailyLimit, g_unregisteredLookupsLimit, g_fDisableRegistrationCheck
-        if g_fDisableRegistrationCheck:
-            return False
         cursor=None
         fOverLimit=False
         try:
@@ -620,7 +641,6 @@ class iPediaProtocol(basic.LineReceiver):
             cursor.execute(query)
             row=cursor.fetchone()
             assert None!=row
-            print "lookups by this cookie: %s" % row[0]
             if row[0]>=g_unregisteredLookupsLimit:
                 query="SELECT COUNT(*) FROM requests WHERE NOT (requested_term is NULL) AND cookie_id=%d AND request_date>DATE_SUB(CURDATE(), INTERVAL 1 DAY)" % self.cookieId
                 cursor.execute(query)
@@ -636,6 +656,8 @@ class iPediaProtocol(basic.LineReceiver):
                 cursor.close()
             self.error=iPediaServerError.serverFailure
             fOverLimit=True
+        if g_fDisableRegistrationCheck:
+            fOverLimit = False
         return fOverLimit
         
     def answer(self):
@@ -644,9 +666,23 @@ class iPediaProtocol(basic.LineReceiver):
             if g_fVerbose:
                 print "--------------------------------------------------------------------------------"
 
+            # check transaction id before anything else
             if self.transactionId:
                 self.outputField(transactionIdField, self.transactionId)
             else:
+                return self.finish()
+
+            # protocolVersion and clientInfo must exist
+            if not self.protocolVersion:
+                self.error = iPediaServerError.malformedRequest
+                return self.finish()
+
+            if not self.clientInfo:
+                self.error = iPediaServerError.malformedRequest
+                return self.finish()
+
+            if PROTOCOL_VERSION != self.protocolVersion:
+                self.error = iPediaServerError.invalidProtocolVersion
                 return self.finish()
 
             if self.deviceInfoToken and not self.handleGetCookieRequest():
@@ -660,11 +696,6 @@ class iPediaProtocol(basic.LineReceiver):
                 return self.finish()
 
             if self.error:
-                return self.finish()
-
-            assert self.protocolVersion            
-            if PROTOCOL_VERSION != self.protocolVersion:
-                self.error = iPediaServerError.invalidProtocolVersion
                 return self.finish()
 
             if self.regCode and not self.handleRegistrationCodeRequest():
@@ -708,8 +739,8 @@ class iPediaProtocol(basic.LineReceiver):
                 self.error=iPediaServerError.malformedRequest
                 return self.answer()
 
+            # empty line marks end of request
             if request == "":
-                # empty line marks end of request
                 return self.answer()
 
             if self.error:
@@ -744,7 +775,7 @@ class iPediaProtocol(basic.LineReceiver):
             elif protocolVersionField == field:
                 self.protocolVersion = value
             elif clientInfoField == field:
-                self.clientVersion = value
+                self.clientInfo = value
             elif getCookieField == field:
                 self.deviceInfoToken = value
             elif cookieField == field:
@@ -877,7 +908,7 @@ class iPediaTelnetProtocol(basic.LineReceiver):
                 self.transport.write( "%s (%d articles)\r\n" % (name,articleCount))
             return
         articleCount = dbsInfo[dbName]
-        # don't switch if articleCount is smaller than 100.000 - such database
+        # don't switch if articleCount is smaller than 100.000 - such a database
         # can't be good
         if articleCount < 100000:
             self.transport.write("Database '%s' doesn't have enough articles ('%d', at least 100.000 required)\r\n" % (dbName, articleCount))

@@ -391,45 +391,50 @@ def createDb(conn,dbName):
     cur.close()
     print "Created '%s' database and granted perms to ipedia user" % dbName
 
-cookiesSql = """CREATE TABLE `cookies` (
-  `id` int(10) unsigned NOT NULL auto_increment,
-  `cookie` varchar(32) binary NOT NULL default '',
-  `device_info_token` varchar(255) NOT NULL default '',
-  `issue_date` timestamp(14) NOT NULL,
-  PRIMARY KEY  (`id`),
-  UNIQUE KEY `cookie_unique` (`cookie`)
+usersSql = """CREATE TABLE users (
+  user_id           INT(10) NOT NULL auto_increment,
+  cookie            VARCHAR(64)  NOT NULL,
+  device_info       VARCHAR(255) NOT NULL,
+  cookie_issue_date TIMESTAMP(14) NOT NULL,
+  reg_code          VARCHAR(64) NULL,
+  registration_date TIMESTAMP(14) NOT NULL,
+  disabled_p        CHAR(1) NOT NULL default 'f'
+  PRIMARY KEY(id)
 ) TYPE=MyISAM;"""
 
-regCodesSql = """CREATE TABLE reg_codes (
-    reg_code    VARCHAR(64) NOT NULL,
-    purpose     VARCHAR(255) NOT NULL,
-    when_entered TIMESTAMP NOT NULL,
-    disabled_p   CHAR(1) NOT NULL DEFAULT 'f',
+requestLogSql = """CREATE TABLE request_log (
+    user_id          INT(10) NOT NULL REFERENCES users(user_id)
+    client_ip        VARCHAR(24) NOT NULL,
+    -- when a request has been made
+    when             TIMESTAMP(14) NOT NULL,
 
-    PRIMARY KEY (reg_code)
-) TYPE=MyISAM;""";
-
-regUsersSql = """CREATE TABLE `registered_users` (
-  `id` int(10) unsigned NOT NULL auto_increment,
-  `cookie_id` int(10) unsigned default '0',
-  `user_name` varchar(255) default '',
-  `reg_code` varchar(255) binary NOT NULL default '',
-  `registration_date` timestamp(14) NOT NULL,
-  PRIMARY KEY  (`id`)
+    if not NULL, this is a SEARCH request
+    search_term  VARCHAR(255) NULL,
+    -- if not NULL, this is EXTENDED SEARCH request. search_term and
+    -- extended_search_title can't be both NULL or not NULL
+    extended_search_term VARCHAR(255) NULL,
+    -- if not NULL, there was an error processing the request and this is the 
+    -- error number
+    error            INT(10) NULL,
+    -- if not NULL, this is the article that was returned for SEARCH request
+    -- (taking redirects into account)
+    article_title    VARCHAR(255) NULL,
 ) TYPE=MyISAM;"""
 
-requestsSql = """CREATE TABLE `requests` (
-  `id` int(10) unsigned NOT NULL auto_increment,
-  `client_ip` int(10) unsigned NOT NULL default '0',
-  `has_get_cookie_field` tinyint(1) NOT NULL default '0',
-  `cookie_id` int(10) unsigned default '0',
-  reg_code VARCHAR(64) NULL default '',
-  `requested_term` varchar(255) default '',
-  `error` int(10) unsigned NOT NULL default '0',
-  `request_date` timestamp(14) NOT NULL,
-  `definition_for` varchar(255) default '',
-  PRIMARY KEY  (`id`)
-) TYPE=MyISAM; """
+getCookieLogSql = """CREATE TABLE get_cookie_log (
+    user_id         INT(10) NOT NULL REFERENCES users(user_id),
+    client_ip       VARCHAR(24) NOT NULL,
+    when            TIMESTAME(14) NOT NULL,
+    cookie          VARCHAR(64) NOT NULL,
+) TYPE=MyISAM;"""
+
+verifyRegCodeLogSql = """CREATE TABLE verify_reg_code_log (
+    user_id         INT(10) NOT NULL REFERENCES users(user_id),
+    client_ip       VARCHAR(24) NOT NULL,
+    when            TIMESTAME(14) NOT NULL
+    cookie          VARCHAR(64) NOT NULL
+    reg_code_valid_p CHAR(1) NOT NULL
+) TYPE=MyISAM;"""
 
 def delDataDb(conn):
     cur = conn.cursor()
@@ -441,10 +446,10 @@ def createDataDb(conn):
     cur = conn.cursor()
     cur.execute("CREATE DATABASE %s" % MANAGEMENT_DB)
     cur.execute("USE %s" % MANAGEMENT_DB)
-    cur.execute(cookiesSql)
-    cur.execute(regCodesSql)
-    cur.execute(regUsersSql)
-    cur.execute(requestsSql)
+    cur.execute(usersSql)
+    cur.execute(requestLogSql)
+    cur.execute(getCookieLogSql)
+    cur.execute(verifyRegCodeLogSql)
     cur.execute("GRANT ALL ON %s.* TO 'ipedia'@'localhost' IDENTIFIED BY 'ipedia';" % MANAGEMENT_DB)
     cur.close()
     print "Created '%s' database and granted perms to ipedia user" % MANAGEMENT_DB

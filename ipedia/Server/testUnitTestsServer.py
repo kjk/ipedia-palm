@@ -143,9 +143,36 @@ class ArsUtils(unittest.TestCase):
         #print req.getString()
         rsp = Response(req)
         #print rsp.getText()
-        self.assertFieldsExist(rsp,[errorField,transactionIdField,cookieField])
+        self.assertFieldsExist(rsp,[errorField,transactionIdField])
         self.assertFieldEqual(rsp, transactionIdField, req.transactionId)
         self.assertFieldEqual(rsp,errorField,iPediaServerError.invalidProtocolVersion)
+
+    def test_ClientInfoMalformed(self):
+        req = Request("1", None)
+        rsp = Response(req)
+        #print rsp.getText()
+        self.assertFieldsExist(rsp,[errorField])
+        self.assertFieldEqual(rsp,errorField,iPediaServerError.requestArgumentMissing)
+
+    def test_ClientInfoMissing(self):
+        req = Request()
+        req.clearFields()
+        req.addTransactionId()
+        req.addField(protocolVersionField,"1")
+        rsp = Response(req)
+        self.assertFieldsExist(rsp,[errorField,transactionIdField])
+        self.assertFieldEqual(rsp, transactionIdField, req.transactionId)
+        self.assertFieldEqual(rsp,errorField,iPediaServerError.malformedRequest)
+
+    def test_ProtocolMissing(self):
+        req = Request()
+        req.clearFields()
+        req.addTransactionId()
+        req.addField(clientInfoField,"Python test client 1.0")
+        rsp = Response(req)
+        self.assertFieldsExist(rsp,[errorField,transactionIdField])
+        self.assertFieldEqual(rsp, transactionIdField, req.transactionId)
+        self.assertFieldEqual(rsp,errorField,iPediaServerError.malformedRequest)
 
     def test_InvalidCookie(self):
         # this is guaranteed to be an invalid cookie
@@ -235,6 +262,14 @@ class ArsUtils(unittest.TestCase):
         # date is in format YYYYMMDD
         date = rsp.getField(databaseTimeField)
         assert 8==len(date)
+
+    def test_GetCookieNoDeviceInfo(self):
+        # TODO:
+        pass
+
+    def test_GetCookieInvalidDeviceInfo(self):
+        # TODO:
+        pass
 
 if __name__ == "__main__":
     client.printUsedServer()

@@ -1,4 +1,6 @@
 # this file contains ideas for things that we might convert in the future
+# TODO: in 2004-07-11 Reggae gets wiped out completely (probably becauase of 
+# mismatched {{ } at the beginning
 
 #this test got broken when moving conversion from 2.3 to 2.2 (lack of unicode data module)
 @16

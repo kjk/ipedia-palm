@@ -76,14 +76,13 @@ code.
 
 Our users table:
 
---- TODO: find standard SQL equivalent of INT(10). Or maybe it is standard SQL?
 CREATE TABLE users (
   user_id           INT(10) NOT NULL auto_increment,
   cookie            VARCHAR(64)  NOT NULL,
   device_info       VARCHAR(255) NOT NULL,
   cookie_issue_date TIMESTAMP(14) NOT NULL,
   reg_code          VARCHAR(64) NULL,
-  registration_date TIMESTAMP(14) NOT NULL
+  registration_date TIMESTAMP(14) NOT NULL,
   disabled_p        CHAR(1) NOT NULL default 'f'
   PRIMARY KEY(id)
 ) TYPE=MyISAM;
@@ -110,15 +109,14 @@ CREATE TABLE request_log (
 CREATE TABLE get_cookie_log (
     user_id         INT(10) NOT NULL REFERENCES users(user_id),
     client_ip       VARCHAR(24) NOT NULL,
-    when            TIMESTAME(14) NOT NULL
+    when            TIMESTAME(14) NOT NULL,
     cookie          VARCHAR(64) NOT NULL
 ) TYPE=MyISAM;
 
 CREATE TABLE verify_reg_code_log (
     user_id         INT(10) NOT NULL REFERENCES users(user_id),
     client_ip       VARCHAR(24) NOT NULL,
-    when            TIMESTAME(14) NOT NULL
-    cookie          VARCHAR(64) NOT NULL
+    when            TIMESTAME(14) NOT NULL,
     reg_code        VARCHAR(64) NULL,
     reg_code_valid_p CHAR(1) NOT NULL
 ) TYPE=MyISAM;

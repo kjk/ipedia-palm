@@ -74,21 +74,27 @@ def socket_readAll(sock):
     return result
 
 class Request:
-    def __init__(self, protocolVer="1", clientVer="0.5"):
+    def __init__(self, protocolVer="1", clientVer="Python testing client 1.0"):
         self.fields = []
         self.lines = []
 
-        self.protocolVer   = protocolVer
-        self.clientVer     = clientVer
-        self.transactionId = "%x" % random.randint(0, 2**16-1)
+        self.addField(protocolVersionField, protocolVer)
+        self.addField(clientInfoField,      clientVer)
+        self.addTransactionId()
 
-        self.addField(protocolVersionField, self.protocolVer)
-        self.addField(clientInfoField,      self.clientVer)
+    def addTransactionId(self):
+        self.transactionId = "%x" % random.randint(0, 2**16-1)
         self.addField(transactionIdField,   self.transactionId)
 
     # we expose addLine() so that clients can also create malformed requests
     def addLine(self,line):
         self.lines.append(line)
+
+    # we expose clearFields() so that clients can create malformed requests
+    # (missing protocol version or transaction id or client info)
+    def clearFields(self):
+        self.fields = []
+        self.lines = []
 
     def addField(self,fieldName,value):
         assert ':' != fieldName[-1]
