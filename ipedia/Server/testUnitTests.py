@@ -16,6 +16,13 @@ class ArsUtils(unittest.TestCase):
         self.assertEqual(arsutils.fIsBzipFile("me.bz"), False)
         self.assertEqual(arsutils.fIsBzipFile("me.bz2.txt"), False)
 
+testDataImg = [ ["[[Image:hello]]", ""],
+                ["pre[[image:foo.gif]]post", "prepost"],
+                ["\noi [[iMage:blast.jpg]]pa", "\noi pa"],
+                ["pre [[[image:mah[[glock\n]]ah]]gr", "pre [gr"],                
+                [ "as[[Image:foo]] ]]", "as ]]"]
+           ]
+
 class ArticleConvert(unittest.TestCase):
     def test_WikipediaLinkEq(self):
         # testing if I got __eq__ and __ne__ right
@@ -68,11 +75,49 @@ class ArticleConvert(unittest.TestCase):
                      ["<div>ah</div>\nas", "div", "\nas"],
                      [ """<div style="float:right; margin:0 0 1em 1em;">[[Image:LeonardoDiCaprio.jpg]]</div>
 
-'''""", "div", "\n\n'''"],
+lost""", "div", "\n\nlost"],
                      ]
         for td in testData:
             txt = stripTagBlocks( td[0], td[1])
             self.assertEqual(txt,td[2])
+
+    def test_articleConvert(self):
+        testData = [ ["<div>ah</div>eh", "eh\n"],
+                     ["<div>ah</div>\nas", "as\n"],
+                     [ """<div style="float:right; margin:0 0 1em 1em;">[[Image:LeonardoDiCaprio.jpg]]</div>lost""", "lost\n"],
+                     [ "boo[[Image:LeonardoDiCaprio.jpg]]ha", "booha\n"],
+                     ]
+        for td in testData:
+            txt = convertArticle("test",td[0])
+            self.assertEqual(txt,td[1])
+
+        tdCopy = [t for t in testDataImg]
+        for td in tdCopy:
+            txt = removeImageStr(td[0])
+            self.assertEqual(txt,td[1])
+
+    def test_removeImageStr(self):
+        tdCopy = [t for t in testDataImg]
+        tdCopy.append(["oh[[image:man[[bo[[la]]e]]]]gal", "ohgal"])
+        for td in tdCopy:
+            txt = removeImageStr(td[0])
+            self.assertEqual(txt,td[1])
+
+    def test_removeImageStrOld(self):
+        tdCopy = [t for t in testDataImg]
+        # TODO: this needs to be fixed for removeImageStrOld!
+        # tdCopy.append(["oh[[image:man[[bo[[la]]e]]]]gal", "ohgal"])
+        for td in tdCopy:
+            txt = removeImageStrOld(td[0])
+            self.assertEqual(txt,td[1])
+
+    def test_removeImageRx(self):
+        tdCopy = [t for t in testDataImg]
+        # TODO: this needs to be fixed for removeImageStrOld!
+        # tdCopy.append(["oh[[image:man[[bo[[la]]e]]]]gal", "ohgal"])
+        for td in tdCopy:
+            txt = removeImageRx(td[0])
+            self.assertEqual(txt,td[1])
 
 class WikipediaSql(unittest.TestCase):
 

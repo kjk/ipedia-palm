@@ -65,59 +65,109 @@ def fixSup2(text):
     outTxt = string.join(outArr,"&sup2;")
     return outTxt
 
-# Remove image tags. We can't use regexp because image links can
-# contain other wiki links e.g.
+# Remove image tags, version using regexps.
+imageRe=re.compile(r"\[\[image:.*?(\[\[.*?\]\].*?)*?\]\]", re.I+re.S)
+def removeImageRx(text):
+    return replaceRegExp(text, imageRe, "")
+
+# Remove image tags, version not using regexps.
 # [[Image:Seattlepikeplace2002.JPG|right|thumb|[[Pike Place Market]]]] 
 # So we need remove everything between "[[Image:" and "]]", ignoring
 # embedded links like "[[foo]]"
 
 # case-insesitivity is important so we'll use regexp instead of string.find()
-#imageStartRe = re.compile("\[\[Image:", re.I)
-imageRe=re.compile(r"\[\[image:.*?(\[\[.*?\]\].*?)*?\]\]", re.I+re.S)
-def removeImage(text):
-    return replaceRegExp(text, imageRe, "")
-#    while True:
-#        match = imageStartRe.search(text)
-#        if None == match:
-#            return text
-#        txtLen = len(text)
-#        posImageStart = match.start()
-#        # now find ending "]]" but counting nesting levels of "[[" and "]]"
-#        nesting = 0
-#        prevChar = None
-#        pos = match.end()
-#        fChanged = False
-#        while pos < txtLen:
-#            if prevChar==']' and text[pos]==']':
-#                if nesting>0:
-#                    nesting -= 1
-#                else:
-#                    # remove image stuff
-#                    txtTmp = text[:posImageStart] + text[pos+2:]
-#                    text = txtTmp
-#                    fChanged = True
-#                    break
-#            if '['==prevChar and '['==text[pos]:
-#                nesting += 1
-#            prevChar = text[pos]
-#            pos += 1
-#        if not fChanged:
-#            return text
-    
+imageStartRe = re.compile("\[\[Image:", re.I)
+# TODO: it doesn't always work, e.g. for "oh[[image:man[[bo[[la]]e]]]]gal"
+def removeImageStrOld(text):
+    while True:
+        match = imageStartRe.search(text)
+        if None == match:
+            return text
+        txtLen = len(text)
+        posImageStart = match.start()
+        # now find ending "]]" but counting nesting levels of "[[" and "]]"
+        nesting = 0
+        prevChar = None
+        pos = match.end()
+        fChanged = False
+        while pos < txtLen:
+            curChar = text[pos]
+            if ']'==prevChar and ']'==curChar:
+                if nesting>0:
+                    nesting -= 1
+                else:
+                    # remove image stuff
+                    txtTmp = text[:posImageStart] + text[pos+1:]
+                    text = txtTmp
+                    fChanged = True
+                    break
+            if '['==prevChar and '['==curChar:
+                nesting += 1
+            prevChar = curChar
+            pos += 1
+        if not fChanged:
+            return text
+
+# Remove image tags, another version using strings.
+# TODO: this sucker doesn't work either
+def removeImageStr(text):
+    while True:
+        match = imageStartRe.search(text)
+        if None == match:
+            return text
+        txtLen = len(text)
+        posImageStart = match.start()
+        curPos = posImageStart + len("[[Image:")
+        assert curPos == match.end()
+        nesting = 0
+        fChanged = False
+        while True:
+            openPos  = text.find("[[", curPos)
+            closePos = text.find("]]", curPos)
+
+            if -1 == closePos:
+                # we didn't find an ending "]]" so something is wrong, but
+                # we can't do much about it
+                break
+
+            if -1 == openPos:
+                # we didn't find starting "[[" for nested tag but found
+                # ending "]]". If nesting level is 0, then we need to remove
+                # everything in between, otherwise decrease nesting level
+                if nesting == 0:
+                    txtTmp = text[:posImageStart] + text[closePos+len("]]"):]
+                    text = txtTmp
+                    fChanged = True
+                    break
+                else:
+                    nesting -= 1
+                    curPos = closePos + len("[[")
+                    continue
+
+            # we have both "[[" and "]]"
+            if openPos < closePos:
+                # we have "[[" before "]]", so we increase nesting level
+                nesting += 1
+                curPos = openPos + len("[[")
+                continue
+            else:
+                nesting -= 1
+                if nesting <= 0:
+                    txtTmp = text[:posImageStart] + text[closePos+len("]]"):]
+                    text = txtTmp
+                    fChanged = True
+                    break
+
+            assert nesting>=0
+
+        if not fChanged:
+            return text
 
 commentRe=re.compile("<!--.*?-->", re.S)
-divRe=re.compile("<div.*?</div>", re.I+re.S)
-tableRe=re.compile("<table.*?</table>", re.I+re.S)
-captionRe=re.compile("<caption.*?</caption>", re.I+re.S)
-tbodyRe=re.compile("<tbody.*?</tbody>", re.I+re.S)
-theadRe=re.compile("<thead.*?</thead>", re.I+re.S)
-trRe=re.compile("<tr.*?</tr>", re.I+re.S)
-tdRe=re.compile("<td.*?</td>", re.I+re.S)
 scriptRe=re.compile("<script.*?</script>", re.I+re.S)
 badLinkRe=re.compile(r"\[\[((\w\w\w?(-\w\w)?)|(simple)|(image)|(media)):.*?\]\]", re.I+re.S)
 # most links to other-language version are caught by badLinkRe, but not "tokipona"
 tokiponaRe=re.compile(r"\[\[tokipona:.*?\]\]", re.I+re.S)
-#numEntityRe=re.compile(r'&#(\d+);')
 
 multipleLinesRe=re.compile("\n{3,100}")
 # replace multiple (1+) empty lines with just one empty line.
@@ -163,7 +213,7 @@ def convertArticle(term, text):
     try:
         text=text.replace('__NOTOC__', '')
         text=fixSup2(text)
-        text=removeImage(text)
+        text=removeImageRx(text)
         # remove categories. TODO: provide a better support for categories
         # i.e. we remember categories on the server and client can display
         # all articles in a given category
