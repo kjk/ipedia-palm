@@ -16,6 +16,8 @@
 #define ARSLEXIS_USE_NEW_FRAMEWORK 1
 #define _PALM_OS  1
 
+#define ALLOCATION_LOG_PATH "\\var\\log\\iPedia_allocation.log"
+
 #ifndef NDEBUG
 //! Some functions depend on this non-standard symbol instead of standard-compliant @c NDEBUG.
 #define DEBUG
