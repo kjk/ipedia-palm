@@ -48,8 +48,8 @@ fieldSeparator =    ": "
 # Response: none
 # Currently we only have one protocol of version 1.
 protocolVersionField =  "Protocol-Version"
-# Client-version is sent by a client with every request. It enables us to
-# track which versions are currently used.
+# Client-version is sent by a client with every request. It's purely informational
+# field that enables us to track which versions are used.
 # Value: version of the client, by convention it matches the software version of the client
 # Response: none
 # TODO: change it to Client-Info which includes both version and the platform
