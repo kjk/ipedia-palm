@@ -13,8 +13,9 @@
 # requires process module from
 # http://starship.python.net/crew/tmick/index.html#process
 
-import sys,string,re,time,urllib2,os,os.path,process,smtplib
+import sys,string,re,time,urllib2,os,os.path,smtplib
 import arsutils, wikipediasql, wikiToDbConvert
+import process
 
 try:
     import psyco
@@ -60,6 +61,11 @@ else:
         MAILHOST = "mail.nwlink.com"
         FROM = "kjk@nwlink.com"
         g_machine = "DVD"
+    if "GIZMO" == os.getenv("COMPUTERNAME"):
+        g_workingDir = "c:\\ArsLexis\\iPedia\\"
+        MAILHOST = "sound.eti.pg.gda.pl"
+        FROM = "rabban@sound.eti.pg.gda.pl"
+        g_machine = "GIZMO"
 
 assert None != g_workingDir
 
