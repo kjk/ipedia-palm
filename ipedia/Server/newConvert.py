@@ -285,16 +285,16 @@ def convertArticles(sqlDump,dbName,articleLimit):
         if article.fRedirect():
             if redirectsExisting.has_key(title):
                 redirect = redirectsExisting[title]
-                print "INSERT REDIRECT '%s' => '%s' (article.getRedirect()='%s',convertedArticle.getRedirect()='%s'" % (title,redirect,article.getRedirect(),convertedArticle.getRedirect())
-                #try:
-                #    title = title.replace("_", " ")
-                #    redirect = redirect.replace("_", " ")
-                #    ipedia_write_cur.execute("""INSERT INTO redirects (title, redirect) VALUES ('%s', '%s')""" % (dbEscape(title), dbEscape(redirect)))
-                #except:
-                #    print "Failed to insert the redirect. Shouldn't happen"
-                #    raise
-            else:
-                print "NO REDIRECT '%s' => '%s' (convertedArticle.getRedirect='%s')" % (title, article.getRedirect(), convertedArticle.getRedirect())
+                #print "INSERT REDIRECT '%s' => '%s' (article.getRedirect()='%s',convertedArticle.getRedirect()='%s'" % (title,redirect,article.getRedirect(),convertedArticle.getRedirect())
+                try:
+                    title = title.replace("_", " ")
+                    redirect = redirect.replace("_", " ")
+                    ipedia_write_cur.execute("""INSERT INTO redirects (title, redirect) VALUES ('%s', '%s')""" % (dbEscape(title), dbEscape(redirect)))
+                except:
+                    print "REDERICT for '%s' => '%s' failed. Shouldn't happen" % (title, redirect)
+                    raise
+            #else:
+            #    print "NO REDIRECT '%s' => '%s' (convertedArticle.getRedirect='%s')" % (title, article.getRedirect(), convertedArticle.getRedirect())
         else:
             print "ARTICLE '%s'" % title
             title = title.replace("_", " ")
