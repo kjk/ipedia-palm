@@ -26,10 +26,11 @@ public:
         // Ugly.
         reservedPrefIdCount=maxLength+2
     };
+    #if defined(_PALM_OS)        
+        ArsLexis::status_t serializeOut(ArsLexis::PrefsStoreWriter& writer, int uniqueId) const;
+        ArsLexis::status_t serializeIn(ArsLexis::PrefsStoreReader& reader, int uniqueId);
+    #endif
 
-    Err serializeOut(ArsLexis::PrefsStoreWriter& writer, int uniqueId) const;
-    Err serializeIn(ArsLexis::PrefsStoreReader& reader, int uniqueId);
-    
     LookupHistory();
     
     bool hasPrevious() const

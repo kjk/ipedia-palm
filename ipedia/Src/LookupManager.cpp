@@ -3,6 +3,7 @@
 #include "iPediaConnection.hpp"
 #include "DefinitionElement.hpp"
 #include <Text.hpp>
+#include "./Rsc/ipedia_Rsc.h"
 
 LookupManager::~LookupManager()
 {
@@ -15,7 +16,7 @@ namespace {
 #pragma pcrelconstdata on
 #endif
 
-    static const UInt16 serverErrorAlerts[]=
+    static const ushort_t serverErrorAlerts[]=
     {   
         serverFailureAlert,
         unsupportedDeviceAlert,
@@ -26,6 +27,8 @@ namespace {
 
 }
 
+using ArsLexis::status_t;
+
 void LookupManager::handleServerError(iPediaServerError serverError)
 {
     assert(serverErrorNone!=serverError);
@@ -33,10 +36,10 @@ void LookupManager::handleServerError(iPediaServerError serverError)
     iPediaApplication::sendDisplayAlertEvent(serverErrorAlerts[serverError-1]);
 }
 
-void LookupManager::handleConnectionError(Err error)
+void LookupManager::handleConnectionError(status_t error)
 {
     using ArsLexis::SocketConnection;
-    UInt16 alertId=connectionErrorAlert;
+    ushort_t alertId=connectionErrorAlert;
     switch (error)
     {
         case SocketConnection::errResponseTooLong:

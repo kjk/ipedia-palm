@@ -33,11 +33,11 @@ struct LookupFinishedEventData
     
     union
     {
-        Err error;
+        ArsLexis::status_t error;
         iPediaServerError serverError;
     };        
     
-    LookupFinishedEventData(Outcome o=outcomeNothing, Err err=errNone):
+    LookupFinishedEventData(Outcome o=outcomeNothing, ArsLexis::status_t err=errNone):
         outcome(o),
         error(err)
     {}
@@ -108,7 +108,7 @@ private:
     
     void handleDefinitionMissing();
     
-    void handleConnectionError(Err error);
+    void handleConnectionError(ArsLexis::status_t error);
     
     void handleDefinition();
     

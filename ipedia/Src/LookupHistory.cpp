@@ -1,7 +1,11 @@
 #include "LookupHistory.hpp"
+
+#if defined(_PALM_OS)        
 #include <PrefsStore.hpp>
+#endif
 
 using ArsLexis::String;
+using ArsLexis::status_t;
 
 LookupHistory::LookupHistory():
     historyPosition_(termHistory_.end())
@@ -19,13 +23,14 @@ void LookupHistory::replaceAllNext(const ArsLexis::String& term)
         termHistory_.pop_front();
 }
 
-Err LookupHistory::serializeOut(ArsLexis::PrefsStoreWriter& writer, int uniqueId) const
+#if defined(_PALM_OS)        
+status_t LookupHistory::serializeOut(ArsLexis::PrefsStoreWriter& writer, int uniqueId) const
 {
-    UInt16 itemCount=termHistory_.size(); 
-    Err error;
+    ushort_t itemCount=termHistory_.size(); 
+    status_t error;
     if (errNone!=(error=writer.ErrSetUInt16(uniqueId++, itemCount)))
         goto OnError;
-    UInt16 currentItem=0;
+    ushort_t currentItem=0;
     TermHistory_t::const_iterator end(termHistory_.end());
     for (TermHistory_t::const_iterator it(termHistory_.begin()); it!=end; ++it)
     {
@@ -42,11 +47,11 @@ OnError:
     return error;
 }
 
-Err LookupHistory::serializeIn(ArsLexis::PrefsStoreReader& reader, int uniqueId)
+status_t LookupHistory::serializeIn(ArsLexis::PrefsStoreReader& reader, int uniqueId)
 {
     LookupHistory tmp;
-    Err error;
-    UInt16 itemCount;
+    status_t error;
+    ushort_t itemCount;
     if (errNone!=(error=reader.ErrGetUInt16(uniqueId++, &itemCount)))
         goto OnError;
     if (maxLength<itemCount)
@@ -54,14 +59,14 @@ Err LookupHistory::serializeIn(ArsLexis::PrefsStoreReader& reader, int uniqueId)
         error=psErrDatabaseCorrupted;
         goto OnError;
     }
-    for (UInt16 i=0; i<itemCount; ++i)
+    for (ushort_t i=0; i<itemCount; ++i)
     {
         const char* p=0;
         if (errNone!=(error=reader.ErrGetStr(uniqueId++, &p)))
             goto OnError;
         tmp.termHistory_.push_back(p);
     }
-    UInt16 lastItem;
+    ushort_t lastItem;
     if (errNone!=(error=reader.ErrGetUInt16(uniqueId++, &lastItem)))
         goto OnError;
     if (itemCount>0 && lastItem>=itemCount)
@@ -84,6 +89,7 @@ Err LookupHistory::serializeIn(ArsLexis::PrefsStoreReader& reader, int uniqueId)
 OnError:    
     return error;
 }
+#endif
 
 bool LookupHistory::hasNext() const
 {
