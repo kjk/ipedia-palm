@@ -188,6 +188,8 @@ public:
     {return elements_;}    
     
     ~DefinitionParser();
+    
+    const char_t* defaultLanguage;
 
 };
 

@@ -43,7 +43,8 @@ DefinitionParser::DefinitionParser():
     unnamedLinksCount_(0),
     lineType_(emptyLine),
     previousLineType_(emptyLine),
-    textPosition_(0)
+    textPosition_(0),
+    defaultLanguage(_T(""))
 {
 }    
 
@@ -363,6 +364,18 @@ bool DefinitionParser::detectHyperlink(uint_t end)
             
         hyperlinkTarget_.assign(textLine_, textPosition_, separatorPos - textPosition_);
         
+#ifdef INFOMAN
+        if (hyperlinkIsTerm)
+        {
+            if (String::npos == hyperlinkTarget_.find(_T(':')))
+            {
+                hyperlinkTarget_.insert(0, _T(":"));
+                hyperlinkTarget_.insert(0, defaultLanguage);
+            }
+            hyperlinkTarget_.insert(0, urlSchemaEncyclopediaTerm _T(":"));
+        }
+#endif                
+
         if (hasSeparator)
         {
             textPosition_=separatorPos+1;
@@ -371,20 +384,14 @@ bool DefinitionParser::detectHyperlink(uint_t end)
         }
         else
         {
-            if (hyperlinkIsTerm)
-            {
-#ifdef INFOMAN
-                hyperlinkTarget_.insert(0, urlSchemaEncyclopediaTerm _T(":"));
-#endif                
-            }
-            else
+            if (!hyperlinkIsTerm)
             {
                 textPosition_=separatorPos;
                 ++unnamedLinksCount_;
                 char_t buffer[8];
                 //TODO
                 tprintf(buffer, _T("[%hu]"), unnamedLinksCount_);
-                String hyperlinkTitle=buffer;
+                String hyperlinkTitle = buffer;
                 createTextElement(hyperlinkTitle, 0, hyperlinkTitle.length());
             }
         }
@@ -481,21 +488,41 @@ GenericTextElement* DefinitionParser::createTextElement(const String& text, Stri
     String copy(text, start, length);
     bool hyperlinkIsTerm = false;
 #ifdef INFOMAN
-    hyperlinkIsTerm = (0 == hyperlinkTarget_.find(urlSchemaEncyclopediaTerm _T(":")));
-    String::size_type pos = copy.find(urlSchemaEncyclopediaTerm _T(":"));
-    if (0 == pos)
-        copy.erase(0, pos + 1);
+    ulong_t schemaLen = tstrlen(urlSchemaEncyclopediaTerm) + 1;
+    if (insideHyperlink_ && 0 == hyperlinkTarget_.find(urlSchemaEncyclopediaTerm _T(":")))
+        hyperlinkIsTerm = true;
 #else
-    hyperlinkIsTerm = (hyperlinkTerm == hyperlinkType_);
+    if (hyperlinkTerm == hyperlinkType_)
+        hyperlinkIsTerm;
 #endif    
-    String::size_type colonPos = hyperlinkTarget_.find(_T(':'));
-    if (insideHyperlink_ && hyperlinkIsTerm && (String::npos != colonPos))
+    if (insideHyperlink_ && hyperlinkIsTerm)
     {
+        String::size_type colonPos;
+        String langCode = defaultLanguage;
+#ifdef INFOMAN        
+        if (schemaLen == hyperlinkTarget_.find(copy, schemaLen))
+        {
+#else
         if (copy == hyperlinkTarget_)
-            copy.erase(0, colonPos+1);
-        String langCode(hyperlinkTarget_, 0, colonPos);
+        {
+#endif         
+            colonPos = copy.find(_T(':'));
+            if (String::npos != colonPos)
+                copy.erase(0, colonPos+1);
+        }
+        
+#ifdef INFOMAN        
+        colonPos = hyperlinkTarget_.find(_T(':'), schemaLen);
+        if (String::npos != colonPos)
+            langCode.assign(hyperlinkTarget_, schemaLen, colonPos - schemaLen);
+#else              
+        colonPos = hyperlinkTarget_.find(_T(':'));
+        if (String::npos != colonPos)
+            langCode.assign(hyperlinkTarget_, 0, colonPos);
+#endif                
+                    
         const char_t* langName = NULL;
-        if (langCode.length() == 2)
+        if (langCode.length() == 2 && langCode != defaultLanguage)
             langName = GetLangNameByLangCode(langCode);
         if (NULL != langName)
             copy.append(_T(" (")).append(langName).append(1, _T(')'));
