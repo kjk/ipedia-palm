@@ -12,6 +12,7 @@
 
 # devnotes: using iterators (http://www-106.ibm.com/developerworks/library/l-pycon.html)
 
+from __future__ import generators   # for 2.2 compatibility
 import MySQLdb, MySQLdb.cursors, sys, re
 import timeit
 

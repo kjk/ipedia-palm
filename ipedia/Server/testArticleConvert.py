@@ -6,6 +6,7 @@
 # Usage:
 #   testFileName : file with tests to use
 #
+from __future__ import generators   # for 2.2 compatibility
 import sys,os,os.path,string,time,md5,bz2
 import arsutils,articleconvert
 try:

@@ -25,6 +25,8 @@
 #  - when using -title and doesn't find the aritcle in main, should also check
 #    *_redirects.txt file
 #
+
+from __future__ import generators   # for 2.2 compatibility
 import sys,os,os.path,string,re,random,time,md5,bz2
 import arsutils,wikipediasql,articleconvert
 try:
@@ -74,9 +76,7 @@ def showDiffRandom(fileName):
         converted = arsutils.normalizeNewlines(converted)
         arsutils.showTxtDiff(origTxt,converted)
 
-
-# TODO: doesn't handle redirects
-def findOrigArticle(fileName,title):
+def findOrigArticleNoRedirect(fileName,title):
     titleLower = title.lower()
     print "looking for article with title %s" % titleLower
     count = 0
@@ -86,10 +86,20 @@ def findOrigArticle(fileName,title):
         title = title.replace("_", " ")
         if 0 == title.find(titleLower):
             return article
-        if count % 2000 == 0:
+        if count % 50000 == 0:
             print "processed %d articles, last title %s" % (count,title)
         count += 1
     return None
+
+def findOrigArticle(fileName, title):
+    while True:
+        article = findOrigArticleNoRedirect(fileName,title)
+        if None == article:
+            return None
+        if not article.fRedirect():
+            return article
+        print "resolving redirect from %s to %s" % (title, article.getRedirect())
+        title = article.getRedirect()
 
 def findConvertedArticle(fileName,title):
     titleLower = title.lower()
