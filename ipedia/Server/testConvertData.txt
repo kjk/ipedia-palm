@@ -92,3 +92,5 @@ end
 start
 
 end
+@s18 bu{{Washington}}ha*buha
+@s19 al  {{reo{gla}}blas*al  blas

@@ -82,6 +82,8 @@ wikiMacrosReplacements = {
 
 wikiMacroRe=re.compile("\{\{((msg)|(subst))\:.*?\}\}", re.I)
 
+wikiTemplateRe=re.compile("\{\{.*\}\}", re.I)
+
 categoryRe=re.compile("\[\[Category:.*\]\]", re.I)
 
 def replaceWikiMacros(term, text):
@@ -102,10 +104,15 @@ def dumpException(e):
 def convertArticle(term, text):
     try:
         text=text.replace('__NOTOC__', '')
-        # remove categories. in the future we should provide a better
-        # support for categories
+        # remove categories. TODO: provide a better support for categories
+        # i.e. we remember categories on the server and client can display
+        # all articles in a given category
         text=replaceRegExp(text, categoryRe, '')
         text=replaceWikiMacros(term, text)
+        # remove remaining templates. TODO: better support for templates
+        # in wikipedia template text is replaced by a page from Template:
+        # namespace
+        #text=replaceRegExp(text, wikiTemplateRe, '')
         text=text.replace('\r','')
         text=replaceRegExp(text, commentRe, '')     # This should be safe, as it's illegal in html to nest comments
 
