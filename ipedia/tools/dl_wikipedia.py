@@ -4,7 +4,8 @@
 #
 # This script:
 #  - downloads the main page of http://download.wikimedia.org
-#  - parsers it to find the name of the current english wikipedia cur database
+#  - parsers it to find the name of the current english, french and english
+#    wikipedia cur database 
 #    e.g.: http://download.wikimedia.org/archives/en/20040403_cur_table.sql.bz2
 #  - downloads it if it hasn't been downloaded yet
 
@@ -13,8 +14,15 @@
 
 import sys,string,re,time,urllib2,os,os.path,process
 
-g_workingDir = "c:\\ArsLexis\\wikipedia\\"
-g_logFileName = g_workingDir + "log.txt"
+g_workingDir = "g:\\wikipedia\\"
+
+if sys.platform == "linux2":
+    # this is our rackshack server
+    g_workingDir = "/ipedia/wikipedia"
+
+#print "Working dir: %s" % g_workingDir
+
+g_logFileName = os.path.join(g_workingDir,"log.txt")
 
 g_reEnName = re.compile('archives/en/(\d+)_cur_table.sql.bz2', re.I)
 g_reFrName = re.compile('archives/fr/(\d+)_cur_table.sql.bz2', re.I)
@@ -42,7 +50,6 @@ def logEvent(txtToLog):
     #print txtToLog
     fo = openLogFileIfNotOpen()
     fo.write("  " + txtToLog + "\n")
-
 
 def matchUrlInTxt(txt, regExp):
     match=regExp.search(txt)
@@ -138,7 +145,8 @@ def downloadUrl(url):
         return
     os.chdir(g_workingDir)
     (fileNameGzipped, fileNameUngzipped) = fileNamesFromUrl(url)
-    p = process.ProcessOpen(['wget.exe', '-c', url, '--output-document', fileNameGzipped])
+
+    p = process.ProcessOpen(['wget', '-c', url, '--output-document', fileNameGzipped])
 
     res_stdout = p.stdout.read()                                     
     res_stderr = p.stderr.read()
