@@ -3,15 +3,36 @@
 iPediaApplication.hpp
 look for serverLocalhost, serverOfficial
 
-## Things to do ##
+## socket handling
 
-# BEFORE SHIPPING v1.0
-* improve registration process
+1. open() tworzy socketa i ustawia go w tryb non-blocking, po czym wywoluje 
+na nim connect() spodziewajac sie dostac netErrWouldBlock, czyli ze connect() 
+zostal skolejkowany i wykonuje sie w tle. Jezeli tak sie stanie rejestruje 
+sie w SocketSelector'ze na odbior zdarzen writable i exception. writable 
+oznacza ze connect() zostal zakonczony pomyslnie, a exception, ze cos sie nie 
+powiodlo
 
-# POSSIBLY AFTER v1.0
-* it would be possible to DOS the server by sending a lot of mal-formatted
-  requests (i.e. when server thinks that there's still data to be read from the client)
-  We could improve things  by using a timeout (i.e. kill connections after 60 secs
-  of inactivity)
-* convert tables into a list of things see e.g. "Seattle"
+2. SocketManager na zdarzenie writable wywoluje notifyWritable(), ktorego 
+zadaniem jest skolejkowac zapis do socketa, czyli wywolac na nim send(), 
+oczekujac znowu netErrWouldBlock
 
+
+dopoki sa dane do wyslylki notifyWritable() sie rejestruje na nasluch na 
+writable. wystapienie writable oznacza, ze poprzednia paczka danych zostala 
+pomyslnie wyslana i socket jest gotowy do dalszej wysylki.
+
+
+3. kiedy wyslalismy wszystko notifyWritable() robi shutdown na wysylce (czyli 
+tzw. graceful shutdown) i nasluchuje na readable.
+
+
+4. kiedy wystapi readable (czyli serwer przyslal jakies dane) 
+ConnectionManager wywoluje notifyReadable()
+
+
+5. notifyReadable() wola recieve() i jesli pozostaly jakies dane do odczytu 
+rejestruje sie dalej na readable
+
+
+6. jesli danych juz wiecej nie ma to konczymy polaczenie
+i to wszystko

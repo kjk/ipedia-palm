@@ -65,6 +65,8 @@ is a efficient sound compression for speech).
 using lucene. This is to decrease amount of time taken by the conversion process
 as well as use less space on disk.
 
+## convert tables into a list of things see e.g. "Seattle"
+
 
                 DONE
 
