@@ -285,7 +285,7 @@ class iPediaProtocol(basic.LineReceiver):
             field = "%s:%s" % (name, lineSeparator)
         self.transport.write(field)
         if g_fVerbose:
-            print field
+            sys.stdout.write(field)
         
     def outputPayloadField(self, name, payload):
         global g_fVerbose
@@ -534,7 +534,7 @@ class iPediaProtocol(basic.LineReceiver):
         return definition
 
     def handleDefinitionRequest(self):
-        sys.stderr.write( "'%s' returned from handleDefinitionRequest()\n" % self.requestedTerm )
+        # sys.stderr.write( "'%s' returned from handleDefinitionRequest()\n" % self.requestedTerm )
         cursor=None
         definition=None
         try:
@@ -597,7 +597,7 @@ class iPediaProtocol(basic.LineReceiver):
             while not idTermDef:
                 idTermDef=iPediaDatabase.findRandomDefinition(db, cursor)
             self.definitionId, self.term, definition=idTermDef
-            sys.stderr.write( "'%s' returned from handleGetRandomRequest()\n" % self.term )
+            # sys.stderr.write( "'%s' returned from handleGetRandomRequest()\n" % self.term )
 
             self.outputDefinition(self.preprocessDefinition(db, cursor, definition))
             cursor.close()
@@ -776,11 +776,11 @@ class iPediaProtocol(basic.LineReceiver):
 class iPediaFactory(protocol.ServerFactory):
 
     def createArticlesConnection(self):
-        print "creating articles connection"
+        #print "creating articles connection"
         return MySQLdb.Connect(host=iPediaDatabase.DB_HOST, user=iPediaDatabase.DB_USER, passwd=iPediaDatabase.DB_PWD, db=self.dbName)
 
     def createManagementConnection(self):
-        print "creating management connection"
+        #print "creating management connection"
         return MySQLdb.Connect(host=iPediaDatabase.DB_HOST, user=iPediaDatabase.DB_USER, passwd=iPediaDatabase.DB_PWD, db=iPediaDatabase.MANAGEMENT_DB)
 
     def __init__(self, dbName):

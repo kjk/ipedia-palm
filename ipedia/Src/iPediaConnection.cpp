@@ -263,13 +263,10 @@ ArsLexis::status_t iPediaConnection::handleField(const String& name, const Strin
     else if (errorField==name)
     {
         error=numericValue(value, numValue);
-        if (!error)
-        {
-            if (numValue>=serverErrorFirst && numValue<=serverErrorLast)
-                serverError_=static_cast<iPediaServerError>(numValue);
-            else
-                error=errResponseMalformed;
-        }            
+        if (error)
+            return errResponseMalformed;
+        if (numValue>=serverErrorFirst && numValue<=serverErrorLast)
+            serverError_=static_cast<iPediaServerError>(numValue);
         else
             error=errResponseMalformed;
     }

@@ -7,18 +7,24 @@
 
 class LookupHistory;
 
+// for description of errors, see iPediaServer.py, class iPediaServerError
 enum iPediaServerError
 {
     serverErrorNone,
-    serverErrorFailure,
+    serverErrorFailure=1,
     serverErrorFirst=serverErrorFailure,
-    serverErrorUnsupportedDevice,
-    serverErrorInvalidAuthorization,
-    serverErrorMalformedRequest,
-    serverErrorTrialExpired,
-    serverErrorLast=serverErrorTrialExpired
+    serverErrorUnsupportedDevice=2,
+    serverErrorInvalidAuthorization=3,
+    serverErrorMalformedRequest=4,    
+    serverErrorLookupLimitReached=5,
+    serverErrorInvalidRequest=6,
+    serverErrorUnexpectedRequestArgument=7,
+    serverErrorRequestArgumentMissing=8,
+    serverErrorInvalidProtocolVersion=9,
+    serverErrorInvalidCookie=10,
+    serverErrorLast=serverErrorInvalidCookie
 };
-        
+
 struct LookupFinishedEventData
 {
     enum Outcome
