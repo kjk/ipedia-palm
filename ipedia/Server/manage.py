@@ -20,26 +20,26 @@ def getReqResponse(req):
     sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     (serverName, serverPort) = getServerNamePort()
     sock.connect((serverName,serverPort))
-    print "Connected to server"
-    print "Sending: '%s'" % req
+    #print "Connected to server"
+    #print "Sending: '%s'" % req
     sock.sendall(req)
     sock.shutdown(1)
-    print "Sent all"
+    #print "Sent all"
     response = socket_readAll(sock)    
-    print "Received:", response
+    #print "Received:", response
     sock.close()
     return response
 
 def socket_readAll(sock):
     result = ""
     while True:
-        data = sock.recv(1)
+        data = sock.recv(10)
         if 0 == len(data):
             break
-        sys.stdout.write(data)
+        #sys.stdout.write(data)
         result += data
     return result
 
 if __name__=="__main__":
     resp = getReqResponse("list\n")
-    print "resp: '%s'" % resp
+    print resp

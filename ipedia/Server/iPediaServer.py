@@ -599,6 +599,8 @@ def fIpediaDb(dbName):
         return True
     return False
 
+# returns a list of tuples describing all iPedia databases. First element
+# is database name, second - the number of articles in a database
 def getIpediaDbList():
     conn = MySQLdb.Connect(host=iPediaDatabase.DB_HOST, user=iPediaDatabase.DB_USER, passwd=iPediaDatabase.DB_PWD, db='')
     cur = conn.cursor()
@@ -607,7 +609,12 @@ def getIpediaDbList():
     for row in cur.fetchall():
         dbName = row[0]
         if fIpediaDb(dbName):
-            dbs.append(dbName)
+            cur.execute("""SELECT COUNT(*) FROM %s.articles""" % dbName)
+            row=cur.fetchone()
+            articleCount=row[0]
+            #print "db '%s' has '%d' articles" % (dbName, articleCount)
+            dbInfo = (dbName, articleCount)
+            dbs.append(dbInfo)
     cur.close()
     conn.close()
     return dbs    
@@ -624,8 +631,9 @@ class iPediaTelnetProtocol(basic.LineReceiver):
         dbs = None
         try:
             dbs = getIpediaDbList()
-            for dbName in dbs:
-                self.transport.write(dbName+'\r\n')
+            for dbInfo in dbs:
+                self.transport.write( "%s %d\r\n" % dbInfo)
+            self.transport.write("currently using: %s\r\n" % self.factory.iPediaFactory.dbName)
         except _mysql_exceptions.Error, ex:
             dumpException(ex)
             self.transport.write("exception\r\n")
@@ -634,7 +642,7 @@ class iPediaTelnetProtocol(basic.LineReceiver):
         self.factory.iPediaFactory.changeDatabase(dbName)
                     
     def lineReceived(self, request):
-        print "telnet: '%s'" % request
+        # print "telnet: '%s'" % request
         if iPediaTelnetProtocol.listRe.match(request):
             self.listDatabases()
         else:
@@ -675,31 +683,34 @@ def main():
     dbs = getIpediaDbList()
     if 0==len(dbs):
         print "No databases available"
+        sys.exit(0)
 
-    dbs.sort()
+    dbNames = [dbInfo[0] for dbInfo in dbs]
+    dbNames.sort()
 
     fListDbs = arsutils.fDetectRemoveCmdFlag("-listdbs")
     if fListDbs:
-        for dbName in dbs:
-            print dbName
+        for name in dbNames:
+            print name
         sys.exit(0)
 
     dbName=arsutils.getRemoveCmdArg("-db")
 
+    if len(sys.argv) != 1:
+        usageAndExit()
+
     if dbName:
-        if dbName in dbs:
+        if dbName in dbNames:
             print "Using database '%s'" % dbName
         else:
             print "Database '%s' doesn't exist" % dbName
             print "Available databases:"
-            for name in dbs:
+            for name in dbNames:
                 print "  %s" % name
             sys.exit(0)
     else: 
-        dbName=dbs[-1] # use the latest database
-
-    if len(sys.argv) != 1:
-        usageAndExit()
+        dbName=dbNames[-1] # use the latest database
+        print "Using database '%s'" % dbName
 
     if fDemon:
         arsutils.daemonize('/dev/null','/tmp/ipedia.log','/tmp/ipedia.log')
