@@ -72,35 +72,38 @@ def fixSup2(text):
 # embedded links like "[[foo]]"
 
 # case-insesitivity is important so we'll use regexp instead of string.find()
-imageStartRe = re.compile("\[\[Image:", re.I)
+#imageStartRe = re.compile("\[\[Image:", re.I)
+imageRe=re.compile(r"\[\[image:.*?(\[\[.*?\]\].*?)*?\]\]", re.I+re.S)
 def removeImage(text):
-    while True:
-        match = imageStartRe.search(text)
-        if None == match:
-            return text
-        txtLen = len(text)
-        posImageStart = match.start()
-        # now find ending "]]" but counting nesting levels of "[[" and "]]"
-        nesting = 0
-        prevChar = None
-        pos = match.end()
-        fChanged = False
-        while pos < txtLen:
-            if prevChar==']' and text[pos]==']':
-                if nesting>0:
-                    nesting -= 1
-                else:
-                    # remove image stuff
-                    txtTmp = text[:posImageStart] + text[pos+2:]
-                    text = txtTmp
-                    fChanged = True
-                    break
-            if '['==prevChar and '['==text[pos]:
-                nesting += 1
-            prevChar = text[pos]
-            pos += 1
-        if not fChanged:
-            return text
+    return replaceRegExp(text, imageRe, "")
+#    while True:
+#        match = imageStartRe.search(text)
+#        if None == match:
+#            return text
+#        txtLen = len(text)
+#        posImageStart = match.start()
+#        # now find ending "]]" but counting nesting levels of "[[" and "]]"
+#        nesting = 0
+#        prevChar = None
+#        pos = match.end()
+#        fChanged = False
+#        while pos < txtLen:
+#            if prevChar==']' and text[pos]==']':
+#                if nesting>0:
+#                    nesting -= 1
+#                else:
+#                    # remove image stuff
+#                    txtTmp = text[:posImageStart] + text[pos+2:]
+#                    text = txtTmp
+#                    fChanged = True
+#                    break
+#            if '['==prevChar and '['==text[pos]:
+#                nesting += 1
+#            prevChar = text[pos]
+#            pos += 1
+#        if not fChanged:
+#            return text
+    
 
 commentRe=re.compile("<!--.*?-->", re.S)
 divRe=re.compile("<div.*?</div>", re.I+re.S)
