@@ -58,11 +58,12 @@ iPediaConnection::~iPediaConnection()
 void iPediaConnection::prepareRequest()
 {
     iPediaApplication& app=iPediaApplication::instance();
-    // get number of articles in the first request to the server. do it only once
-    // per application launch
+    // get number of articles and database update time in the first request to
+    // the server. do it only once per application launch
     if (!app.fArticleCountChecked_)
     {
         getArticleCount_ = true;
+        getDatabaseTime_ = true;
         app.fArticleCountChecked_ = true; // or do it later, when we process the response
     }
 
@@ -196,9 +197,9 @@ ArsLexis::status_t iPediaConnection::notifyProgress()
 
 ArsLexis::status_t iPediaConnection::handleField(const String& name, const String& value)
 {
-    long numValue;
-    ArsLexis::status_t error=errNone;
-    iPediaApplication& app=iPediaApplication::instance();
+    long                numValue;
+    ArsLexis::status_t  error=errNone;
+    iPediaApplication&  app=iPediaApplication::instance();
 
     if (0==name.find(transactionIdField))
     {
@@ -274,8 +275,7 @@ ArsLexis::status_t iPediaConnection::handleField(const String& name, const Strin
     }
     else if (0==name.find(databaseTimeField))
     {
-        // TODO: remember the database time
-        //app.preferences().databaseTime.assign(value);
+        app.preferences().databaseTime=value;
     }
     else 
         error=FieldPayloadProtocolConnection::handleField(name, value);

@@ -70,6 +70,8 @@ public:
         
         long articleCount;
         
+        ArsLexis::String databaseTime;
+
         Preferences():
             serialNumberRegistered(false),
             articleCount(-1)            

@@ -150,6 +150,7 @@ namespace {
         serialNumberPrefId,
         serialNumberRegFlagPrefId,
         lastArticleCountPrefId,
+        databaseTimePrefId,
         lookupHistoryFirstPrefId,
         renderingPrefsFirstPrefId=lookupHistoryFirstPrefId+LookupHistory::reservedPrefIdCount,
         
@@ -181,6 +182,9 @@ void iPediaApplication::loadPreferences()
         goto OnError;
     if (errNone!=(error=reader->ErrGetLong(lastArticleCountPrefId, &prefs.articleCount))) 
         goto OnError;
+    if (errNone!=(error=reader->ErrGetStr(databaseTimePrefId, &text))) 
+        goto OnError;
+    prefs.databaseTime=text;
     if (errNone!=(error=prefs.renderingPreferences.serializeIn(*reader, renderingPrefsFirstPrefId)))
         goto OnError;
     preferences_=prefs;    
@@ -205,6 +209,8 @@ void iPediaApplication::savePreferences()
     if (errNone!=(error=writer->ErrSetBool(serialNumberRegFlagPrefId, preferences_.serialNumberRegistered)))
         goto OnError;
     if (errNone!=(error=writer->ErrSetLong(lastArticleCountPrefId, preferences_.articleCount))) 
+        goto OnError;
+    if (errNone!=(error=writer->ErrSetStr(databaseTimePrefId, preferences_.databaseTime.c_str())))
         goto OnError;
     if (errNone!=(error=preferences_.renderingPreferences.serializeOut(*writer, renderingPrefsFirstPrefId)))
         goto OnError;

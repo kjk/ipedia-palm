@@ -86,7 +86,7 @@ class MainForm: public iPediaForm
     
     void prepareSplashScreen();
 
-    void updateArticleCountEl(long articleCount);
+    void updateArticleCountEl(long articleCount, ArsLexis::String& dbTime);
 
 protected:
 
