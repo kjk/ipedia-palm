@@ -58,8 +58,8 @@ void LookupManager::handleServerError(iPediaServerError serverError)
         iPediaApplication::sendDisplayAlertEvent(serverFailureAlert);
     else
         iPediaApplication::sendDisplayAlertEvent(alertId);
-    lastInputTerm_ = "";
-    lastSearchExpression_ = "";
+    lastInputTerm_ = _T("");
+    lastSearchExpression_ = _T("");
 }
 
 void LookupManager::handleConnectionError(status_t error)
@@ -96,8 +96,8 @@ void LookupManager::handleConnectionError(status_t error)
 
     }
 
-    lastInputTerm_ = "";
-    lastSearchExpression_ = "";
+    lastInputTerm_ = _T("");
+    lastSearchExpression_ = _T("");
 
     iPediaApplication::sendDisplayAlertEvent(alertId);
 }
