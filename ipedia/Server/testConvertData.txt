@@ -117,3 +117,7 @@ René-Lévesque (far right).]]
 @s28 [[ImAgE:[[]]*
 @s29 [[IMAGE:[[]]]]post*post
 @s30 pre[[IMAGE:[[]]]]post*prepost
+@s31 Gda&#324;sk*Gdansk
+@s32 Mot&#322;awa*Motlawa
+@s33 Wybrze&#380;e*Wybrzeze
+@s34 T&#333;ky&#333;*Tokyo

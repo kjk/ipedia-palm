@@ -15,16 +15,20 @@
 #   Adding support for others is trivial (see diffWithWindiff() etc.)
 #
 # Usage:
-#   -limit N : only process first N rows
 #   -random : show a random word
 #   -title $title : show diff of a given title
 #   -dump : dump before and after to stdout
+#   -save : will save both original and converted text to $title_orig.txt and
+#           $title_conv.txt so that it can be examined later
+#   -forceconvert : re-run conversion routine instead of getting converted
+#                   data from cache. Useful for testing changes to conversion
+#                   routine
 #   fileName - which sql file to process
 #
 # TODO:
-#  - when using -title and doesn't find the aritcle in main, should also check
-#    *_redirects.txt file
-#
+#  - when using - title and doesn't find the aritcle in main, should also check
+#    *_redirects.txt file (shouldn't be needed because we get name name of
+#    redirected title from the original, but you never know)
 
 from __future__ import generators   # for 2.2 compatibility
 import sys,os,os.path,string,re,random,time,md5,bz2
@@ -35,10 +39,8 @@ try:
 except:
     print "psyco not available. You should consider using it (http://psyco.sourceforge.net/)"
 
-g_fSave = None
-
 def usageAndExit():
-    print "Usage: diffConvert.py [-limit N] [-save] [-random] [-title foo] fileName"
+    print "Usage: diffConvert.py [-save] [-forceconvert] [-random] [-title foo] fileName"
     sys.exit(0)
 
 # algorithm based on http://aspn.activestate.com/ASPN/Cookbook/Python/Recipe/59865
@@ -84,7 +86,6 @@ def findOrigArticleNoRedirect(fileName,titleToFind):
     print "looking for article with title %s" % titleToFind
     count = 0
     for article in wikipediasql.iterWikipediaArticles(fileName,None,fUseCache=True,fRecreateCache=False):
-        #if article.getTitle().lower() == titleLower:
         title = article.getTitle().lower()
         if title == titleToFind:
             return article
@@ -119,55 +120,53 @@ def findConvertedArticle(fileName,titleToFind):
     return None
 
 def iterArticlesExactTitle(fileName,title):
-    #title = string.lower(title.replace(" ", "_"))
-    #title = string.lower(title.replace(" ", "_"))
     titleLower = title.lower()
     print "looking for article with title %s" % titleLower
     count = 0
     for article in iterArticles(fileName):
         title = article.getTitle().lower().strip()
-        #if 0 == title.find(titleLower):
         if title == titleLower:
             yield article
         if count % 1000 == 0:
             print "processed %d articles, last title %s" % (count,article.getTitle().lower().strip())
         count += 1
 
-def showDiffTitle(fileName,title):
-    global g_fSave
+def showDiffTitle(fileName,title,fSave=False,fForceConvert=False):
     article = findOrigArticle(fileName,title)
     if not article:
         print "couldn't find article with the title %s" % title
         return
-
-    title = article.getTitle() # re-get the title in case this was a redirect
-    convertedArticle = None
-    if wikipediasql.fConvertedCacheExists(fileName):
-        convertedArticle = findConvertedArticle(fileName,title)
-    else:
-        print "Converted cache for '%s' doesn't exist" % fileName
-        sys.exit(0)
-    if None == convertedArticle:
-        print "didn't find article '%s' in the converted cache" % title
-        sys.exit(0)
     origTxt = article.getText()
     origTxt = arsutils.normalizeNewlines(origTxt)
 
-    if None == convertedArticle:
-        print "didn't find converted article, generating it myself"
-        convertedArticle = articleconvert.convertArticle(article.getTitle(), article.getText())
-    converted = arsutils.normalizeNewlines(convertedArticle.getText())
+    if fForceConvert:
+        convertedTxt = articleconvert.convertArticle(article.getTitle(), article.getText())
+    else:
+        title = article.getTitle() # re-get the title in case this was a redirect
+        convertedArticle = None
+        if wikipediasql.fConvertedCacheExists(fileName):
+            convertedArticle = findConvertedArticle(fileName,title)
+        else:
+            print "Converted cache for '%s' doesn't exist" % fileName
+            sys.exit(0)
 
-    if g_fSave:
+        if None == convertedArticle:
+            print "didn't find converted article, generating it myself"
+            convertedTxt = articleconvert.convertArticle(article.getTitle(), article.getText())
+        else:
+            convertedTxt = convertedArticle.getText()
+
+    convertedTxt = arsutils.normalizeNewlines(convertedTxt)
+    if fSave:
         title = article.getTitle()
         title = title.replace(" ", "_")
         fo = open("%s_orig.txt" % title, "wb")
         fo.write(origTxt)
         fo.close()
         fo = open("%s_conv.txt" % title, "wb")
-        fo.write(converted)
+        fo.write(convertedTxt)
         fo.close()
-    arsutils.showTxtDiff(origTxt, converted)
+    arsutils.showTxtDiff(origTxt, convertedTxt)
 
 def dumpArticle(fileName,title):
     for article in iterArticlesExactTitle(fileName,title):
@@ -183,12 +182,6 @@ def dumpArticle(fileName,title):
         return
 
 if __name__=="__main__":
-    global g_fSave
-
-    limit = arsutils.getRemoveCmdArgInt("-limit")
-    if None == limit:
-        limit = 9999999 # very big number
-
     fRandom = arsutils.fDetectRemoveCmdFlag("-random")
     fDump = arsutils.fDetectRemoveCmdFlag("-dump")
 
@@ -198,7 +191,8 @@ if __name__=="__main__":
 
     title = arsutils.getRemoveCmdArg("-title")
 
-    g_fSave = arsutils.fDetectRemoveCmdFlag("-save")
+    fSave = arsutils.fDetectRemoveCmdFlag("-save")
+    fForceConvert = arsutils.fDetectRemoveCmdFlag("-forceconvert")
 
     if title and fRandom:
         print "Can't use -title and -random at the same time"
@@ -221,4 +215,4 @@ if __name__=="__main__":
         if fDump:
             dumpArticle(fileName,title)
         else:
-            showDiffTitle(fileName,title)
+            showDiffTitle(fileName,title,fSave,fForceConvert)

@@ -484,29 +484,16 @@ def convertNumberedEntities(term, text):
     matches.reverse()
     for match in matches:
         num=int(text[match.start(1):match.end(1)])
-#        if num>255:
-#            try:
-#                char=unichr(num)
-#                decomposed=unicodedata.normalize('NFKD', char)
-#                valid=''
-#                for char in decomposed:
-#                    if ord(char)<256:
-#                        valid+=chr(ord(char))
-#                if len(valid):
-#                    text=text[:match.start()]+valid+text[match.end():]
-#                else:
-#                    if approx_refs.has_key(num):
-#                        text=text[:match.start()]+approx_refs[num]+text[match.end():]
-#                    elif greek_refs.has_key(num):
-#                        text=text[:match.start()]+'/'+greek_refs[num]+'/'+text[match.end():]
-#            except ValueError:
-#                print "Wide unicode character (%d) in definition for term: %s." % (num, term)
-#        else:
-        if num<=255:
-            text=text[:match.start()]+chr(num)+text[match.end():]
+        if num>255:
+            if approx_refs.has_key(num):
+                text=text[:match.start()]+approx_refs[num]+text[match.end():]
+            elif greek_refs.has_key(num):
+                text=text[:match.start()]+'/'+greek_refs[num]+'/'+text[match.end():]
+            else:
+                # don't change the text
+                pass
         else:
-            # do nothing
-            pass
+            text=text[:match.start()]+chr(num)+text[match.end():]
     return text
 
 # This function uses .normalize function only available in python 2.3
