@@ -1,6 +1,8 @@
 #ifndef __MAINFORM_HPP__
 #define __MAINFORM_HPP__
 
+#include <Logging.hpp>
+
 #include "iPediaForm.hpp"
 #include "Definition.hpp"
 #include "iPediaApplication.hpp"
@@ -104,6 +106,11 @@ class MainForm: public iPediaForm
     void doDbSelected(EventType &event);
 
 protected:
+
+    mutable ArsLexis::ChildLogger log_;
+
+    ArsLexis::Logger& log() const
+    {return log_;}
 
     void resize(const ArsLexis::Rectangle& screenBounds);
     

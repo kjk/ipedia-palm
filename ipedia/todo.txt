@@ -4,13 +4,13 @@
 
 ## 5. add unit tests for new multi-langual features
 
-## 20. remove timeline in the parser e.g. "List of Federal Presidents of Austria"
+## 6. remove timeline in the parser e.g. "List of Federal Presidents of Austria"
 
-## 21. change "trail expired" dialog to "Unregistered version expired. Please
+## 7. change "trail expired" dialog to "Unregistered version expired. Please
 register by purchasing registration code.\nEnter registration code?
 Yes/NO". Just like in iPedia/SM
 
-## 22. add text-to-speech functions. The idea would be to either do synthesis
+## 8. add text-to-speech functions. The idea would be to either do synthesis
 on the device (which will be tricky) or do text-to-speech on the server (see
 festival speech synthesis system for links and info related to freely available
 text-to-speech systems) and stream them to the client in speex format (speex

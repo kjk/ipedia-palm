@@ -64,7 +64,8 @@ MainForm::MainForm(iPediaApplication& app):
     forceAboutRecalculation_(false),
     articleCountElement_(0),
     articleCountSet_(-1),
-    penUpsToEat_(0)
+    penUpsToEat_(0),
+    log_(_T("MainForm"))
 {
     articleCountSet_ = app.preferences().articleCount;
     article_.setRenderingProgressReporter(&renderingProgressReporter_);
@@ -841,7 +842,7 @@ void MainForm::doHistory()
 
 void MainForm::doLookupSelectedTerm(EventType& event)
 {
-    StringListEventData& data=reinterpret_cast<StringListEventData&>(event.data);
+    StringListEventData& data = reinterpret_cast<StringListEventData&>(event.data);
 
     int selectedStr = data.value;
     if (NOT_SELECTED==selectedStr)
@@ -927,9 +928,10 @@ void MainForm::changeDatabase()
 
 void MainForm::doDbSelected(EventType& event)
 {
-    StringListEventData& data=reinterpret_cast<StringListEventData&>(event.data);
+    StringListEventData& data = reinterpret_cast<StringListEventData&>(event.data);
 
     int selectedStr = data.value;
+    log().error() << _T("doDbSelected selectedStr=") << selectedStr;
     if (NOT_SELECTED == selectedStr)
         goto Exit;
 
@@ -942,8 +944,19 @@ void MainForm::doDbSelected(EventType& event)
     langName[2] = '\0';
 
     LookupManager* lookupManager=app().getLookupManager(true);
+    if (NULL==lookupManager)
+    {
+        log().error() << _T("doDbSelected no LookupManager");
+    }
+    else if (lookupManager->lookupInProgress())
+    {
+        log().error() << _T("doDbSelected lookupInProgress");
+    }
+
     if (lookupManager && !lookupManager->lookupInProgress())
+    {
         lookupManager->switchDatabase(langName);
+    }
 
 Exit:
     if (NULL!=app().strList)
