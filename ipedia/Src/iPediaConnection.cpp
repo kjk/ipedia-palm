@@ -65,7 +65,7 @@ void iPediaConnection::prepareRequest()
 
     String request;
     appendField(request, protocolVersionField, protocolVersion);
-    appendField(request, clientInfoField, "Palm 0.5" );
+    appendField(request, clientInfoField, _T("Palm 0.5") );
     char_t buffer[16];
     tprintf(buffer, _T("%08lx"), transactionId_);
     appendField(request, transactionIdField, buffer);
