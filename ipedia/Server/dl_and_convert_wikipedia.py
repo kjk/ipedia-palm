@@ -15,7 +15,7 @@
 
 import sys,string,re,time,urllib2,os,os.path,smtplib
 import arsutils, wikipediasql, wikiToDbConvert
-import process
+import subprocess # requires python2.4
 
 try:
     import psyco
@@ -61,6 +61,13 @@ else:
         MAILHOST = "mail.nwlink.com"
         FROM = "kjk@nwlink.com"
         g_machine = "DVD"
+    if "DVD2"==os.getenv("COMPUTERNAME"):
+        # this must be my desktop machine
+        g_workingDir = "c:\\wikipedia\\"
+        # this will only work when I'm connected to nwlink.com
+        MAILHOST = "mail.nwlink.com"
+        FROM = "kjk@nwlink.com"
+        g_machine = "DVD2"
     if "GIZMO" == os.getenv("COMPUTERNAME"):
         g_workingDir = "c:\\ArsLexis\\iPedia\\"
         MAILHOST = "sound.eti.pg.gda.pl"
@@ -76,6 +83,8 @@ g_logFileName = os.path.join(g_workingDir,"log.txt")
 g_reEnName = re.compile('archives/en/(\d+)_cur_table.sql.bz2', re.I)
 g_reFrName = re.compile('archives/fr/(\d+)_cur_table.sql.bz2', re.I)
 g_reDeName = re.compile('archives/de/(\d+)_cur_table.sql.bz2', re.I)
+
+g_reName = re.compile('(\d+)_cur_table.sql.bz2', re.I)
 
 g_enUrlToDownload = None
 g_deUrlToDownload = None
@@ -112,6 +121,18 @@ def matchUrlInTxt(txt, regExp):
     fileUrl = 'http://download.wikimedia.org/' + fileName
     return fileUrl
 
+def matchUrlsInTxt(txt, regExp, lang):
+    urls = []
+    while True:
+        match = regExp.search(txt)
+        if not match:
+            return urls
+
+        fileName = txt[match.start():match.end()]
+        fileUrl = 'http://download.wikimedia.org/archives/%s/%s' % (lang, fileName)
+        urls.append(fileUrl)
+        txt = txt[match.end()+1:]
+
 def findEnFileUrlInStr(txt):
     global g_reEnName
     return matchUrlInTxt(txt, g_reEnName)
@@ -124,34 +145,48 @@ def findDeFileUrlInStr(txt):
     global g_reDeName
     return matchUrlInTxt(txt, g_reDeName)
 
-def getCurrentFileUrls():
-    global g_enUrlToDownload, g_deUrlToDownload, g_frUrlToDownload
+def getCurrentFileUrlForLang(lang):
+    global g_reName
+    assert lang in ["en", "fr", "de"]
+    url = "http://download.wikimedia.org/archives/%s/" % lang
+    #print "Trying to download %s" % url
     try:
-        f = urllib2.urlopen('http://download.wikimedia.org/')
+        f = urllib2.urlopen(url)
         wikipediaHtml = f.read()
         f.close()
     except:
-        logEvent("Failed to download http://download.wikimedia.org")
+        logEvent("Failed to download %s" % url)
         raise
-    #print wikipediaHtml
-    logEvent("Downloaded http://download.wikimedia.org/index.html")
-    g_enUrlToDownload = findEnFileUrlInStr(wikipediaHtml)
+    logEvent("Downloaded %s" % url)
+    urls = matchUrlsInTxt(wikipediaHtml, g_reName, lang)
+    if 0 == len(urls):
+        return None
+    # choose the latest one
+    urls.sort()
+    url = urls[-1]
+    for testUrl in urls:
+        assert url >= testUrl
+    print "url = %s" % url
+    return url
+
+def getCurrentFileUrls():
+    global g_enUrlToDownload, g_deUrlToDownload, g_frUrlToDownload
+
+    g_enUrlToDownload = getCurrentFileUrlForLang("en")
+    g_deUrlToDownload = getCurrentFileUrlForLang("de")
+    g_frUrlToDownload = getCurrentFileUrlForLang("fr")
     if g_enUrlToDownload:
         logEvent("Found url for en cur database: " + g_enUrlToDownload )
     else:
-        logEvent("Didn't find the url for en cur database in http://download.wikimedia.org/index.html")
-
-    g_frUrlToDownload = findFrFileUrlInStr(wikipediaHtml)
+        logEvent("Didn't find the url for en cur database")
     if g_frUrlToDownload:
         logEvent("Found url for fr cur database: " + g_frUrlToDownload )
     else:
-        logEvent("Didn't find the url for fr cur database in http://download.wikimedia.org/index.html")
-
-    g_deUrlToDownload = findDeFileUrlInStr(wikipediaHtml)
+        logEvent("Didn't find the url for fr cur database")
     if g_deUrlToDownload:
         logEvent("Found url for de cur database: " + g_deUrlToDownload )
     else:
-        logEvent("Didn't find the url for de cur database in http://download.wikimedia.org/index.html")
+        logEvent("Didn't find the url for de cur database")
 
 def fFileExists(filePath):
     try:
@@ -200,15 +235,22 @@ def downloadUrl(url):
 
     # don't remove '-q' option! if it's removed, the download hangs at 2.30 MB
     # (for whatever wicked reason)
-    p = process.ProcessOpen(['wget', '-q', '-c', url, '--output-document', fileNameGzipped])
+    #p = process.ProcessOpen(['wget', '-q', '-c', url, '--output-document', fileNameGzipped])
 
-    res_stdout = p.stdout.read()                                     
-    res_stderr = p.stderr.read()
-    status = p.wait()   # .wait() returns the child's exit status
+    #res_stdout = p.stdout.read()                                     
+    #res_stderr = p.stderr.read()
+    #status = p.wait()   # .wait() returns the child's exit status
 
     #print "status = %d" % status
 
-    if -1 != res_stderr.find("is not recognized"):
+    #if -1 != res_stderr.find("is not recognized"):
+    #    logEvent("didn't launch wget properly")
+    #    return
+
+    print "url = %s" % url
+    print "fileNameGzipped = %s" % fileNameGzipped
+    sts = subprocess.call(['wget', '-q', '-c', url, '--output-document', fileNameGzipped], shell=True)
+    if sts != 0:
         logEvent("didn't launch wget properly")
         return
     
@@ -278,6 +320,11 @@ def mailLog():
     global g_logTotal, MAILHOST, FROM, TO_LIST, g_machine
     if None == MAILHOST:
         return
+
+    # TODO: find a way to mail it anyway
+    if "DVD2"==os.getenv("COMPUTERNAME"):
+        return
+
     curDate = time.strftime( "%Y-%m-%d", time.localtime() )
     SUBJECT = "ipedia db download status %s (%s)" % (curDate,g_machine)
     BODY = g_logTotal
