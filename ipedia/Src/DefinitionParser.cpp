@@ -1,5 +1,4 @@
 #include "DefinitionParser.hpp"
-#include "FormattedTextElement.hpp"
 #include "ListNumberElement.hpp"
 #include "BulletElement.hpp"
 #include "ParagraphElement.hpp"
@@ -98,7 +97,11 @@ void DefinitionParser::applyCurrentFormatting(TextElement* element)
 {
     assert(NULL != element);
     DefinitionStyle* style = new_nt DefinitionStyle();
-    if (NULL != currentStyle_)
+    if (NULL == style)
+        return;
+    style->reset();
+    const DefinitionStyle* def = getStaticStyle(styleIndexDefault);
+    if (NULL != currentStyle_ && def != currentStyle_)
         *style |= *currentStyle_;
         
     element->setStyle(style, DefinitionElement::ownStyle);
