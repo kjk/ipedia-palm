@@ -531,7 +531,7 @@ void MainForm::updateAfterLookup()
         update();
         
         Field field(*this, termInputField);        
-        field.replace(lookupManager->lastInputTerm());
+        field.replace(lookupManager->lastSearchTerm());
         field.select();                    
     }
     updateNavigationButtons();

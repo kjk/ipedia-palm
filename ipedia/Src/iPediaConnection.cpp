@@ -352,7 +352,7 @@ ArsLexis::status_t iPediaConnection::notifyFinished()
         std::swap(definitionParser_->elements(), lookupManager_.lastDefinitionElements());
         lookupManager_.setLastFoundTerm(articleTitle_);
         if (getRandom_)
-            lookupManager_.setLastInputTerm(articleTitle_);
+            lookupManager_.setLastSearchTerm(articleTitle_);
         data.outcome=data.outcomeArticleBody;
     }
 
@@ -367,8 +367,8 @@ ArsLexis::status_t iPediaConnection::notifyFinished()
     if (NULL!=searchResultsHandler_)
     {
         assert(NULL == definitionParser_);
-        lookupManager_.setLastSearchResults(searchResultsHandler_->searchResults());
-        lookupManager_.setLastSearchExpression(articleTitle_);
+        lookupManager_.setLastExtendedSearchResults(searchResultsHandler_->searchResults());
+        lookupManager_.setLastExtendedSearchTerm(articleTitle_);
         data.outcome=data.outcomeList;
     }
 

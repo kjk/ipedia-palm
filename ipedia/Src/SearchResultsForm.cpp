@@ -15,11 +15,11 @@ using ArsLexis::formatNumber;
 
 void SearchResultsForm::updateSearchResults()
 {
-    iPediaApplication& app=static_cast<iPediaApplication&>(application());
-    LookupManager* lookupManager=app.getLookupManager();
+    iPediaApplication& app = static_cast<iPediaApplication&>(application());
+    LookupManager* lookupManager = app.getLookupManager();
     if (lookupManager)
     {
-        listPositionsString_=lookupManager->lastSearchResults();    
+        listPositionsString_=lookupManager->lastExtendedSearchResults();    
         listPositions_.clear();
         String::iterator end(listPositionsString_.end());
         String::iterator lastStart=listPositionsString_.begin();
@@ -34,9 +34,9 @@ void SearchResultsForm::updateSearchResults()
                 listPositions_.push_back(start);
             }
         }
-        if (!lookupManager->lastSearchExpression().empty())
+        if (!lookupManager->lastExtendedSearchTerm().empty())
         {
-            String title = lookupManager->lastSearchExpression();
+            String title = lookupManager->lastExtendedSearchTerm();
             size_t resultsCount = listPositions_.size();
             char buffer[32];
             int len = formatNumber(resultsCount, buffer, sizeof(buffer));
@@ -142,7 +142,7 @@ void SearchResultsForm::refineSearch()
     if (0==lookupManager)
         return;
     
-    String expression(lookupManager->lastSearchExpression());
+    String expression(lookupManager->lastExtendedSearchTerm());
     expression.reserve(expression.length()+textLen+1);
     expression.append(1, ' ').append(text, textLen);
     lookupManager->search(expression);

@@ -5,6 +5,8 @@
 #include <iPediaApplication.hpp>
 #include "Definition.hpp"
 
+using ArsLexis::String;
+
 class LookupHistory;
 
 // For description of errors, see iPediaServer.py, class iPediaServerError
@@ -62,11 +64,11 @@ class LookupManager: public ArsLexis::LookupManagerBase<iPediaApplication::appLo
 
     Definition::Elements_t lastDefinitionElements_;
 
-    ArsLexis::String lastInputTerm_;
-    ArsLexis::String lastFoundTerm_;
-    ArsLexis::String lastSearchExpression_;
-    ArsLexis::String lastSearchResults_;
-    ArsLexis::String lastReverseLinks_;
+    String lastSearchTerm_;
+    String lastFoundTerm_;
+    String lastExtendedSearchTerm_;
+    String lastExtendedSearchResults_;
+    String lastReverseLinks_;
 
     enum HistoryChange
     {
@@ -88,20 +90,20 @@ public:
     
     ~LookupManager();
 
-    const ArsLexis::String& lastSearchResults() const
-    {return lastSearchResults_;}
+    const String& lastExtendedSearchResults() const
+    {return lastExtendedSearchResults_;}
     
     Definition::Elements_t& lastDefinitionElements() 
     {return lastDefinitionElements_;}
     
-    void search(const ArsLexis::String& expression);
+    void search(const String& expression);
 
-    void lookupTerm(const ArsLexis::String& term);
+    void lookupTerm(const String& term);
 
     void lookupRandomTerm();
 
     //! @return @c true if lookup is started, @c false otherwise.
-    bool lookupIfDifferent(const ArsLexis::String& term);
+    bool lookupIfDifferent(const String& term);
 
     void moveHistory(bool forward=false);
     
@@ -109,18 +111,18 @@ public:
     
     bool hasNextHistoryTerm() const;    
     
-    const ArsLexis::String& lastSearchExpression() const
-    {return lastSearchExpression_;}
+    const String& lastExtendedSearchTerm() const
+    {return lastExtendedSearchTerm_;}
 
-    const ArsLexis::String& lastInputTerm() const
-    {return lastInputTerm_;}
+    const String& lastSearchTerm() const
+    {return lastSearchTerm_;}
 
-    const ArsLexis::String& lastReverseLinks() const
+    const String& lastReverseLinks() const
     {return lastReverseLinks_;}
 
     void handleLookupFinishedInForm(const LookupFinishedEventData& data);
 
-    void verifyRegistrationCode(const ArsLexis::String& regCode);
+    void verifyRegistrationCode(const String& regCode);
     
 private:
     
@@ -134,20 +136,20 @@ private:
     
     void handleList();
 
-    void setLastSearchResults(const ArsLexis::String& sr)
-    {lastSearchResults_=sr;}
+    void setLastExtendedSearchResults(const String& sr)
+    {lastExtendedSearchResults_ = sr;}
     
-    void setLastInputTerm(const ArsLexis::String& lit)
-    {lastInputTerm_=lit;}
+    void setLastSearchTerm(const String& term)
+    {lastSearchTerm_ = term;}
 
-    void setLastFoundTerm(const ArsLexis::String& t)
-    {lastFoundTerm_=t;}
+    void setLastFoundTerm(const String& term)
+    {lastFoundTerm_ = term;}
 
-    void setLastSearchExpression(const ArsLexis::String& se)
-    {lastSearchExpression_=se;}
+    void setLastExtendedSearchTerm(const String& term)
+    {lastExtendedSearchTerm_ = term;}
 
-    void setLastReverseLinks(const ArsLexis::String& rl)
-    {lastReverseLinks_=rl;}
+    void setLastReverseLinks(const String& reverseLinks)
+    {lastReverseLinks_ = reverseLinks;}
 
     friend class iPediaConnection;
 
