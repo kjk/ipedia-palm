@@ -759,7 +759,8 @@ class iPediaProtocol(basic.LineReceiver):
     # handle verifyRegCodeField. If reg code is invalid append regCodeValidField
     # with value "0". If reg code is invalid, append regCodeValidField with value
     # "1" and update users table to mark this as a registration
-    # Return false if there was an error that requires aborting connection
+    # Return error if there was an error that requires aborting connection
+    # Return None if all was ok
     def handleVerifyRegistrationCodeRequest(self):
         # by now we have to have it (from handling getCookieField, cookieField or regCodeField)
         assert self.userId
@@ -800,7 +801,8 @@ class iPediaProtocol(basic.LineReceiver):
         return None
 
     # Set self.userId based on reg code given by client
-    # Return false if there was a problem that requires aborting the connection
+    # Return error if there was a problem that requires aborting the connection
+    # Return None if all was ok
     def handleRegistrationCodeRequest(self):
         assert self.fHasField(regCodeField)
 
@@ -869,7 +871,8 @@ class iPediaProtocol(basic.LineReceiver):
 
     # Assign a cookie to the user. Try to re-use cookie based on deviceInfo
     # or create a new entry in users table. Set self.userId
-    # Return false if there was a problem that requires aborting the connection
+    # Return error if there was a problem that requires aborting the connection
+    # Return None if all was ok
     def handleGetCookieRequest(self):
         assert self.fHasField(getCookieField)
 
