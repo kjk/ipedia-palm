@@ -428,6 +428,7 @@ bool MainForm::handleEvent(EventType& event)
             
         case LookupManager::lookupFinishedEvent:
             handleLookupFinished(event);
+            handled=true;
             break;     
             
         case LookupManager::lookupStartedEvent:
@@ -435,6 +436,7 @@ bool MainForm::handleEvent(EventType& event)
             
         case LookupManager::lookupProgressEvent:
             update(redrawProgressIndicator);
+            handled=true;
             break;
 
         case iPediaApplication::appGetArticlesCountEvent:
