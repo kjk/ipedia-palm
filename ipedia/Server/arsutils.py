@@ -384,3 +384,29 @@ def dumpException(e):
     print sys.exc_info()[1]
     print traceback.print_tb(sys.exc_info()[2])
 
+from httplib import HTTPConnection, HTTPException
+
+# @note assumption that url is not encoded is unrealistic; url must be encoded
+# @exception httplib.HTTPException is thrown in case of connection errors
+# @return tuple (status, reason, responseText)
+def retrieveHttpResponse(address, url, host=None):    
+    status, reason, responseText=None, None, None
+    conn=HTTPConnection(address)
+    conn.connect()
+    try:
+        conn.putrequest("GET", url)
+        conn.putheader("Accept", "image/gif, image/x-xbitmap, image/jpeg, image/pjpeg, */*")
+        if None!=host:
+            conn.putheader("Host", host)
+        else:
+            conn.putheader("Host", address)
+        conn.putheader("User-Agent", "Mozilla/4.0 (compatible; MSIE 6.0; Windows NT 5.1; .NET CLR 1.1.4322)")
+        conn.putheader("Connection", "Keep-Alive")
+        conn.endheaders()
+        resp=conn.getresponse()
+        status, reason, responseText=resp.status, resp.reason, resp.read()
+    finally:
+        conn.close()
+    return status, reason, responseText
+
+
