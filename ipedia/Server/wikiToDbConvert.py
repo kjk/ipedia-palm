@@ -381,13 +381,13 @@ cookiesSql = """CREATE TABLE `cookies` (
   UNIQUE KEY `cookie_unique` (`cookie`)
 ) TYPE=MyISAM;"""
 
-regCodesSql = """CREATE TABLE
+regCodesSql = """CREATE TABLE reg_codes (
     reg_code    VARCHAR(64) NOT NULL,
     purpose     VARCHAR(255) NOT NULL,
-    when_entered TIMESTAMP NOT NULL
-    disabled_p   CHAR(1) NOT NULL DEFAULT 'f' -- is it disabled?, 't' or 'f'
+    when_entered TIMESTAMP NOT NULL,
+    disabled_p   CHAR(1) NOT NULL DEFAULT 'f',
 
-    PRIMARY_KEY (reg_code)
+    PRIMARY KEY (reg_code)
 ) TYPE=MyISAM;""";
 
 regUsersSql = """CREATE TABLE `registered_users` (

@@ -5,11 +5,12 @@
 # For testing the server.
 #
 # Usage:
-#   -perfrandom N : do a performance test for Get-Random-Definitions by issuing N requests
+#   -perfrandom $n : do a performance test for Get-Random-Definitions by issuing $n requests
 #   -get term : get and display a definition of term
 #   -getrandom
 #   -articlecount
 #   -ping : does a ping request (to test if the server is alive)
+#   -verifyregcode $regCode : verify registration code
 import sys, string, re, socket, random, pickle, time, arsutils
 
 # server string must be of form "name:port"
@@ -34,6 +35,8 @@ GET_ARTICLE_COUNT = "Get-Article-Count:"
 ARTICLE_COUNT     = "Article-Count:"
 GET_DATABASE_TIME = "Get-Database-Time:"
 DATABASE_TIME     = "Database-Time:"
+VERIFY_REG_CODE   = "Verify-Registration-Code:"
+REG_CODE_VALID    = "Registration-Code-Valid:"
 
 # current version of the definition format returned by the client
 CUR_FORMAT_VER = "1"
@@ -250,6 +253,14 @@ def doGetDatabaseTime():
     assert rsp.hasField(DATABASE_TIME)
     print "Database time: %s" % rsp.getField(DATABASE_TIME)
 
+def doVerifyRegCode(regCode):
+    req = getRequestHandleCookie(VERIFY_REG_CODE, regCode)
+    rsp = Response(req.getString())
+    handleCookie(rsp)
+    assert rsp.hasField(TRANSACTION_ID)
+    assert rsp.hasField(REG_CODE_VALID)
+    print "Reg code valid: %s" % rsp.getField(REG_CODE_VALID)
+
 def doRandomPerf(count):
     timer = arsutils.Timer(fStart=True)
     for i in range(count):
@@ -266,7 +277,7 @@ def doPing():
     assert rsp.getField(TRANSACTION_ID) == req.transactionId
 
 def usageAndExit():
-    print "client.py [-showtiming] [-perfrandom N] [-getrandom] [-get term] [-articlecount] [-dbtime] [-ping]"
+    print "client.py [-showtiming] [-perfrandom N] [-getrandom] [-get term] [-articlecount] [-dbtime] [-ping] [-verifyregcode $regCode]"
 
 if __name__=="__main__":
     g_fShowTiming = arsutils.fDetectRemoveCmdFlag("-showtiming")
@@ -291,6 +302,10 @@ if __name__=="__main__":
             sys.exit(0)
         if arsutils.fDetectRemoveCmdFlag("-dbtime"):
             doGetDatabaseTime()
+            sys.exit(0)
+        regCode = arsutils.getRemoveCmdArg("-verifyregcode")
+        if regCode:
+            doVerifyRegCode(regCode)
             sys.exit(0)
         usageAndExit()
     finally:

@@ -107,9 +107,6 @@ notFoundField =         "Not-Found"
 # Error is returned by the server if there was an error.
 # Value: error number
 errorField =            "Error"
-# Register is sent by client to verify if a registration code is valid
-# value is registration code
-registerField =         "Register"
 # Client sends Registration-Code if registration code has been entered by the
 # user and confirmed as valid by Register request.
 # Value: registration code
@@ -187,6 +184,7 @@ class iPediaProtocol(basic.LineReceiver):
         self.getArticleCount=False
         self.getDatabaseTime=False
         self.searchExpression=None
+        self.regCodeToVerify=None
 
     def getManagementDatabase(self):
         if not self.dbManagement:
@@ -324,26 +322,39 @@ class iPediaProtocol(basic.LineReceiver):
         try:
             db=self.getManagementDatabase()
             cursor=db.cursor()
-            cursor.execute("""SELECT reg_code FROM reg_codes WHERE reg_code='%s' AND disabled_p=='f'""" % db.escape_string(regCode))
+            cursor.execute("""SELECT reg_code FROM reg_codes WHERE reg_code='%s' AND disabled_p='f'""" % db.escape_string(regCode))
             row=cursor.fetchone()
+            cursor.close()
             if row:
                 return True
         except _mysql_exceptions.Error, ex:
-            dumpException(ex)
-            self.error=iPediaServerError.serverFailure
-        finally:
             if cursor:
                 cursor.close()        
+            dumpException(ex)
+            self.error=iPediaServerError.serverFailure
         return False;
 
-    def handleRegisterRequest(self):
+    def handleVerifyRegistrationCodeRequest(self):
+        if not self.cookieId:
+            self.error=iPediaServerError.malformedRequest
+            return False
+        fRegCodeExists = self.fRegCodeExists(self.regCodeToVerify)
+        if fRegCodeExists:
+            self.outputField(regCodeValidField, "1")
+        else:
+            self.outputField(regCodeValidField, "0")
+        return True
+
+    def handleRegistrationCodeRequest(self):
+        # TODO: we should accept *either* cookie or reg code
         if not self.cookieId:
             self.error=iPediaServerError.malformedRequest
             return False
 
         fRegCodeExists = self.fRegCodeExists(self.regCode)
         if not fRegCodeExists:
-            
+            self.error=iPediaServerError.malfromedRequest
+            return False
 
         cursor=None
         try:
@@ -562,29 +573,32 @@ class iPediaProtocol(basic.LineReceiver):
             
             if self.deviceInfoToken and not self.handleGetCookieRequest():
                 return self.finish()
-        
+ 
             if self.cookie:
                 if not self.handleCookieRequest():
                     return self.finish()
             else:
                 self.error=iPediaServerError.malformedRequest
                 return self.finish()
-                
-            if self.regCode and not self.handleRegisterRequest():
+
+            if self.regCode and not self.handleRegistrationCodeRequest():
+                return self.finish()
+
+            if None!=self.regCodeToVerify and not self.handleVerifyRegistrationCodeRequest():
                 return self.finish()
 
             if self.term and not self.userId and self.fOverUnregisteredLookupsLimit():
                 return self.finish()
-            
+
             if self.term and not self.handleDefinitionRequest():
                 return self.finish()
-                
+
             if self.searchExpression and not self.handleSearchRequest():
                 return self.finish();
     
             if self.getRandom and not self.handleGetRandomRequest():
                 return self.finish()
-                
+
             if self.getArticleCount:
                 self.outputField(articleCountField, str(self.factory.articleCount))
 
@@ -594,7 +608,7 @@ class iPediaProtocol(basic.LineReceiver):
         except Exception, ex:
             dumpException(ex)
             self.error=iPediaServerError.serverFailure
-            
+ 
         self.finish()
 
     def extractFieldValue(self, line):
@@ -607,7 +621,7 @@ class iPediaProtocol(basic.LineReceiver):
     def lineReceived(self, request):
         try:
             ++self.linesCount
-            
+
             if requestLinesCountLimit==self.linesCount:
                 self.error=iPediaServerError.malformedRequest
 
@@ -616,39 +630,45 @@ class iPediaProtocol(basic.LineReceiver):
             else:
                 if g_fVerbose:
                     print request
-                
+
                 if request.startswith(transactionIdField):
                     self.transactionId=self.extractFieldValue(request)
-                    
+
                 elif request.startswith(protocolVersionField):
                     self.protocolVersion=self.extractFieldValue(request)
-                    
+
                 elif request.startswith(clientVersionField):
                     self.clientVersion=self.extractFieldValue(request)
-    
+
                 elif request.startswith(getCookieField):
                     self.deviceInfoToken=self.extractFieldValue(request)
-                    
+
                 elif request.startswith(cookieField):
                     self.cookie=self.extractFieldValue(request)
-            
+
                 elif request.startswith(getDefinitionField):
                     self.requestedTerm=self.term=self.extractFieldValue(request)
-                
-                elif request.startswith(registerField):
+
+                elif request.startswith(regCodeField):
                     self.regCode=self.extractFieldValue(request)
-    
+
                 elif request.startswith(getRandomField):
                     self.getRandom = True
-                    
+
                 elif request.startswith(searchField):
                     self.searchExpression=self.extractFieldValue(request)        
-                    
+
                 elif request.startswith(getArticleCountField):
                     self.getArticleCount=True
 
                 elif request.startswith(getDatabaseTimeField):
                     self.getDatabaseTime=True
+
+                elif request.startswith(verifyRegCodeField):
+                    regCode = self.extractFieldValue(request)
+                    if None == regCode:
+                        self.error=iPediaServerError.malformedRequest
+                    self.regCodeToVerify=self.extractFieldValue(request)
 
                 else:
                     self.error=iPediaServerError.malformedRequest
