@@ -75,8 +75,6 @@ iPediaApplication::~iPediaApplication()
 
     if (history_)
         delete history_;
-
-    logAllocation_=false;        
 }
 
 
