@@ -93,6 +93,7 @@ public:
         appLookupEventLast=appLookupEventFirst+reservedLookupEventsCount,
         appRegisterEvent,
         appRandomWord,
+        appRegistrationFinished,
         appFirstAvailableEvent
     };
     

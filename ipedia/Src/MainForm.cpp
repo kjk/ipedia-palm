@@ -52,40 +52,40 @@ inline const LookupHistory& MainForm::getHistory() const
 void MainForm::resize(const ArsLexis::Rectangle& screenBounds)
 {
     Rectangle bounds(this->bounds());
-    if (screenBounds!=bounds)
-    {
-        setBounds(screenBounds);
+    if (screenBounds==bounds)
+        return;
 
-        FormObject object(*this, definitionScrollBar);
-        object.bounds(bounds);
-        bounds.x()=screenBounds.extent.x-8;
-        bounds.height()=screenBounds.extent.y-36;
-        object.setBounds(bounds);
+    setBounds(screenBounds);
+
+    FormObject object(*this, definitionScrollBar);
+    object.bounds(bounds);
+    bounds.x()=screenBounds.extent.x-8;
+    bounds.height()=screenBounds.extent.y-36;
+    object.setBounds(bounds);
+    
+    object.attach(termInputField);
+    object.bounds(bounds);
+    bounds.y()=screenBounds.extent.y-14;
+    bounds.width()=screenBounds.extent.x-63;
+    object.setBounds(bounds);
+
+    object.attach(searchButton);
+    object.bounds(bounds);
+    bounds.x()=screenBounds.extent.x-34;
+    bounds.y()=screenBounds.extent.y-14;
+    object.setBounds(bounds);
+    
+    object.attach(backButton);
+    object.bounds(bounds);
+    bounds.y()=screenBounds.extent.y-14;
+    object.setBounds(bounds);
+
+    object.attach(forwardButton);
+    object.bounds(bounds);
+    bounds.y()=screenBounds.extent.y-14;
+    object.setBounds(bounds);
         
-        object.attach(termInputField);
-        object.bounds(bounds);
-        bounds.y()=screenBounds.extent.y-14;
-        bounds.width()=screenBounds.extent.x-63;
-        object.setBounds(bounds);
-
-        object.attach(searchButton);
-        object.bounds(bounds);
-        bounds.x()=screenBounds.extent.x-34;
-        bounds.y()=screenBounds.extent.y-14;
-        object.setBounds(bounds);
-        
-        object.attach(backButton);
-        object.bounds(bounds);
-        bounds.y()=screenBounds.extent.y-14;
-        object.setBounds(bounds);
-
-        object.attach(forwardButton);
-        object.bounds(bounds);
-        bounds.y()=screenBounds.extent.y-14;
-        object.setBounds(bounds);
-            
-        update();    
-    }        
+    update();    
 }
 
 void MainForm::updateScrollBar()
@@ -451,6 +451,15 @@ bool MainForm::handleEvent(EventType& event)
             handled=true;
             break;
 
+        case iPediaApplication::appRegistrationFinished:
+            // need to re-create about page just in case registration status
+            // has changed
+            prepareAbout();
+            forceAboutRecalculation_=true;
+            update();
+            handled=true;
+            break;
+
         case iPediaApplication::appRandomWord:
             randomArticle();
             handled=true;
@@ -618,7 +627,11 @@ bool MainForm::handleMenuCommand(UInt16 itemId)
             break;
 
         case aboutMenuItem:
-            handleAbout();
+            if (showAbout!=displayMode())
+            {
+                setDisplayMode(showAbout);
+                update();
+            }
             handled = true;
             break;
 
@@ -715,23 +728,6 @@ void MainForm::handleToggleStressMode()
         app.toggleStressMode(true);
         randomArticle();
     }        
-}
-
-void MainForm::handleAbout()
-{
-    if (showAbout!=displayMode())
-    {
-        setDisplayMode(showAbout);
-        update();
-    }
-    else 
-    {
-        if (!article_.empty())
-        {
-            setDisplayMode(showArticle);
-            update();
-        }
-    }                
 }
 
 void MainForm::search(bool fullText)
@@ -892,7 +888,6 @@ void MainForm::prepareAbout()
     Definition::Elements_t elems;
     FormattedTextElement* text;
 
-    assert( about_.empty() );
     FontEffects fxBold;
     fxBold.setWeight(FontEffects::weightBold);
 
@@ -918,17 +913,26 @@ void MainForm::prepareAbout()
     text->setJustification(DefinitionElement::justifyCenter);
     elems.push_back(new LineBreakElement(1,4));
 
-    // TODO: remove that if we have a reg code
-    elems.push_back(text=new FormattedTextElement("Unregistered ("));
-    text->setJustification(DefinitionElement::justifyCenter);
-    elems.push_back(text=new FormattedTextElement("how to register"));
-    text->setJustification(DefinitionElement::justifyCenter);
-    // url doesn't really matter, it's only to establish a hotspot
-    text->setHyperlink("", hyperlinkTerm);
-    text->setActionCallback( unregisteredActionCallback, static_cast<void*>(this) );
-    elems.push_back(text=new FormattedTextElement(")"));
-    text->setJustification(DefinitionElement::justifyCenter);
-    elems.push_back(new LineBreakElement(1,2));
+    iPediaApplication& app=static_cast<iPediaApplication&>(application());
+    if (app.preferences().regCode.empty())
+    {
+        elems.push_back(text=new FormattedTextElement("Unregistered ("));
+        text->setJustification(DefinitionElement::justifyCenter);
+        elems.push_back(text=new FormattedTextElement("how to register"));
+        text->setJustification(DefinitionElement::justifyCenter);
+        // url doesn't really matter, it's only to establish a hotspot
+        text->setHyperlink("", hyperlinkTerm);
+        text->setActionCallback( unregisteredActionCallback, static_cast<void*>(this) );
+        elems.push_back(text=new FormattedTextElement(")"));
+        text->setJustification(DefinitionElement::justifyCenter);
+        elems.push_back(new LineBreakElement(1,2));
+    }
+    else
+    {
+        elems.push_back(text=new FormattedTextElement("Registered"));
+        text->setJustification(DefinitionElement::justifyCenter);
+        elems.push_back(new LineBreakElement(1,2));
+    }
 
     elems.push_back(text=new FormattedTextElement("Software \251 "));
     text->setJustification(DefinitionElement::justifyCenter);

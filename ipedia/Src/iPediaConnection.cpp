@@ -60,16 +60,14 @@ void iPediaConnection::prepareRequest()
         fSendRegCode = false;
 
     bool fSendCookie = !fSendRegCode;
-    // TODO: for now always send cookie because that's what the server expects
-    fSendCookie = true;
-
+ 
     String request;
     appendField(request, protocolVersionField, protocolVersion);
     appendField(request, clientInfoField, 
         #if defined(_PALM_OS)
-            _T("Palm 0.5")
+            _T("Palm 1.0")
         #elif defined(PPC)
-            _T("Pocket PC 2002")
+            _T("Pocket PC 2002 1.0")
         #else
             _T("Smartphone 1.0")
         #endif

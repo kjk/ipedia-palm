@@ -14,6 +14,7 @@
 #   -verifyregcode $regCode : verify registration code
 #   -invalidcookie : send a request with invalid cookie
 #   -malformed : send malformed request
+#   -tcnc : test get cookie no cookie
 import sys, string, re, socket, random, pickle, time
 import arsutils
 from iPediaServer import *
@@ -239,6 +240,22 @@ def handleCookie(rsp):
         print "Found cookie: %s" % rsp.getField(cookieField)
         g_cookie = rsp.getField(cookieField)
 
+def test_NoCookieAndGetCookie():
+    # verify that server rejects a query with both cookieField and getCookieField
+    req = Request()
+    req.addField(getCookieField,g_exampleDeviceInfo)
+    rsp = Response(req.getString())
+    print rsp.getText()
+    return
+    assert rsp.hasField(transactionIdField)
+    assert rsp.hasField(cookieField)
+    cookie = self.rsp.getField(cookieField)
+    self.req = Request()
+    self.req.addField(cookieField,cookie)
+    self.req.addField(getCookieField,g_exampleDeviceInfo)
+    self.getResponse([transactionIdField,errorField])
+    self.assertError(iPediaServerError.malformedRequest)
+
 def doGetRandom(fSilent=False,fDoTiming=False):
     req = getRequestHandleCookie(getRandomField, None)
     timer = arsutils.Timer(fStart=True)
@@ -393,6 +410,9 @@ if __name__=="__main__":
             sys.exit(0)
         if arsutils.fDetectRemoveCmdFlag("-malformed"):
             doMalformed()
+            sys.exit(0)
+        if arsutils.fDetectRemoveCmdFlag("-tcnc"):
+            test_NoCookieAndGetCookie()
             sys.exit(0)
         usageAndExit()
     finally:

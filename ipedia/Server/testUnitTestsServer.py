@@ -7,7 +7,7 @@
 
 import string,unittest
 import client
-from client import getRequestHandleCookie, Response, Request
+from client import getRequestHandleCookie, Response, Request, g_exampleDeviceInfo
 from iPediaServer import *
 
 invalidRegCodeNumber = "0000"
@@ -110,19 +110,15 @@ class ArsUtils(unittest.TestCase):
         self.assertFieldEqual(rsp,transactionIdField, req.transactionId)
         self.assertFieldEqual(rsp,errorField,iPediaServerError.invalidRequest)
 
-    def test_RegistrationValidRegCode(self):
-        req = getRequestHandleCookie(verifyRegCodeField, testValidRegCode)
-        rsp = Response(req)
-        self.assertFieldsExist(rsp,[cookieField,transactionIdField,regCodeValidField])
-        self.assertFieldEqual(rsp,transactionIdField, req.transactionId)
-        self.assertFieldEqual(rsp,regCodeValidField,1)
+    def test_VerifyValidRegCode(self):
+        self.req = getRequestHandleCookie(verifyRegCodeField, testValidRegCode)
+        self.getResponse([cookieField,transactionIdField,regCodeValidField])
+        self.assertFieldEqual(self.rsp,regCodeValidField,1)
 
-    def test_RegistrationInvalidRegCode(self):
-        req = getRequestHandleCookie(verifyRegCodeField, invalidRegCodeNumber)
-        rsp = Response(req)
-        self.assertFieldsExist(rsp,[cookieField,transactionIdField,regCodeValidField])
-        self.assertFieldEqual(rsp,transactionIdField, req.transactionId)
-        self.assertFieldEqual(rsp,regCodeValidField,0)
+    def test_VerifyInvalidRegCode(self):
+        self.req = getRequestHandleCookie(verifyRegCodeField, invalidRegCodeNumber)
+        self.getResponse([cookieField,transactionIdField,regCodeValidField])
+        self.assertFieldEqual(self.rsp,regCodeValidField,0)
 
     def test_InvalidProtocolVer(self):
         req = Request(protocolVer="2")
@@ -261,10 +257,33 @@ class ArsUtils(unittest.TestCase):
         self.assertError(iPediaServerError.malformedRequest)
 
     def test_DuplicateField(self):
+        # TODO: doesn't work
         self.req = getRequestHandleCookie(getArticleCountField, None)
         #self.req.addField(getArticleCountField, None)
         self.getResponse([transactionIdField])
         #self.assertError(iPediaServerError.malformedRequest)
+
+    def test_VerifyRegCodeAsFirstRequest(self):
+        # this is what client sends when it sends Verify-Register-Code
+        # as the first request ever
+        self.req = getRequestHandleCookie(verifyRegCodeField, testValidRegCode)
+        self.req.addField(getCookieField, g_exampleDeviceInfo)
+        self.req.addField(getArticleCountField, None)
+        self.req.addField(getDatabaseTimeField, None)
+        self.getResponse([cookieField,transactionIdField,regCodeValidField])
+        self.assertFieldEqual(self.rsp,regCodeValidField,1)
+
+    def test_NoCookieAndGetCookie(self):
+        # verify that server rejects a query with both cookieField and getCookieField
+        self.req = Request()
+        self.req.addField(getCookieField,g_exampleDeviceInfo)
+        self.getResponse([cookieField,transactionIdField])
+        cookie = self.rsp.getField(cookieField)
+        self.req = Request()
+        self.req.addField(cookieField,cookie)
+        self.req.addField(getCookieField,g_exampleDeviceInfo)
+        self.getResponse([transactionIdField,errorField])
+        self.assertError(iPediaServerError.malformedRequest)
 
     def test_GetCookieNoDeviceInfo(self):
         # TODO:

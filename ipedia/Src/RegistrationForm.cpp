@@ -10,6 +10,7 @@ using ArsLexis::Field;
 using ArsLexis::Control;
 using ArsLexis::String;
 using ArsLexis::removeNonDigits;
+using ArsLexis::sendEvent;
 
 void RegistrationForm::resize(const ArsLexis::Rectangle& screenBounds)
 {
@@ -68,10 +69,13 @@ void RegistrationForm::handleControlSelect(const EventType& event)
         return;
     }
 
-    LookupManager* lookupManager=app.getLookupManager();
+    // get lookup manager, create if doesn't exist. We might not have lookupManager
+    // at this point (if we didn't do any query before registration query)
+    LookupManager* lookupManager=app.getLookupManager(true);
+    assert(lookupManager);
     if (NULL==lookupManager)
     {
-        // TODO: Can it ever happen?
+        // shouldn't happen, but just in case
         return;
     }
 
@@ -98,6 +102,7 @@ void RegistrationForm::handleLookupFinished(const EventType& event)
         }
 
         FrmAlert(alertRegistrationOk);
+        sendEvent(iPediaApplication::appRegistrationFinished);
         closePopup();
     }
     else if (data.outcomeRegCodeInvalid==data.outcome)
@@ -119,7 +124,7 @@ void RegistrationForm::handleLookupFinished(const EventType& event)
     }
     else
     {
-        assert (data.outcomeError==data.outcome);
+        assert((data.outcomeServerError==data.outcome) || (data.outcomeError==data.outcome));
         // an alert will be shown for server errors
         update();
     }

@@ -49,8 +49,6 @@ class MainForm: public iPediaForm
     
     void handleToggleStressMode();
     
-    void handleAbout();
-    
     void search(bool fullText=false);
     
     void handlePenDown(const EventType& event);
