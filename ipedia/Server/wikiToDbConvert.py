@@ -71,21 +71,22 @@ def getIpediaConnection(dbName):
         assert g_connIpedia
         return g_connIpedia
     if g_connIpedia:
-        assert dbName == g_connIpediaDbName
+        if dbName == g_connIpediaDbName:
+            return g_connIpedia
+        else:
+            g_connIpedia.close()
+            g_connIpediaDbName = None
     g_connIpedia = MySQLdb.Connect(host=DB_HOST, user=DB_USER, passwd=DB_PWD, db=dbName)
     g_connIpediaDbName = dbName
     return g_connIpedia
 
-g_ipediaRowCount = None
-def getIpediaRowCount():
-    global g_ipediaRowCount
-    if None == g_ipediaRowCount:
-        conn = getIpediaConnection(None)
-        g_ipediaRowCount = getOneResult(conn, """SELECT COUNT(*) FROM ipedia.articles;""")
-    return g_ipediaRowCount
+def getIpediaArticlesCount():
+    conn = getIpediaConnection(None)
+    ipediaRowCount = getOneResult(conn, """SELECT COUNT(*) FROM articles;""")
+    return ipediaRowCount
 
-def printIpediaRowCount():
-    ipediaRows = getIpediaRowCount()
+def printIpediaArticlesCount():
+    ipediaRows = getIpediaArticlesCount()
     sys.stderr.write("rows in ipedia: %d\n" % ipediaRows)
 
 def deinitDatabase():
@@ -94,8 +95,11 @@ def deinitDatabase():
     closeAllNamedCursors()
     if g_connIpedia:
         g_connIpedia.close()
+        g_connIpedia = None
+        g_connIpediaDbName = None
     if g_connRoot:
         g_connRoot.close()
+        g_connRoot = None
 
 g_namedCursors = {}
 def getNamedCursor(conn,curName):
@@ -601,13 +605,11 @@ def createIpediaDb(sqlDumpName,fRecreateDb=False):
             sys.exit(0)
 
 def createFtIndex():
-    print "starting to create full-text index"
     query = "CREATE FULLTEXT INDEX full_text_index ON articles(title,body);"
     conn = getIpediaConnection(None)
     cur = conn.cursor()
     cur.execute(query)
     cur.close()
-    print "finished creating full-text index"
 
 def revLinksOnly(sqlDump):
     try:

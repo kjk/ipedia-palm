@@ -8,12 +8,20 @@
 #    wikipedia cur database 
 #    e.g.: http://download.wikimedia.org/archives/en/20040403_cur_table.sql.bz2
 #  - downloads it if it hasn't been downloaded yet
+#  - converts it if it hasn't been converted yet
 
 # requires process module from
 # http://starship.python.net/crew/tmick/index.html#process
 
 import sys,string,re,time,urllib2,os,os.path,process,smtplib
-import arsutils
+import arsutils, wikipediasql, wikiToDbConvert
+
+try:
+    import psyco
+    g_fPsycoAvailable = True
+except:
+    print "psyco not available. You should consider using it (http://psyco.sourceforge.net/)"
+    g_fPsycoAvailable = False
 
 # this is the whole text that was logged during this session
 g_logTotal = ""
@@ -120,22 +128,22 @@ def getCurrentFileUrls():
     #print wikipediaHtml
     logEvent("Downloaded http://download.wikimedia.org/index.html")
     g_enUrlToDownload = findEnFileUrlInStr(wikipediaHtml)
-    if not g_enUrlToDownload:
-        logEvent("Didn't find the url for en cur database in http://download.wikimedia.org/index.html")
-    else:
+    if g_enUrlToDownload:
         logEvent("Found url for en cur database: " + g_enUrlToDownload )
+    else:
+        logEvent("Didn't find the url for en cur database in http://download.wikimedia.org/index.html")
 
     g_frUrlToDownload = findFrFileUrlInStr(wikipediaHtml)
-    if not g_frUrlToDownload:
-        logEvent("Didn't find the url for fr cur database in http://download.wikimedia.org/index.html")
-    else:
+    if g_frUrlToDownload:
         logEvent("Found url for fr cur database: " + g_frUrlToDownload )
+    else:
+        logEvent("Didn't find the url for fr cur database in http://download.wikimedia.org/index.html")
 
     g_deUrlToDownload = findDeFileUrlInStr(wikipediaHtml)
-    if not g_deUrlToDownload:
-        logEvent("Didn't find the url for de cur database in http://download.wikimedia.org/index.html")
-    else:
+    if g_deUrlToDownload:
         logEvent("Found url for de cur database: " + g_deUrlToDownload )
+    else:
+        logEvent("Didn't find the url for de cur database in http://download.wikimedia.org/index.html")
 
 def fFileExists(filePath):
     try:
@@ -211,39 +219,52 @@ def downloadDb(url):
 
     if fDbDownloaded(url):
         (fileNameGzipped, fileNameUngzipped) = fileNamesFromUrl(url)
-        if fFileExists(fileGzipped):
+        if fFileExists(fileNameGzipped):
             g_latestDatabases.append(fileNameGzipped)
 
 def convertDb(sqlDumpFileName):
-    connRoot = wikiToDbConvert.getRootConnection()
 
-    dbName = wikiToDbConvert.getDbNameFromFileName(sqlDumpFileName)
+    foLog = None
+    try:
+        logEvent("convertDb(%s) called" % sqlDumpFileName)
+        connRoot = wikiToDbConvert.getRootConnection()
 
-    if dbName in wikiToDbConvert.getDbList():
-        logEvent("db %s already exists" % dbName)
+        dbName = wikiToDbConvert.getDbNameFromFileName(sqlDumpFileName)
 
-    logEvent("started creating db %s" % dbName)
-    createDb(connRoot,dbName)
+        if dbName in wikiToDbConvert.getDbList():
+            logEvent("db %s already exists" % dbName)
+            return
 
-    timer = arsutils.Timer(fStart=True)
-    logFileName = wikipediasql.getLogFileName(sqlDump)
-    # use small buffer so that we can observe changes with tail -w
-    foLog = open(logFileName, "wb", 64)
-    sys.stdout = foLog
-    # sys.stderr = foLog
-    convertArticles(sqlDump,articleLimit)
-    calcReverseLinks(sqlDump)
-    timer.stop()
-    durInSecs = timer.getDurationInSecs()
-    durTxt = arsutils.timeInSecsToTxt(durInSecs)
-    logEvent("db %s created in %s" % (dbName, durTxt))
+        logEvent("started creating db %s" % dbName)
+        wikiToDbConvert.createDb(connRoot,dbName)
 
-    timer = arsutils.Timer(fStart=True)
-    createFtIndex()
-    timer.stop()
-    durInSecs = timer.getDurationInSecs()
-    durTxt = arsutils.timeInSecsToTxt(durInSecs)
-    logEvent("full-text index for db %s created in %s" % (dbName, durTxt))
+        timer = arsutils.Timer(fStart=True)
+        logFileName = wikipediasql.getLogFileName(sqlDumpFileName)
+        # use small buffer so that we can observe changes with tail -w
+        foLog = open(logFileName, "wb", 64)
+        sys.stdout = foLog
+        # sys.stderr = foLog
+        wikiToDbConvert.convertArticles(sqlDumpFileName,articleLimit=None)
+        wikiToDbConvert.calcReverseLinks(sqlDumpFileName)
+        timer.stop()
+        durInSecs = timer.getDurationInSecs()
+        durTxt = arsutils.timeInSecsToTxt(durInSecs)
+        logEvent("db %s created in %s" % (dbName, durTxt))
+
+        timer = arsutils.Timer(fStart=True)
+        wikiToDbConvert.createFtIndex()
+        timer.stop()
+        durInSecs = timer.getDurationInSecs()
+        durTxt = arsutils.timeInSecsToTxt(durInSecs)
+        logEvent("full-text index for db %s created in %s" % (dbName, durTxt))
+
+        ARTICLE_COUNT_DELTA = 3000 # should be same as in iPediaServer.py
+        articlesCount = wikiToDbConvert.getIpediaArticlesCount() - ARTICLE_COUNT_DELTA
+        logEvent("%d articles in db %s" % (articlesCount, dbName))
+    finally:
+        wikiToDbConvert.deinitDatabase()
+        if None != foLog:
+            foLog.close()
 
 def mailLog():
     global g_logTotal, MAILHOST, FROM, TO_LIST, g_machine
@@ -265,10 +286,18 @@ def mailLog():
     server.quit()
  
 if __name__=="__main__":
-    getCurrentFileUrls()
-    downloadDb(g_frUrlToDownload)
-    downloadDb(g_deUrlToDownload)
-    downloadDb(g_enUrlToDownload)
-    for sqlDumpFileName in g_latestDatabases:
-        convertDb(sqlDumpFileName)
-    mailLog()
+    if g_fPsycoAvailable:
+        print "using psyco"
+        psyco.full()
+    try:
+        getCurrentFileUrls()
+        if None==g_frUrlToDownload and None==g_deUrlToDownload and None==g_enUrlToDownload:
+            logEvent("didn't find any databses to download")
+        else:
+            downloadDb(g_frUrlToDownload)
+            downloadDb(g_deUrlToDownload)
+            downloadDb(g_enUrlToDownload)
+            for sqlDumpFileName in g_latestDatabases:    
+                    convertDb(sqlDumpFileName)
+    finally:
+        mailLog()
