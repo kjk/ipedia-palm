@@ -60,6 +60,15 @@ scriptRe=re.compile("<script.*?</script>", re.I+re.S)
 badLinkRe=re.compile(r"\[\[((\w\w\w?(-\w\w)?)|(simple)|(image)|(media)):.*?\]\]", re.I+re.S)
 #numEntityRe=re.compile(r'&#(\d+);')
 
+# this is a bit of a hack. the problem (see e.g. Seattle) is
+# that an image can have nested [[links]] e.g.:
+# [[Image:Seattlepikeplace2002.JPG|right|thumb|[[Pike Place Market]]]] 
+# We want to remove all of that so I rely on the fact, that it ends
+# with a newline. Probably not perfect but basically I don't know any
+# good alternative with regexp (greedy regexp would do if we were
+# line based, but we're doing it on the whole text)
+imageRe = re.compile("\[\[Image:.*\]\]\s*\n", re.I)
+
 multipleLinesRe=re.compile("\n{3,100}")
 # replace multiple (1+) empty lines with just one empty line.
 def stripMultipleNewLines(txt):
@@ -104,6 +113,7 @@ def dumpException(e):
 def convertArticle(term, text):
     try:
         text=text.replace('__NOTOC__', '')
+        text=replaceRegExp(text, imageRe, '')
         # remove categories. TODO: provide a better support for categories
         # i.e. we remember categories on the server and client can display
         # all articles in a given category
