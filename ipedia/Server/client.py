@@ -11,6 +11,7 @@
 #   -articlecount
 #   -ping : does a ping request (to test if the server is alive)
 #   -verifyregcode $regCode : verify registration code
+#   -invalidcookie : send a request with invalid cookie
 import sys, string, re, socket, random, pickle, time
 import arsutils
 from iPediaServer import *
@@ -72,12 +73,12 @@ def socket_readAll(sock):
     return result
 
 class Request:
-    def __init__(self):
+    def __init__(self, protocolVer="1", clientVer="0.5"):
         self.fields = []
         self.lines = []
 
-        self.protocolVer   = "1"
-        self.clientVer     = "0.5"
+        self.protocolVer   = protocolVer
+        self.clientVer     = clientVer
         self.transactionId = "%x" % random.randint(0, 2**16-1)
 
         self.addField(protocolVersionField, self.protocolVer)
@@ -101,12 +102,15 @@ class Request:
         txt += "\n"
         return txt
 
+    def addCookie(self):
+        if getGlobalCookie():
+            self.addField(cookieField, getGlobalCookie())
+        else:
+            self.addField(getCookieField, g_exampleDeviceInfo)
+
 def getRequestHandleCookie(field=None,value=None):
     r = Request()
-    if getGlobalCookie():
-        r.addField(cookieField, getGlobalCookie())
-    else:
-        r.addField(getCookieField, g_exampleDeviceInfo)
+    r.addCookie()
     if field!=None:
         r.addField(field,value)
     return r
@@ -188,6 +192,9 @@ class Response:
             # TODO: throw an exception
             print "FAILURE in parseServerResponse"
             sys.exit(0)
+
+    def getFields(self):
+        return self.responseDict.keys()
 
     def hasField(self,field):
         assert ':' != field[-1]
@@ -283,6 +290,15 @@ def doPing():
     assert rsp.hasField(transactionIdField)
     assert rsp.getField(transactionIdField) == req.transactionId
 
+def doInvalidCookie():
+    req = Request()
+    req.addField(cookieField, "blah")
+    print req.getString()
+    rsp = Response(req)
+    print rsp.getText()
+    assert rsp.hasField(transactionIdField)
+    assert rsp.getField(transactionIdField) == req.transactionId
+
 def usageAndExit():
     print "client.py [-showtiming] [-perfrandom N] [-getrandom] [-get term] [-articlecount] [-dbtime] [-ping] [-verifyregcode $regCode]"
 
@@ -314,6 +330,9 @@ if __name__=="__main__":
         regCode = arsutils.getRemoveCmdArg("-verifyregcode")
         if regCode:
             doVerifyRegCode(regCode)
+            sys.exit(0)
+        if arsutils.fDetectRemoveCmdFlag("-invalidcookie"):
+            doInvalidCookie()
             sys.exit(0)
         usageAndExit()
     finally:
