@@ -66,15 +66,15 @@ void iPediaConnection::prepareRequest()
  
     String request;
     appendField(request, protocolVersionField, protocolVersion);
-    appendField(request, clientInfoField, 
-        #if defined(_PALM_OS)
-            _T("Palm 1.0")
-        #elif defined(PPC)
-            _T("Pocket PC 2002 1.0")
-        #else
-            _T("Smartphone 1.0")
-        #endif
-    );
+
+#if defined(_PALM_OS)
+    appendField(request, clientInfoField, _T("Palm 1.0"))
+#elif defined(PPC2)
+    appendField(request, clientInfoField, _T("PocketPC 1.0"));
+#else
+    appendField(request, clientInfoField, _T("Smartphone 1.0"));
+#endif
+
     char_t buffer[16];
     tprintf(buffer, _T("%08lx"), transactionId_);
     appendField(request, transactionIdField, buffer);
