@@ -912,7 +912,35 @@ void MainForm::changeDatabase()
             lookupManager->getAvailableLangs();
         return;
     }
-    app().strList = StringListFromString(availableLangs, " ", app().strListSize);
+
+    char_t **strList = StringListFromString(availableLangs, " ", app().strListSize_);
+    char_t *fullName;
+
+    for (int i=0; i<app().strListSize_; i++)
+    {
+        if (0==tstrcmp(strList[i],_T("en")) )
+        {
+            fullName = "English (en)";
+        }
+        else if (0==tstrcmp(strList[i],_T("fr")) )
+        {
+            fullName = "French (fr)";
+        }
+        else if (0==tstrcmp(strList[i],_T("de")) )
+        {
+            fullName = "Germand (de)";
+        }
+        else
+        {
+            assert(false);
+            fullName = "Unknown (en)";
+        }
+        delete [] strList[i];
+        strList[i] = StringCopy(fullName);
+    }
+
+    app().strList_ = strList;
+
     Application::popupForm(stringListSelectDbId);
 }
 
@@ -924,11 +952,17 @@ void MainForm::doDbSelected(EventType& event)
     if (NOT_SELECTED == selectedStr)
         goto Exit;
 
-    const char_t* dbName = app().strList[selectedStr];
+    char_t *fullName = app().strList_[selectedStr];
+    // a hack: lang is what is inside "(" and ")"
+    while (*fullName && (*fullName!='('))
+        ++fullName;
+    assert(*fullName);
+    char_t *langName = fullName+1;
+    langName[2] = '\0';
 
     LookupManager* lookupManager=app().getLookupManager(true);
     if (lookupManager && !lookupManager->lookupInProgress())
-        lookupManager->switchDatabase(dbName);
+        lookupManager->switchDatabase(langName);
 
 Exit:
     if (NULL!=app().strList)

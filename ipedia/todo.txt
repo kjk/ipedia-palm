@@ -2,8 +2,6 @@
 
 ## 2. add spanish (?)
 
-## 4. modify manage.py to work with multi-lingual interface
-
 ## 5. add unit tests for new multi-langual features
 
 ## 20. remove timeline in the parser e.g. "List of Federal Presidents of Austria"
@@ -35,4 +33,10 @@ database (see MainForm::changeDatabase)
 that english is always available) and display about
 (2004-09-12)
 
+## 4. modify manage.py to work with multi-lingual interface
+(2004-09-12)
+
+## 3. add full language names to Switch database (e.g. "English (en)", "French (fr)"
+etc. instead of just "en", "fr")
+(2004-09-12)
 

@@ -23,7 +23,6 @@ iPediaConnection::iPediaConnection(LookupManager& lookupManager):
     performFullTextSearch_(false),
     getRandom_(false),
     regCodeValid_(regCodeTypeUnset),
-    newDbLangCode_(NULL),
     fGetAvailableLangs_(false)
 {
 }
@@ -94,7 +93,7 @@ void iPediaConnection::prepareRequest()
             appendField(request, cookieField, app.preferences().cookie);
     }
 
-    if (NULL!=newDbLangCode_)
+    if (!newDbLangCode_.empty())
     {
         // a bit of a hack but this one has priority over currentLang in prefs
         appendField(request, useLangField, newDbLangCode_);
@@ -131,7 +130,7 @@ void iPediaConnection::prepareRequest()
     // (because on smartphone applications rarely quit)
     bool fNeedsToGetArticleCount = false;
 
-    if (!app.fArticleCountChecked || (NULL!=newDbLangCode_))
+    if (!app.fArticleCountChecked || !newDbLangCode_.empty())
     {
         fNeedsToGetArticleCount = true;
     }
@@ -440,7 +439,7 @@ ArsLexis::status_t iPediaConnection::notifyFinished()
         data.outcome = data.outcomeRegCodeInvalid;
     }        
 
-    if (NULL!=newDbLangCode_)
+    if (!newDbLangCode_.empty())
     {
         assert(data.outcomeNothing==data.outcome);
         data.outcome = data.outcomeDatabaseSwitched;
