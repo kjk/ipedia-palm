@@ -320,11 +320,11 @@ BEGIN
     GADGET ID infoRenderer AT (2 17 148 124)
     GADGET ID articleRenderer AT (2 17 148 124)
     SCROLLBAR       ID definitionScrollBar  AT (152 17 7 124) USABLE VALUE 50 MIN 0 MAX 100 PAGESIZE 10
-    BUTTON ""       ID backButton      AT (0 146 10 11) FONT 4 NOFRAME DISABLED BITMAPID backDisabledBitmap GRAPHICAL    
-    BUTTON ""       ID forwardButton   AT (8 146 10 11) FONT 4 NOFRAME DISABLED BITMAPID forwardDisabledBitmap GRAPHICAL 
-    FIELD           ID termInputField  AT (20 146 92 Auto) MAXCHARS 255 EDITABLE UNDERLINED DISABLED      
-    GRAFFITISTATEINDICATOR AT (114 PREVTOP+2)
+    BUTTON ""       ID backButton      AT (0 146 10 11) FONT 4 NOFRAME BITMAPID backDisabledBitmap GRAPHICAL    
+    BUTTON ""       ID forwardButton   AT (8 146 10 11) FONT 4 NOFRAME BITMAPID forwardDisabledBitmap GRAPHICAL 
+    FIELD           ID termInputField  AT (22 146 88 Auto) MAXCHARS 255 EDITABLE UNDERLINED      
     BUTTON "Search" ID searchButton    AT (126 146 32 AUTO)
+    GRAFFITISTATEINDICATOR AT (114 PREVTOP+2)
 END
 
 NAVIGATION ID mainForm
@@ -332,7 +332,7 @@ NAVIGATION ID mainForm
     NAVIGATIONMAP
       ROW infoRenderer
       ROW articleRenderer 
-      ROW backButton forwardButton termInputField
+      ROW backButton forwardButton termInputField searchButton
     END
 
 

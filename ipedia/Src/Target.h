@@ -53,6 +53,14 @@
 #ifndef NDEBUG
 //! Some functions depend on this non-standard symbol instead of standard-compliant @c NDEBUG.
 #define DEBUG
+
+#ifdef __MWERKS__
+// Decreases stack usage
+#pragma stack_cleanup on
+#pragma warn_impl_s2u_conv on
+
+#endif
+
 #endif
 
 #else

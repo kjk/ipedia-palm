@@ -128,7 +128,7 @@ void MainForm::resize(const ArsLexis::Rectangle& screenBounds)
     infoRenderer_.anchor(screenBounds, anchorRightEdge, 12, anchorBottomEdge, 36);
     articleRenderer_.anchor(screenBounds, anchorRightEdge, 12, anchorBottomEdge, 36);
     scrollBar_.anchor(screenBounds, anchorLeftEdge, 8, anchorBottomEdge, 36);
-    termInputField_.anchor(screenBounds, anchorRightEdge, 78, anchorTopEdge, 14);
+    termInputField_.anchor(screenBounds, anchorRightEdge, 72, anchorTopEdge, 14);
 
     searchButton_.anchor(screenBounds, anchorLeftEdge, 34, anchorTopEdge, 14);
     backButton_.anchor(screenBounds, anchorNot, 0, anchorTopEdge, 14);
@@ -166,12 +166,16 @@ void MainForm::draw(UInt16 updateCode)
 void MainForm::moveHistory(bool forward)
 {
     LookupManager* lookupManager=app().getLookupManager(true);
-    if (lookupManager && !lookupManager->lookupInProgress())
+    if (NULL != lookupManager && !lookupManager->lookupInProgress())
         lookupManager->moveHistory(forward);
 }
 
 void MainForm::handleControlSelect(const EventType& event)
 {
+    LookupManager* lookupManager = app().getLookupManager();
+    if (NULL != lookupManager && lookupManager->lookupInProgress())
+        return;
+        
     iPediaApplication& app = static_cast<iPediaApplication&>(application());
     bool fFullText = false;
     switch (event.data.ctlSelect.controlID)
@@ -198,8 +202,8 @@ void MainForm::handleControlSelect(const EventType& event)
 
 void MainForm::setControlsState(bool enabled)
 {
-    backButton_.setEnabled(enabled);
-    forwardButton_.setEnabled(enabled);
+//    backButton_.setEnabled(enabled);
+//    forwardButton_.setEnabled(enabled);
     searchButton_.setEnabled(enabled);
     if (enabled)
         enableInputFieldAfterUpdate_  = true;
@@ -405,14 +409,14 @@ void MainForm::updateNavigationButtons()
     const LookupHistory& history=getHistory();
 
     bool enabled = history.hasPrevious();
-    backButton_.setEnabled(enabled);
+//    backButton_.setEnabled(enabled);
     if (enabled)
         backButton_.setGraphics(backBitmap);
     else
         backButton_.setGraphics(backDisabledBitmap);
         
     enabled = history.hasNext();
-    forwardButton_.setEnabled(enabled);
+//    forwardButton_.setEnabled(enabled);
     if (enabled)
         forwardButton_.setGraphics(forwardBitmap);
     else
@@ -445,7 +449,6 @@ bool MainForm::handleKeyPress(const EventType& event)
 
     switch (event.data.keyDown.chr)
     {
-        case vchrRockerCenter:
         case chrLineFeed:
         case chrCarriageReturn:
             lastPenDownTimestamp_ = TimGetTicks();
