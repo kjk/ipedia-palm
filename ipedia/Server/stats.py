@@ -70,14 +70,14 @@ def _weeklyDailyStats(db, body, header, regsQuery, lookupsQuery, limit):
             body=body+"<tr>\n"
             selected=True
         if "Day"==header:
-            body=body+"  <td><a href=\"stats.py/daily?date=%s\">%s</a></td>\n" % (issueDate, issueDate)
+            body=body+"  <td><a href=\"./dailyStats?date=%s\">%s</a></td>\n" % (issueDate, issueDate)
         else:
             body=body+"<td>%s</td>\n" % issueDate
         
         body=body+"  <td>%d</td>\n" % regsCount
             
         if "Day"==header:
-            body=body+"  <td><a href=\"stats.py/daily_lookups?date=%s\">%d</a></td>\n" % (issueDate, lookupsCount)
+            body=body+"  <td><a href=\"./dailyLookupsStats?date=%s\">%d</a></td>\n" % (issueDate, lookupsCount)
         else:
             body=body+"  <td>%d</td>\n" % lookupsCount
                         
@@ -167,6 +167,34 @@ def _recentLookups(db, limit):
     body=body+"</table>\n"
     return body
     
+def _statsCmp(a, b):
+    sn1, sc1=a
+    sn2, sc2=b
+    if sn1==sn2:
+        return 0
+    elif sn1<sn2:
+        return -1
+    else:
+        return 1
+    
+def _getDeviceStats(db):
+    cursor=db.cursor()
+    query="SELECT DISTINCT device_info_token FROM cookies"
+    cursor.execute(query)
+    statsDict=dict()
+    for row in cursor:
+        deviceInfo=row[0]
+        devInfoDec=arsutils.decodeDi(deviceInfo)
+        devName=devInfoDec["device_name"]
+        if statsDict.has_key(devName):
+            statsDict[devName]=statsDict[devName]+1
+        else:
+            statsDict[devName]=1
+    cursor.close()
+    stats=statsDict.items()
+    stats.sort(_statsCmp)
+    return stats
+    
 def _showDeviceStats(db):
     body="""
 <table id="stats" cellspacing="0">
@@ -174,12 +202,10 @@ def _showDeviceStats(db):
   <td>Device name</td>
   <td>Count</td>
 </tr>"""
-    stats=[]
-    
+    stats=_getDeviceStats(db)
     selected = False
     for stat in stats:
-        deviceName=stat[0]
-        count = stat[1]
+        deviceName, count=stat
         if selected:
             selected=False
             body=body+"<tr class=\"selected\">\n"
@@ -195,7 +221,7 @@ def _showDeviceStats(db):
     
 def summary(req):
     contents=_readTemplate(req)
-    body="<b>Summary</b>&nbsp;|&nbsp;<a href=\"stats.py/active_users\">Active users</a><p>"
+    body="<b>Summary</b>&nbsp;|&nbsp;<a href=\"./activeUsers\">Active users</a><p>"
     db=_connect()
     uniqueCookies=_singleResult(db, "SELECT COUNT(*) FROM cookies")
     days=_singleResult(db, "SELECT TO_DAYS(MAX(request_date))-TO_DAYS(MIN(request_date)) FROM requests")
@@ -248,7 +274,109 @@ def summary(req):
     
     db.close()
     return contents % body
-        
+
+def activeUsers(req):
+    contents=_readTemplate(req)
+    body="""
+<a href="./">Summary</a>&nbsp;|&nbsp;
+<b>Active users</b>
+<p>"""
+    db=_connect()
+    rows=_getAllRows(db, "SELECT COUNT(cookie_id) AS cnt, cookie_id FROM requests INNER JOIN cookies ON requests.cookie_id=cookies.id GROUP BY cookie_id HAVING cnt>9")
+    usersCount=len(rows)
+    body=body+"Active users (made more than 9 requests): %d<p>" % usersCount
+    body=body+"""
+    <table id="stats" cellspacing="0">
+    <tr class="header">
+      <td>User</td>
+      <td>Device</td>
+      <td>Total</td>
+      <td>Days registered</td>
+      <td>Lookups per day</td>
+    </tr>"""
+    cursor=db.cursor()
+    cursor.execute("SELECT COUNT(cookie_id) AS cnt, cookie_id, device_info_token, TO_DAYS(NOW())-TO_DAYS(issue_date) FROM requests INNER JOIN cookies ON requests.cookie_id=cookies.id GROUP BY cookie_id ORDER BY cnt DESC")
+    selected=False
+    for row in cursor:
+        totalLookupsCount=row[0]
+        if totalLookupsCount<10:
+            break
+        cookieId=row[1]
+        devInfo=row[2]
+        daysReg=row[3]
+        devInfoDec=arsutils.decodeDi(devInfo)
+        devName=devInfoDec["device_name"]
+        hsName="Unavailable"
+        if devInfoDec.has_key("HS"):
+            hsName=devInfoDec["HS"]
+        reqCount=_singleResult(db, "SELECT COUNT(*) FROM requests WHERE cookie_id=%d" % cookieId)
+        if selected:
+            body=body+"<tr class=\"selected\">\n"
+            selected=False
+        else:
+            body=body+"<tr>\n"
+            selected=True
+        body=body+"  <td><a href=\"./userStats?cookieId=%d\">%s</a></td>\n" % (cookieId, hsName)
+        body=body+"  <td>%s</td>\n" % devName
+        body=body+"  <td>%d</td>\n" % reqCount
+        body=body+"  <td>%d</td>\n" % daysReg
+        body=body+"  <td>%.2f</td>\n" % (float(reqCount)/float(daysReg))
+        body=body+"</tr>\n"
+    cursor.close()
+    body=body+"</table>\n"
+    return contents % body
+    
+def dailyStats(req, date):
+    contents=_readTemplate(req)
+    body="""
+<a href="./">Summary</a>&nbsp;|&nbsp;
+<b>Daily per user stats for %s</b>&nbsp;|&nbsp;
+<a href=\"./dailyLookupsStats?date=%s\">Daily lookup stats for %s&nbsp;</a>
+<p>""" % (date, date, date)
+    body=body+"""
+    <table id="stats" cellspacing="0">
+    <tr class="header">
+      <td>User</td>
+      <td>Device</td>
+      <td>Today</td>
+      <td>Total</td>
+      <td>Days registered</td>
+      <td>Lookups per day</td>
+    </tr>"""
+    db=_connect()
+    cursor=db.cursor()
+    query="SELECT COUNT(cookie_id) AS cnt, cookie_id, TO_DAYS(request_date)-TO_DAYS(issue_date)+1, device_info_token FROM requests INNER JOIN cookies on requests.cookie_id=cookies.id WHERE DATE_FORMAT(request_date, '%%Y-%%m-%%d')='%s' GROUP BY cookie_id ORDER BY cnt DESC" % date
+    cursor.execute(query)
+    selected = False
+    for row in cursor:
+        lookupsCount=row[0]
+        cookieId=row[1]
+        daysReg=row[2]
+        devInfo=row[3]
+        devInfoDec=arsutils.decodeDi(devInfo)
+        devName=devInfoDec["device_name"]
+        hsName="Unavailable"
+        if devInfoDec.has_key("HS"):
+            hsName=devInfoDec["HS"]
+        totalLookupsCount=_singleResult(db, "SELECT COUNT(*) FROM requests WHERE cookie_id=%d" % cookieId)
+
+        if selected:
+            body=body+"<tr class=\"selected\">\n"
+            selected=False
+        else:
+            body=body+"<tr>\n"
+            selected=True
+
+        body=body+"  <td><a href=\"./userStats?cookieId=%d\">%s</a></td>\n" % (cookieId, hsName)
+        body=body+"  <td>%s</td>\n" % devName
+        body=body+"  <td>%d</td>\n" % lookupsCount
+        body=body+"  <td>%d</td>\n" % totalLookupsCount
+        body=body+"  <td>%d</td>\n" % daysReg
+        body=body+"  <td>%.2f</td>\n" % (float(totalLookupsCount)/float(daysReg))
+        body=body+"</tr>\n"
+    cursor.close()
+    body=body+"</table>\n"
+    return contents % body  
     
 def index(req):
     return summary(req)
