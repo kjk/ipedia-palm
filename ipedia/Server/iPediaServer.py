@@ -15,7 +15,7 @@
 #   -listdbs  : list all available ipedia databases
 #   -demon    : start in deamon mode
 
-import sys, re, random, time, MySQLdb, _mysql_exceptions
+import sys, os, re, random, time, traceback, MySQLdb, _mysql_exceptions
 import arsutils,iPediaDatabase
 from twisted.internet import protocol, reactor
 from twisted.protocols import basic
@@ -26,7 +26,7 @@ except:
     print "psyco not available. You should consider using it (http://psyco.sourceforge.net/)"
     g_fPsycoAvailable = False
 
-g_fDisableRegistrationCheck = False
+g_fDisableRegistrationCheck = True
 g_unregisteredLookupsLimit=10
 g_unregisteredLookupsDailyLimit=2    
 
@@ -136,6 +136,12 @@ def mainDeamonTest():
         c = c + 1
         time.sleep(1)
 
+def dumpException(e):
+    print str(e)
+    print sys.exc_info()[0]
+    print sys.exc_info()[1]
+    print traceback.print_tb(sys.exc_info()[2])
+
 class iPediaServerError:
     serverFailure=1
     unsupportedDevice=2
@@ -223,7 +229,7 @@ class iPediaProtocol(basic.LineReceiver):
             cursor.execute(query)
             cursor.close()
         except _mysql_exceptions.Error, ex:
-            print ex
+            dumpException(ex)
             if cursor:
                 cursor.close()
         
@@ -250,23 +256,21 @@ class iPediaProtocol(basic.LineReceiver):
             
     def validateDeviceInfo(self):
         return True
-        
+
     def createCookie(self, cursor):
-        finished=False
-        randMax=2**32-1
-        result=None
-        while not finished:
+        randMax=2**16-1
+        while True:
             result=""
-            for i in range(4):
+            for i in range(8):
                 val=random.randint(0, randMax)
-                hexVal=hex(val)[2:10]
+                hexVal=hex(val)[2:]
                 result+=hexVal
-            cursor.execute("""select id from cookies where cookie='%s'""" % result)
+            cursor.execute("""SELECT id FROM cookies WHERE cookie='%s'""" % result)
             row=cursor.fetchone()
             if not row:
-                finished=True
+                break
         self.cookie=result
-        
+
     def handleGetCookieRequest(self):
 
         if not self.validateDeviceInfo():
@@ -295,7 +299,7 @@ class iPediaProtocol(basic.LineReceiver):
             return True
             
         except _mysql_exceptions.Error, ex:
-            print ex
+            dumpException(ex)
             if cursor:
                 cursor.close()
             self.error=iPediaServerError.serverFailure
@@ -341,7 +345,7 @@ class iPediaProtocol(basic.LineReceiver):
             cursor.close()
             return True
         except _mysql_exceptions.Error, ex:
-            print ex
+            dumpException(ex)
             if cursor:
                 cursor.close()
             self.error=iPediaServerError.serverFailure
@@ -365,7 +369,7 @@ class iPediaProtocol(basic.LineReceiver):
                     cursor.close()
                     return False
             except _mysql_exceptions.Error, ex:
-                print ex
+                dumpException(ex)
                 if cursor:
                     cursor.close()
                 self.error=iPediaServerError.serverFailure
@@ -414,7 +418,7 @@ class iPediaProtocol(basic.LineReceiver):
                     self.outputField(notFoundField)
             cursor.close()
         except _mysql_exceptions.Error, ex:
-            print ex
+            dumpException(ex)
             if cursor:
                 cursor.close()
             self.error=iPediaServerError.serverFailure
@@ -437,7 +441,7 @@ class iPediaProtocol(basic.LineReceiver):
                 self.outputField(notFoundField)
             cursor.close()
         except _mysql_exceptions.Error, ex:
-            print ex
+            dumpException(ex)
             if cursor:
                 cursor.close()
             self.error=iPediaServerError.serverFailure
@@ -460,7 +464,7 @@ class iPediaProtocol(basic.LineReceiver):
             cursor.close()
             
         except _mysql_exceptions.Error, ex:
-            print ex
+            dumpException(ex)
             if cursor:
                 cursor.close()
             self.error=iPediaServerError.serverFailure
@@ -493,7 +497,7 @@ class iPediaProtocol(basic.LineReceiver):
                     fOverLimit=True
             cursor.close()
         except _mysql_exceptions.Error, ex:
-            print ex
+            dumpException(ex)
             if cursor:
                 cursor.close()
             self.error=iPediaServerError.serverFailure
@@ -542,7 +546,7 @@ class iPediaProtocol(basic.LineReceiver):
                 self.outputField(articleCountField, str(self.factory.articleCount))
 
         except Exception, ex:
-            print ex
+            dumpException(ex)
             self.error=iPediaServerError.serverFailure
             
         self.finish()
@@ -599,7 +603,7 @@ class iPediaProtocol(basic.LineReceiver):
                 else:
                     self.error=iPediaServerError.malformedRequest
         except Exception, ex:
-            print ex
+            dumpException(ex)
             self.error=iPediaServerError.serverFailure
             self.answer()
 
@@ -668,7 +672,7 @@ class iPediaTelnetProtocol(basic.LineReceiver):
             for dbName in dbs:
                 self.transport.write(dbName+'\r\n')
         except _mysql_exceptions.Error, ex:
-            print ex
+            dumpException(ex)
             self.transport.write("exception\r\n")
 
     def useDatabase(self, dbName):
@@ -746,6 +750,6 @@ if __name__ == "__main__":
     if not fDemon:
         fDemon = arsutils.fDetectRemoveCmdFlag("-daemon")
     if fDemon:
-        daemonize('/dev/null','/tmp/daemon.log','/tmp/daemon.log')
+        daemonize('/dev/null','/tmp/ipedia.log','/tmp/ipedia.log')
     main()
 
