@@ -90,12 +90,6 @@ public:
 
     void setRandom()
     {getRandom_=true;}
-    
-    void setRetrieveArticleCount(bool value=true)
-    {getArticleCount_=value;}
-
-    void setGetDatabaseTime(bool value=true)
-    {getDatabaseTime_=true;}
 
     // if set, send Verify-Registration-Code
     ArsLexis::String  regCodeToVerify;
@@ -107,11 +101,8 @@ private:
     RegCodeValidationType regCodeValid_;
 
     bool notFound_:1;
-    bool registering_:1;
     bool performFullTextSearch_:1;
     bool getRandom_:1;
-    bool getArticleCount_:1;
-    bool getDatabaseTime_:1;
     
 };
 

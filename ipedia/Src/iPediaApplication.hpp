@@ -66,14 +66,11 @@ public:
         enum {serialNumberLength=32};
         ArsLexis::String serialNumber;
         
-        bool serialNumberRegistered;
-        
         long articleCount;
         
         ArsLexis::String databaseTime;
 
         Preferences():
-            serialNumberRegistered(false),
             articleCount(-1)            
         {}
         

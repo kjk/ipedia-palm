@@ -2,11 +2,11 @@
 # Owner: Krzysztof Kowalczyk
 #
 # Purpose:
-#  Generate registration codes for iNoah. Our goals:
+#  Generate registration codes for iPedia. Our goals:
 #  - generate codes incrementally
 #  - codes can be for handango, palmgear and esellerate
 #  - codes should be unique and random and not easy to find
-#  - generate *.sql file that we can import into inoahdb to install those regcodes
+#  - generate *.sql file that we can import into ipedia_manage to install those regcodes
 #  - generate *.txt file with codes ready to be uploaded to esellerate/pg/handango
 #
 # How it works.
@@ -216,10 +216,9 @@ def genNewCodes(count, purpose, prevCodes):
     return newCodes
 
 def usageAndExit():
-    print "Usage: inoah_gen_reg_codes.py [-special who] [$purpose (es,h,pg) $count]"
-    print "e.g. inoah_gen_reg_codes.py es 700"
+    print "Usage: ipedia_gen_reg_codes.py [-special who] [$purpose (es,h,pg) $count]"
+    print "e.g. ipedia_gen_reg_codes.py es 700"
     sys.exit(0)
-
 
 #  eSellerate: serial number per line, at least 500 serial numbers
 def createEsellerateFile(codes):

@@ -123,6 +123,14 @@ BEGIN
     BUTTONS "OK" "Re-enter registration code"
 END
 
+ALERT ID alertRegistrationOk
+INFORMATION
+BEGIN
+    TITLE "Registration successful"
+    MESSAGE "Thank you for registering iPedia."
+    BUTTONS "OK"
+END
+
 ALERT ID trialExpiredAlert
     DEFAULTBUTTON 0
     ERROR
@@ -147,6 +155,15 @@ ALERT ID malformedRequestAlert
 BEGIN
     TITLE "Malformed Request"
     MESSAGE "Server rejected your query."
+    BUTTONS "OK"
+END
+
+ALERT ID invalidRequestAlert
+    DEFAULTBUTTON 0
+    ERROR
+BEGIN
+    TITLE "Invalid request"
+    MESSAGE "Client sent invalid request. Please contact support@arslexis.com."
     BUTTONS "OK"
 END
 
@@ -246,7 +263,7 @@ FORM ID registrationForm AT ( 2 90 156 68 )
 MODAL DEFAULTBTNID okButton SAVEBEHIND  
 BEGIN
     TITLE "Registration"
-    LABEL "Enter your registration number:" AUTOID   AT (5 20)
+    LABEL "Enter registration code:" AUTOID   AT (5 20)
     FIELD ID serialNumberField   AT (5 PREVBOTTOM+5 146 AUTO) MAXCHARS 32 EDITABLE UNDERLINED 
     BUTTON "Register" ID okButton   AT (5 PREVBOTTOM+5 40 AUTO)
     BUTTON "Later" ID cancelButton AT (PREVRIGHT+5 PREVTOP 40 AUTO)

@@ -19,11 +19,8 @@ iPediaConnection::iPediaConnection(LookupManager& lookupManager):
     payloadType_(payloadNone),
     serverError_(serverErrorNone),
     notFound_(false),
-    registering_(false),
     performFullTextSearch_(false),
     getRandom_(false),
-    getArticleCount_(false),
-    getDatabaseTime_(false),
     regCodeValid_(regCodeTypeUnset)
 {
 }
@@ -53,14 +50,18 @@ iPediaConnection::~iPediaConnection()
 void iPediaConnection::prepareRequest()
 {
     iPediaApplication& app=iPediaApplication::instance();
-    // get number of articles and database update time in the first request to
-    // the server. do it only once per application launch
-    if (!app.fArticleCountChecked)
-    {
-        getArticleCount_ = true;
-        getDatabaseTime_ = true;
-        app.fArticleCountChecked = true; // or do it later, when we process the response
-    }
+
+    // decide if we want to send registration code. We don't send it if
+    // we don't have it or if we're asking to verify registration code (a strange
+    // but possible case when user re-enters registration code even though he
+    // already provided valid reg code before)
+    bool fSendRegCode = true;
+    if (app.preferences().serialNumber.empty() || !regCodeToVerify.empty())
+        fSendRegCode = false;
+
+    bool fSendCookie = !fSendRegCode;
+    // TODO: for now always send cookie because that's what the server expects
+    fSendCookie = true;
 
     String request;
     appendField(request, protocolVersionField, protocolVersion);
@@ -68,10 +69,14 @@ void iPediaConnection::prepareRequest()
     char_t buffer[16];
     tprintf(buffer, _T("%08lx"), transactionId_);
     appendField(request, transactionIdField, buffer);
-    if (chrNull==app.preferences().cookie[0])
-        appendField(request, getCookieField, deviceInfoToken());
-    else
-        appendField(request, cookieField, app.preferences().cookie);
+
+    if (fSendCookie)
+    {
+        if (chrNull==app.preferences().cookie[0])
+            appendField(request, getCookieField, deviceInfoToken());
+        else
+            appendField(request, cookieField, app.preferences().cookie);
+    }
 
     if (!term_.empty())
     {
@@ -82,30 +87,28 @@ void iPediaConnection::prepareRequest()
     }
 
     if (!regCodeToVerify.empty())
+    {
+        assert(!fSendRegCode);
         appendField(request, verifyRegCodeField, regCodeToVerify);
+    }
 
-    // decide if we want to send registration code. We don't send it if
-    // we don't have it or if we're asking to verify registration code (a strange
-    // but possible case when user re-enters registration code even though he
-    // already provided valid reg code before)
-    registering_ = true;
-    if (!regCodeToVerify.empty() || app.preferences().serialNumberRegistered || chrNull==app.preferences().serialNumber[0])
-        registering_ = false;
-
-    if (registering_)
-        appendField(request, registerField, app.preferences().serialNumber);
+    if (fSendRegCode)
+        appendField(request, regCodeField, app.preferences().serialNumber);
 
     if (getRandom_)
     {
         assert(term_.empty());
         appendField(request, getRandomDefField);
     }
-    
-    if (getArticleCount_)
-        appendField(request, getArticleCountField);
 
-    if (getDatabaseTime_)
+    // get number of articles and database update time in the first request to
+    // the server. do it only once per application launch
+    if (!app.fArticleCountChecked)
+    {
+        appendField(request, getArticleCountField);
         appendField(request, getDatabaseTimeField);
+        app.fArticleCountChecked = true; // or do it later, when we process the response
+    }
 
     request+='\n';
     NarrowString req;
@@ -335,10 +338,7 @@ ArsLexis::status_t iPediaConnection::notifyFinished()
         lookupManager_.setLastSearchExpression(resultsFor_);
         data.outcome=data.outcomeList;
     }
-
-    if (registering_ && !serverError_)
-        app.preferences().serialNumberRegistered=true;
-    
+   
     if (notFound_)
         data.outcome=data.outcomeNotFound;
 

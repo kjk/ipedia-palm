@@ -175,16 +175,17 @@ requestLinesCountLimit = 20
 
 # this is a special reg code used for testing. Clients should never sent
 # such reg code (a reg code format we use for real clients is a 12-digit number)
-testValidRegCode = "go123aser"
+testValidRegCode = "7432"
 
 class iPediaServerError:
     # return serverFailure if we encountered a problem in code execution
     # (e.g. exception has been thrown that shouldn't have). Usually it means
     # there's a bug in our code
     serverFailure=1
-    # unsupportedDevice is not used
+    # unsupportedDevice - not used
     unsupportedDevice=2
-    # return invalidAuthorization if ...
+    # return invalidAuthorization if the reg code is invalid (?)
+    # TODO: change this to invalidRegCode to better reflect what it means
     invalidAuthorization=3
     # request from the client has been malformed. This applies to cases when
     # the request doesn't fit our strict format of request
@@ -208,7 +209,6 @@ class iPediaServerError:
     invalidCookie=10
 
 lineSeparator =     "\n"
-fieldSeparator =    ": "
 
 # A format of a request accepted by a server is very strict:
 # validClientRequest = validClientField ":" fieldValue? "\n"
@@ -286,7 +286,7 @@ class iPediaProtocol(basic.LineReceiver):
         self.transport.write(field)
         if g_fVerbose:
             sys.stdout.write(field)
-        
+
     def outputPayloadField(self, name, payload):
         global g_fVerbose
         self.outputField(name, str(len(payload)))
@@ -434,9 +434,12 @@ class iPediaProtocol(basic.LineReceiver):
 
         fRegCodeExists = self.fRegCodeExists(self.regCode)
         if not fRegCodeExists:
-            self.error=iPediaServerError.malfromedRequest
+            self.error=iPediaServerError.invalidAuthorization
             return False
 
+        return True
+
+        # TODO: figure out what was this supposed to do and do sth. similar
         cursor=None
         try:
             db=self.getManagementDatabase()
@@ -673,6 +676,9 @@ class iPediaProtocol(basic.LineReceiver):
                 return self.finish()
 
             if self.regCode and not self.handleRegistrationCodeRequest():
+                # TODO: should I disable the check for Get-Random? We don't want
+                # to block Get-Random. On the other hand, reg code, if sent,
+                # shouldn't be invalid
                 return self.finish()
 
             if None!=self.regCodeToVerify and not self.handleVerifyRegistrationCodeRequest():

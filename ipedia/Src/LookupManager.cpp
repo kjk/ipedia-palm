@@ -17,7 +17,6 @@ namespace {
 #endif
 
 /*
-    serverErrorInvalidRequest=6,
     serverErrorUnexpectedRequestArgument=7,
     serverErrorRequestArgumentMissing=8,
     serverErrorInvalidProtocolVersion=9,
@@ -31,7 +30,8 @@ namespace {
         { serverErrorInvalidAuthorization, invalidAuthorizationAlert},
         { serverErrorMalformedRequest, malformedRequestAlert },
         { serverErrorLookupLimitReached, trialExpiredAlert},
-        { serverErrorInvalidCookie, invalidAuthorizationAlert}
+        { serverErrorInvalidCookie, invalidAuthorizationAlert},
+        { serverErrorInvalidRequest, invalidRequestAlert}
     };
 }
 
@@ -45,7 +45,7 @@ static uint_t getAlertFromServerError(iPediaServerError serverError)
     
     uint_t error = (uint_t)serverError;
     int arrSize = sizeof(serverErrorToAlertMap)/sizeof(serverErrorToAlertMap[0]);
-    assert( 6 == arrSize );
+    assert( 7 == arrSize );
     for (int i=0; i<arrSize; i++)
     {
         if (error==serverErrorToAlertMap[i][0])

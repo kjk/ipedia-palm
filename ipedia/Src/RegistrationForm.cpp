@@ -118,17 +118,16 @@ void RegistrationForm::handleLookupFinished(const EventType& event)
         {
             assert(newSn.length()<=prefs.serialNumberLength);
             prefs.serialNumber=newSn;
-            // TODO: get rid of serialNumberRegistered
-            prefs.serialNumberRegistered=false;
             app.savePreferences();
         }
+        UInt16 buttonId;
+        buttonId = FrmAlert(alertRegistrationOk);
         closePopup();
     }
     else if (data.outcomeRegCodeInvalid==data.outcome)
     {
         // TODO: should it be done as a message to ourselves?
         UInt16 buttonId;
-        
         buttonId = FrmAlert(alertRegistrationFailed);
         
         if (0==buttonId)

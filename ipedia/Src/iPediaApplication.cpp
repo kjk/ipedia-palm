@@ -148,7 +148,7 @@ namespace {
     {
         cookiePrefId,
         serialNumberPrefId,
-        serialNumberRegFlagPrefId,
+        serialNumberRegFlagPrefId, // unused
         lastArticleCountPrefId,
         databaseTimePrefId,
         lookupHistoryFirstPrefId,
@@ -178,8 +178,6 @@ void iPediaApplication::loadPreferences()
     if (errNone!=(error=reader->ErrGetStr(serialNumberPrefId, &text))) 
         goto OnError;
     prefs.serialNumber=text;
-    if (errNone!=(error=reader->ErrGetBool(serialNumberRegFlagPrefId, safe_reinterpret_cast<Boolean*>(&prefs.serialNumberRegistered))))
-        goto OnError;
     if (errNone!=(error=reader->ErrGetLong(lastArticleCountPrefId, &prefs.articleCount))) 
         goto OnError;
     if (errNone!=(error=reader->ErrGetStr(databaseTimePrefId, &text))) 
@@ -205,8 +203,6 @@ void iPediaApplication::savePreferences()
     if (errNone!=(error=writer->ErrSetStr(cookiePrefId, preferences_.cookie.c_str())))
         goto OnError;
     if (errNone!=(error=writer->ErrSetStr(serialNumberPrefId, preferences_.serialNumber.c_str())))
-        goto OnError;
-    if (errNone!=(error=writer->ErrSetBool(serialNumberRegFlagPrefId, preferences_.serialNumberRegistered)))
         goto OnError;
     if (errNone!=(error=writer->ErrSetLong(lastArticleCountPrefId, preferences_.articleCount))) 
         goto OnError;
