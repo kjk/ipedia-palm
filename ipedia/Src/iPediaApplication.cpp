@@ -26,7 +26,9 @@ iPediaApplication::iPediaApplication():
     lookupManager_(0),
     server_(SERVER_TO_USE),
     stressMode_(false),
-    fArticleCountChecked(false)
+    fArticleCountChecked(false),
+    strList(NULL),
+    strListSize(0)
 {
 #ifdef INTERNAL_BUILD
 # ifndef NDEBUG    
@@ -37,7 +39,6 @@ iPediaApplication::iPediaApplication():
     log().addSink(new MemoLogSink(), Logger::logError);
 # endif
 #endif
-    strList_ = NULL;
 }
 
 inline void iPediaApplication::detectViewer()
@@ -142,25 +143,25 @@ Form* iPediaApplication::createForm(UInt16 formId)
 
         case stringListSelectDbId:
             strListForm = new StringListForm(*this, (uint_t)stringListForm, (uint_t)stringList, (uint_t)selectButton, (uint_t)cancelButton);
-            strListForm->SetStringList(strListSize_, strList_, appDbnameStringSelected);
+            strListForm->SetStringList(strListSize, strList, appDbnameStringSelected);
             form = strListForm;
             break;
 
         case stringListHistoryId:
             strListForm = new StringListForm(*this, (uint_t)stringListForm, (uint_t)stringList, (uint_t)selectButton, (uint_t)cancelButton);
-            strListForm->SetStringList(strListSize_, strList_, appHistoryStringSelected);
+            strListForm->SetStringList(strListSize, strList, appHistoryStringSelected);
             form = strListForm;
             break;
 
         case stringListLinkedArticlesId:
             strListForm = new StringListForm(*this, (uint_t)stringListForm, (uint_t)stringList, (uint_t)selectButton, (uint_t)cancelButton);
-            strListForm->SetStringList(strListSize_, strList_, appLinkedArticlesStringSelected);
+            strListForm->SetStringList(strListSize, strList, appLinkedArticlesStringSelected);
             form = strListForm;
             break;
 
         case stringListLinkingArticlesId:
             strListForm = new StringListForm(*this, (uint_t)stringListForm, (uint_t)stringList, (uint_t)selectButton, (uint_t)cancelButton);
-            strListForm->SetStringList(strListSize_, strList_, appLinkingArticlesStringSelected);
+            strListForm->SetStringList(strListSize, strList, appLinkingArticlesStringSelected);
             form = strListForm;
             break;
 

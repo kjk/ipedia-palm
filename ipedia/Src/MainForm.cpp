@@ -229,7 +229,8 @@ void MainForm::drawDefinition(Graphics& graphics, const ArsLexis::Rectangle& bou
             update();
         }
         iPediaApplication::sendDisplayAlertEvent(notEnoughMemoryAlert);
-    } else
+    } 
+    else
     {
         updateScrollBar();
     }
@@ -459,8 +460,8 @@ void MainForm::updateArticleCountEl(long articleCount, ArsLexis::String& dbTime)
     articleCountText.append(buffer, len);
     articleCountText.append(" articles. ");
 
-    String langCode = app().preferences().currentLang;
-    const char_t *langName = GetLangNameByLangCode(langCode);
+    const String& langCode = app().preferences().currentLang;
+    const char_t* langName = GetLangNameByLangCode(langCode);
     articleCountText.append(langName);
 
     articleCountText.append(" encyclopedia last updated on ");
@@ -846,8 +847,8 @@ void MainForm::doHistory()
         return;
     LookupHistory& lookupHistory = lookupManager->getHistory();
     const StringList_t& history = lookupHistory.getHistory();
-    app().strList_ = StringListFromStringList(history, app().strListSize_);
-    ReverseStringList(app().strList_, app().strListSize_);
+    app().strList = StringListFromStringList(history, app().strListSize);
+//    ReverseStringList(app().strList, app().strListSize);
     Application::popupForm(stringListHistoryId);
 }
 
@@ -859,28 +860,28 @@ void MainForm::doLookupSelectedTerm(EventType& event)
     if (NOT_SELECTED==selectedStr)
         goto Exit;
 
-    const char_t *term = app().strList_[selectedStr];
+    const char_t* term = app().strList[selectedStr];
 
     LookupManager* lookupManager=app().getLookupManager(true);
     if (lookupManager && !lookupManager->lookupInProgress())
         lookupManager->lookupIfDifferent(term);
 
 Exit:
-    if (NULL!=app().strList_)
+    if (NULL!=app().strList)
     {
-        for (int i=0; i<app().strListSize_; i++)
+        for (int i=0; i<app().strListSize; i++)
         {
-            delete [] app().strList_[i];
+            delete [] app().strList[i];
         }
     }
-    app().strList_ = NULL;
+    app().strList = NULL;
 }
 
 void MainForm::doLinkedArticles()
 {
     Definition& def = currentDefinition();
     Application::popupForm(stringListLinkedArticlesId);
-    app().strList_ = ExtractLinksFromDefinition(def, app().strListSize_);
+    app().strList = ExtractLinksFromDefinition(def, app().strListSize);
 }
 
 void MainForm::doLinkingArticles()
@@ -890,11 +891,11 @@ void MainForm::doLinkingArticles()
         return;
 
     String& reverseLinks = lookupManager->lastReverseLinks();
-    app().strList_ = StringListFromString(reverseLinks, "\n", app().strListSize_);
+    app().strList = StringListFromString(reverseLinks, "\n", app().strListSize);
 
-    for (int i=0; i<app().strListSize_; i++)
+    for (int i=0; i<app().strListSize; i++)
     {
-        replaceCharInString(app().strList_[i], _T('_'), _T(' '));
+        replaceCharInString(app().strList[i], _T('_'), _T(' '));
     }
 
     Application::popupForm(stringListLinkingArticlesId);
@@ -911,7 +912,7 @@ void MainForm::changeDatabase()
             lookupManager->getAvailableLangs();
         return;
     }
-    app().strList_ = StringListFromString(availableLangs, " ", app().strListSize_);
+    app().strList = StringListFromString(availableLangs, " ", app().strListSize);
     Application::popupForm(stringListSelectDbId);
 }
 
@@ -920,24 +921,24 @@ void MainForm::doDbSelected(EventType& event)
     StringListEventData& data=reinterpret_cast<StringListEventData&>(event.data);
 
     int selectedStr = data.value;
-    if (NOT_SELECTED==selectedStr)
+    if (NOT_SELECTED == selectedStr)
         goto Exit;
 
-    const char_t *dbName = app().strList_[selectedStr];
+    const char_t* dbName = app().strList[selectedStr];
 
     LookupManager* lookupManager=app().getLookupManager(true);
     if (lookupManager && !lookupManager->lookupInProgress())
         lookupManager->switchDatabase(dbName);
 
 Exit:
-    if (NULL!=app().strList_)
+    if (NULL!=app().strList)
     {
-        for (int i=0; i<app().strListSize_; i++)
+        for (int i=0; i<app().strListSize; i++)
         {
-            delete [] app().strList_[i];
+            delete [] app().strList[i];
         }
     }
-    app().strList_ = NULL;
+    app().strList = NULL;
 }
 
 void MainForm::randomArticle()
@@ -1219,7 +1220,7 @@ void MainForm::prepareAbout()
     text->setJustification(DefinitionElement::justifyCenter);
     // url doesn't really matter, it's only to establish a hotspot
     text->setHyperlink("", hyperlinkTerm);
-    text->setActionCallback( wikipediaActionCallback, static_cast<void*>(this) );
+    text->setActionCallback(wikipediaActionCallback, static_cast<void*>(this) );
 
     elems.push_back(new LineBreakElement(1,2));
 
@@ -1230,7 +1231,7 @@ void MainForm::prepareAbout()
     }
     articleCountElement_->setJustification(DefinitionElement::justifyCenter);
 
-    elems.push_back(new LineBreakElement(1,2));
+    elems.push_back(new LineBreakElement(1, 2));
     elems.push_back(text=new FormattedTextElement("Using iPedia: "));
     text->setJustification(DefinitionElement::justifyLeft);
 

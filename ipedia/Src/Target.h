@@ -36,6 +36,8 @@
 #define ARSLEXIS_USE_NEW_FRAMEWORK 1
 #define _PALM_OS  1
 
+#define ARSLEXIS_DEBUG_MEMORY_ALLOCATION 1
+
 #define ALLOCATION_LOG_PATH "\\var\\log\\ipedia_allocation.log"
 
 #ifndef NDEBUG

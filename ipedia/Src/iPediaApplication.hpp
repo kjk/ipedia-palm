@@ -156,8 +156,8 @@ public:
     // intentional lack of accessor functions, treat it like a property
     bool        fArticleCountChecked;
 
-    int         strListSize_;
-    char_t **   strList_;
+    int             strListSize;
+    char_t**    strList;
 
 private:
     Preferences preferences_;
