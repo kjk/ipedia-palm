@@ -35,6 +35,47 @@ static const char_t* GetLangNameByLangCode(const String& langCode)
     return NULL;
 }
 
+static char_t **ExtractLinksFromDefinition(Definition& def, int& strListSize)
+{
+
+    int strCount;
+    char_t **strList;
+    for (int phase=0; phase<=1; phase++)
+    {
+        if (1==phase)
+        {
+            strListSize = strCount;
+            strList = new char_t *[strCount];
+        }
+        strCount = 0;
+
+        Definition::ElementPosition_t posCur;
+        Definition::ElementPosition_t posStart = def.firstElementPosition();
+        Definition::ElementPosition_t posEnd   = def.lastElementPosition();
+        DefinitionElement *currEl;
+        for (posCur=posStart; posCur!=posEnd; posCur++)
+        {
+            currEl = *posCur;
+            if (currEl->isTextElement())
+            {
+                GenericTextElement *txtEl=(GenericTextElement*)currEl;
+                if ((txtEl->isHyperlink()) &&
+                    ((txtEl->hyperlinkProperties()->type==hyperlinkTerm) ||
+                     (txtEl->hyperlinkProperties()->type==hyperlinkExternal)))
+                {
+                    if (1==phase)
+                    {
+                        strList[strCount] = StringCopy(txtEl->hyperlinkProperties()->resource);
+                        replaceCharInString(strList[strCount], _T('_'), _T(' '));
+                    }
+                    strCount += 1;
+                }
+            }
+        }
+    }
+    return strList;
+}
+
 MainForm::MainForm(iPediaApplication& app):
     iPediaForm(app, mainForm),
     renderingProgressReporter_(*this),
@@ -108,7 +149,7 @@ void MainForm::resize(const ArsLexis::Rectangle& screenBounds)
 
     object.attach(forwardButton);
     object.bounds(bounds);
-    bounds.y()=screenBounds.extent.y-14;
+    bounds.y() = screenBounds.extent.y-14;
     object.setBounds(bounds);
         
     update();    
@@ -240,6 +281,7 @@ void MainForm::scrollDefinition(int units, MainForm::ScrollUnit unit, bool updat
         units*=(def.shownLinesCount());
     
     bool doubleBuffer=true;
+
     if (-1==units || 1==units)
         doubleBuffer=false;
 
@@ -248,28 +290,27 @@ void MainForm::scrollDefinition(int units, MainForm::ScrollUnit unit, bool updat
 
     if (doubleBuffer)
     {
-        Rectangle b=bounds();
-        Rectangle rect=b;
+        Rectangle b = bounds();
+        Rectangle rect = b;
         rect.explode(2, 17, -12, -37);
-        Err error=errNone;
+        Err error = errNone;
 
         WinHandle wh=WinCreateOffscreenWindow(b.width(), b.height(), windowFormat(), &error);
         if (wh!=0)
         {
-            {
             Graphics offscreen(wh);
             ActivateGraphics act(offscreen);
             graphics.copyArea(b, offscreen, Point(0, 0));
             def.scroll(offscreen, renderingPreferences(), units);
             offscreen.copyArea(b, graphics, Point(0, 0));
-            }
             WinDeleteWindow(wh, false);
         }
         else
-            doubleBuffer=false;
+            doubleBuffer = false;
     }            
     if (!doubleBuffer)
         def.scroll(graphics, renderingPreferences(), units);
+
     if (updateScrollbar)
         updateScrollBar();
 }
@@ -281,10 +322,9 @@ void MainForm::moveHistory(bool forward)
         lookupManager->moveHistory(forward);
 }
 
-
 void MainForm::handleControlSelect(const EventType& event)
 {
-    iPediaApplication& app=static_cast<iPediaApplication&>(application());
+    iPediaApplication& app = static_cast<iPediaApplication&>(application());
     bool fFullText = false;
     switch (event.data.ctlSelect.controlID)
     {
@@ -370,7 +410,7 @@ void MainForm::handleLookupFinished(const EventType& event)
         updateArticleCountEl(articleCountSet_, app().preferences().databaseTime);
         forceAboutRecalculation_ = true;
     }
-    
+
     LookupManager* lookupManager=app().getLookupManager();
     assert(lookupManager);
     lookupManager->handleLookupFinishedInForm(data);
@@ -426,7 +466,7 @@ void MainForm::handleExtendSelection(const EventType& event, bool finish)
     const LookupManager* lookupManager=app().getLookupManager();
     if (lookupManager && lookupManager->lookupInProgress())
         return;
-    Definition& def=currentDefinition();
+    Definition& def = currentDefinition();
     if (def.empty())
         return;
     ArsLexis::Point point(event.screenX, event.screenY);
@@ -473,7 +513,7 @@ bool MainForm::handleEvent(EventType& event)
             
         case LookupManager::lookupFinishedEvent:
             handleLookupFinished(event);
-            handled=true;
+            handled = true;
             break;     
             
         case LookupManager::lookupStartedEvent:
@@ -481,12 +521,12 @@ bool MainForm::handleEvent(EventType& event)
             
         case LookupManager::lookupProgressEvent:
             update(redrawProgressIndicator);
-            handled=true;
+            handled = true;
             break;
 
         case iPediaApplication::appRegisterEvent:
             Application::popupForm(registrationForm);
-            handled=true;
+            handled = true;
             break;
 
         case iPediaApplication::appRegistrationFinished:
@@ -503,6 +543,21 @@ bool MainForm::handleEvent(EventType& event)
             handled = true;
             break;
 
+        case iPediaApplication::appHistoryStringSelected:
+            doLookupSelectedTerm(event);
+            handled = true;
+            break;
+
+        case iPediaApplication::appLinkedArticlesStringSelected:
+            doLookupSelectedTerm(event);
+            handled = true;
+            break;
+
+        case iPediaApplication::appLinkingArticlesStringSelected:
+            doLookupSelectedTerm(event);
+            handled = true;
+            break;
+
         case iPediaApplication::appForceUpgrade:
             {
                 UInt16 buttonId = FrmAlert(forceUpgradeAlert);
@@ -512,13 +567,13 @@ bool MainForm::handleEvent(EventType& event)
                     if ( errNone != WebBrowserCommand(false, 0, sysAppLaunchCmdGoToURL, "http://www.arslexis.com/updates/palm-ipedia-1-0.html",NULL) )
                         FrmAlert(noWebBrowserAlert);
                 }
-                handled=true;
+                handled = true;
             }
             break;
 
         case iPediaApplication::appRandomWord:
             randomArticle();
-            handled=true;
+            handled = true;
             break;
 
         case penDownEvent:
@@ -526,7 +581,7 @@ bool MainForm::handleEvent(EventType& event)
             break;
     
         default:
-            handled=iPediaForm::handleEvent(event);
+            handled = iPediaForm::handleEvent(event);
     }
     return handled;
 }
@@ -536,7 +591,7 @@ void MainForm::updateNavigationButtons()
     const LookupHistory& history=getHistory();
 
     Control control(*this, backButton);
-    bool enabled=history.hasPrevious();
+    bool enabled = history.hasPrevious();
     control.setEnabled(enabled);
     if (enabled)
         control.setGraphics(backBitmap);
@@ -544,7 +599,7 @@ void MainForm::updateNavigationButtons()
         control.setGraphics(backDisabledBitmap);
         
     control.attach(forwardButton);
-    enabled=history.hasNext();
+    enabled = history.hasNext();
     control.setEnabled(enabled);
     if (enabled)
         control.setGraphics(forwardBitmap);
@@ -555,13 +610,13 @@ void MainForm::updateNavigationButtons()
 
 void MainForm::updateAfterLookup()
 {
-    LookupManager* lookupManager=app().getLookupManager();
+    LookupManager* lookupManager = app().getLookupManager();
     assert(lookupManager!=0);
     if (lookupManager)
     {
         article_.replaceElements(lookupManager->lastDefinitionElements());
         setDisplayMode(showArticle);
-        const LookupHistory& history=getHistory();
+        const LookupHistory& history = getHistory();
         if (history.hasCurrentTerm())
             setTitle(history.currentTerm());
         
@@ -576,7 +631,7 @@ void MainForm::updateAfterLookup()
 
 bool MainForm::handleKeyPress(const EventType& event)
 {
-    bool handled=false;
+    bool handled = false;
 
     switch (event.data.keyDown.chr)
     {
@@ -584,7 +639,7 @@ bool MainForm::handleKeyPress(const EventType& event)
             if (fCanScrollDef())
             {
                 scrollDefinition(1, scrollPage);
-                handled=true;
+                handled = true;
             }
             break;
             
@@ -592,7 +647,7 @@ bool MainForm::handleKeyPress(const EventType& event)
             if (fCanScrollDef())
             {
                 scrollDefinition(-1, scrollPage);
-                handled=true;
+                handled = true;
             }
             break;
         
@@ -600,7 +655,7 @@ bool MainForm::handleKeyPress(const EventType& event)
             if (fCanScrollDef())
             {
                 scrollDefinition(1, scrollLine);
-                handled=true;
+                handled = true;
             }
             break;
 
@@ -608,7 +663,7 @@ bool MainForm::handleKeyPress(const EventType& event)
             if (fCanScrollDef())
             {
                 scrollDefinition(-1, scrollLine);
-                handled=true;
+                handled = true;
             }
             break;
             
@@ -616,11 +671,11 @@ bool MainForm::handleKeyPress(const EventType& event)
         case chrLineFeed:
         case chrCarriageReturn:
             {
-                lastPenDownTimestamp_=TimGetTicks();
+                lastPenDownTimestamp_ = TimGetTicks();
                 Control control(*this, searchButton);
                 control.hit();
             }                
-            handled=true;
+            handled = true;
             break;
     }
     return handled;
@@ -633,23 +688,24 @@ void MainForm::switchServer(const char* server)
 
 bool MainForm::handleMenuCommand(UInt16 itemId)
 {
-    bool handled=false;
+    bool handled = false;
+
     switch (itemId)
     {
 #ifdef  INTERNAL_BUILD    
         case useDictPcMenuItem:
             switchServer(SERVER_OFFICIAL);
-            handled=true;
+            handled = true;
             break;
             
         case useLocalhostMenuItem:
             switchServer(SERVER_LOCALHOST);
-            handled=true;
+            handled = true;
             break;
 
         case toggleStressModeMenuItem:
             handleToggleStressMode();
-            handled=true;
+            handled = true;
             break;
 #endif
             
@@ -705,17 +761,17 @@ bool MainForm::handleMenuCommand(UInt16 itemId)
                 setDisplayMode(showTutorial);
                 update();
             }
-            handled=true;
+            handled = true;
             break;
 
         case searchMenuItem:
             search();
-            handled=true;
+            handled = true;
             break;
 
         case extendedSearchMenuItem:
             search(true);
-            handled=true;
+            handled = true;
             break;
             
         case forwardMenuItem:
@@ -750,7 +806,7 @@ bool MainForm::handleMenuCommand(UInt16 itemId)
             break;
 
         default:
-            handled=iPediaForm::handleMenuCommand(itemId);
+            handled = iPediaForm::handleMenuCommand(itemId);
     }
     // to prevent accidental selection of links in main About page
     penUpsToEat_ = 1;
@@ -760,27 +816,73 @@ bool MainForm::handleMenuCommand(UInt16 itemId)
 void MainForm::doHistory()
 {
     Application::popupForm(stringListHistoryId);
+    LookupManager* lookupManager=app().getLookupManager(true);
+    if (NULL==lookupManager)
+        return;
+    LookupHistory& lookupHistory = lookupManager->getHistory();
+    const StringList_t& history = lookupHistory.getHistory();
+    app().strList_ = StringListFromStringList(history, app().strListSize_);
+    Application::popupForm(stringListHistoryId);
+}
+
+void MainForm::doLookupSelectedTerm(EventType& event)
+{
+    StringListEventData& data=reinterpret_cast<StringListEventData&>(event.data);
+
+    int selectedStr = data.value;
+    if (NOT_SELECTED==selectedStr)
+        goto Exit;
+
+    const char_t *term = app().strList_[selectedStr];
+
+    LookupManager* lookupManager=app().getLookupManager(true);
+    if (lookupManager && !lookupManager->lookupInProgress())
+        lookupManager->lookupIfDifferent(term);
+
+Exit:
+    if (NULL!=app().strList_)
+    {
+        for (int i=0; i<app().strListSize_; i++)
+        {
+            delete [] app().strList_[i];
+        }
+    }
+    app().strList_ = NULL;
 }
 
 void MainForm::doLinkedArticles()
 {
+    Definition& def = currentDefinition();
     Application::popupForm(stringListLinkedArticlesId);
+    app().strList_ = ExtractLinksFromDefinition(def, app().strListSize_);
 }
 
 void MainForm::doLinkingArticles()
 {
+    LookupManager* lookupManager = app().getLookupManager(true);
+    if (NULL==lookupManager)
+        return;
+
+    String& reverseLinks = lookupManager->lastReverseLinks();
+    app().strList_ = StringListFromString(reverseLinks, "\n", app().strListSize_);
+
+    for (int i=0; i<app().strListSize_; i++)
+    {
+        replaceCharInString(app().strList_[i], _T('_'), _T(' '));
+    }
+
     Application::popupForm(stringListLinkingArticlesId);
 }
 
 void MainForm::changeDatabase()
 {
     String availableLangs = app().preferences().availableLangs;
-    // TODO: a hackk. we should request a list of available langs from the server
+    // TODO: a hack. we should request a list of available langs from the server
     if (availableLangs.empty())
     {
         availableLangs.assign(_T("en"));
     }
-    app().dbNameStrList_ = StringListFromString(availableLangs, " ", app().dbNameStringCount_);
+    app().strList_ = StringListFromString(availableLangs, " ", app().strListSize_);
     Application::popupForm(stringListSelectDbId);
 }
 
@@ -792,21 +894,21 @@ void MainForm::doDbSelected(EventType& event)
     if (NOT_SELECTED==selectedStr)
         goto Exit;
 
-    const char_t *dbName = app().dbNameStrList_[selectedStr];
+    const char_t *dbName = app().strList_[selectedStr];
 
     LookupManager* lookupManager=app().getLookupManager(true);
     if (lookupManager && !lookupManager->lookupInProgress())
         lookupManager->switchDatabase(dbName);
 
 Exit:
-    if (NULL!=app().dbNameStrList_)
+    if (NULL!=app().strList_)
     {
-        for (int i=0; i<app().dbNameStringCount_; i++)
+        for (int i=0; i<app().strListSize_; i++)
         {
-            delete [] app().dbNameStrList_[i];
+            delete [] app().strList_[i];
         }
     }
-    app().dbNameStrList_ = NULL;
+    app().strList_ = NULL;
 }
 
 void MainForm::randomArticle()

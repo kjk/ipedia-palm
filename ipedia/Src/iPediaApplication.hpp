@@ -48,26 +48,29 @@ public:
     ~iPediaApplication();
     
     Err initialize();
-    
+
     LookupManager* getLookupManager(bool create=false);
     const LookupManager* getLookupManager() const
-    {return lookupManager_;}
+    {
+        return lookupManager_;
+    }
+
     bool fLookupInProgress() const;
-    
+
     void savePreferences();
-    
+
     struct Preferences
     {
         RenderingPreferences renderingPreferences;
-        
+
         enum {cookieLength=32};
         ArsLexis::String cookie;
-        
+
         enum {regCodeLength=32};
         ArsLexis::String regCode;
-        
+
         long articleCount;
-        
+
         ArsLexis::String databaseTime;
 
         ArsLexis::String availableLangs;
@@ -77,20 +80,26 @@ public:
         Preferences():
             articleCount(-1)            
         {}
-        
+
     };
-    
+
     Preferences& preferences() 
-    {return preferences_;}
-    
+    {
+        return preferences_;
+    }
+
     const Preferences& preferences() const
-    {return preferences_;}
-    
+    {
+        return preferences_;
+    }
+
     const RenderingPreferences& renderingPreferences() const
-    {return preferences().renderingPreferences;}
-    
+    {
+        return preferences().renderingPreferences;
+    }
+
     static const uint_t reservedLookupEventsCount=3;
-    
+
     enum Event
     {
         appLookupEventFirst=appFirstAvailableEvent,
@@ -107,21 +116,29 @@ public:
     };
     
     void setServer(const ArsLexis::String& server)
-    {server_=server;}
-    
+    {
+        server_ = server;
+    }
+
     const ArsLexis::String& server() const
-    {return server_;}
-    
+    {
+        return server_;
+    }
+
     static iPediaApplication& instance()
-    {return static_cast<iPediaApplication&>(Application::instance());}
+    {
+        return static_cast<iPediaApplication&>(Application::instance());
+    }
 
     bool inStressMode() const
-    {return stressMode_;}
-    
+    {
+        return stressMode_;
+    }
+
     void toggleStressMode(bool enable)
     {
         toggleShowAlerts(!enable);
-        stressMode_=enable;
+        stressMode_ = enable;
     }
     
     const LookupHistory& history() const
@@ -131,19 +148,19 @@ public:
     }
     
     iPediaHyperlinkHandler& hyperlinkHandler()
-    {return hyperlinkHandler_;}    
+    {
+        return hyperlinkHandler_;
+    }
 
     // intentional lack of accessor functions, treat it like a property
-    bool fArticleCountChecked;
-    
-    int         dbNameStringCount_;
-    char_t **   dbNameStrList_;
+    bool        fArticleCountChecked;
+
+    int         strListSize_;
+    char_t **   strList_;
 
 private:
-    
     Preferences preferences_;
-    bool stressMode_:1;
-    
+    bool        stressMode_:1;
 };
 
 

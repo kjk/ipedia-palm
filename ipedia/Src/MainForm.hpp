@@ -24,7 +24,9 @@ class MainForm: public iPediaForm
     const LookupHistory& getHistory() const;
     
     const RenderingPreferences& renderingPreferences() const
-    {return static_cast<const iPediaApplication&>(application()).renderingPreferences();}
+    {
+        return static_cast<const iPediaApplication&>(application()).renderingPreferences();
+    }
     
     void handleScrollRepeat(const EventType& data);
     
@@ -89,6 +91,8 @@ class MainForm: public iPediaForm
 
     void updateArticleCountEl(long articleCount, ArsLexis::String& dbTime);
 
+    void doLookupSelectedTerm(EventType& event);
+
     void doHistory();
 
     void doLinkedArticles();
@@ -139,19 +143,32 @@ public:
     };
     
     DisplayMode displayMode() const
-    {return displayMode_;}
+    {
+        return displayMode_;
+    }
 
     bool fCanScrollDef() const
-    {return displayMode_==showAbout ? false : true; }
+    {
+        if (showAbout==displayMode_)
+            return false;
+        else
+            return true;
+    }
 
     void setDisplayMode(DisplayMode displayMode)
-    {displayMode_=displayMode;}
-    
+    {
+        displayMode_ = displayMode;
+    }
+
     void setUpdateDefinitionOnEntry(bool val=true)
-    {updateDefinitionOnEntry_=val;}
+    {
+        updateDefinitionOnEntry_=val;
+    }
 
     void scrollDefinition(int units, ScrollUnit unit)
-    {scrollDefinition(units, unit, true);}
+    {
+        scrollDefinition(units, unit, true);
+    }
 
     void prepareTutorial();    
 

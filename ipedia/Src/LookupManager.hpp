@@ -129,6 +129,11 @@ public:
 
     void switchDatabase(const char_t* langCode);
 
+    LookupHistory& getHistory()
+    {
+        return history_;
+    }
+
 private:
     
     void handleServerError(iPediaServerError serverError);

@@ -3,6 +3,7 @@
 
 #include <Debug.hpp>
 #include <BaseTypes.hpp>
+#include <Text.hpp>
 #include <list>
 
 namespace ArsLexis
@@ -13,12 +14,10 @@ namespace ArsLexis
 
 class LookupHistory
 {
-
     // Not quite effective. But using std::deque for this purpose would increase code size significantly.
-    typedef std::list<ArsLexis::String> TermHistory_t;
-    TermHistory_t termHistory_;
-    TermHistory_t::iterator historyPosition_;
-    
+    StringList_t termHistory_;
+    StringList_t::iterator historyPosition_;
+
 public:
 
     enum {
@@ -35,7 +34,9 @@ public:
     ~LookupHistory();
     
     bool hasPrevious() const
-    {return historyPosition_!=termHistory_.begin();}
+    {
+        return historyPosition_!=termHistory_.begin();
+    }
     
     bool hasNext() const;
     
@@ -62,14 +63,14 @@ public:
     const ArsLexis::String& previousTerm() const
     {
         assert(hasPrevious());
-        TermHistory_t::const_iterator it=historyPosition_;
+        StringList_t::const_iterator it=historyPosition_;
         return *(--it);
     }
     
     const ArsLexis::String& nextTerm() const
     {
         assert(hasNext());
-        TermHistory_t::const_iterator it=historyPosition_;
+        StringList_t::const_iterator it=historyPosition_;
         return *(++it);
     }
     
@@ -77,8 +78,14 @@ public:
     {termHistory_.erase(termHistory_.begin(), historyPosition_);}
     
     bool hasCurrentTerm() const
-    {return historyPosition_!=termHistory_.end();}
-    
+    {
+        return historyPosition_!=termHistory_.end();
+    }
+
+    StringList_t getHistory() const
+    {
+        return termHistory_;
+    }
 };
 
 #endif

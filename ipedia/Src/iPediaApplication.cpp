@@ -37,7 +37,7 @@ iPediaApplication::iPediaApplication():
     log().addSink(new MemoLogSink(), Logger::logError);
 # endif
 #endif
-    dbNameStrList_ = NULL;
+    strList_ = NULL;
 }
 
 inline void iPediaApplication::detectViewer()
@@ -142,28 +142,25 @@ Form* iPediaApplication::createForm(UInt16 formId)
 
         case stringListSelectDbId:
             strListForm = new StringListForm(*this, (uint_t)stringListForm, (uint_t)stringList, (uint_t)selectButton, (uint_t)cancelButton);
-            strListForm->SetStringList(dbNameStringCount_, dbNameStrList_, appDbnameStringSelected);
-            form = strListForm;
-            break;
-
-        case stringListLinkedArticlesId:
-            // TODO:
-            strListForm = new StringListForm(*this, (uint_t)stringListForm, (uint_t)stringList, (uint_t)selectButton, (uint_t)cancelButton);
-            // strListForm->SetStringList(dbNameStringCount_, dbNameStrList_, appDbnameStringSelected);
+            strListForm->SetStringList(strListSize_, strList_, appDbnameStringSelected);
             form = strListForm;
             break;
 
         case stringListHistoryId:
-            // TODO:
             strListForm = new StringListForm(*this, (uint_t)stringListForm, (uint_t)stringList, (uint_t)selectButton, (uint_t)cancelButton);
-            // strListForm->SetStringList(dbNameStringCount_, dbNameStrList_, appDbnameStringSelected);
+            strListForm->SetStringList(strListSize_, strList_, appHistoryStringSelected);
+            form = strListForm;
+            break;
+
+        case stringListLinkedArticlesId:
+            strListForm = new StringListForm(*this, (uint_t)stringListForm, (uint_t)stringList, (uint_t)selectButton, (uint_t)cancelButton);
+            strListForm->SetStringList(strListSize_, strList_, appLinkedArticlesStringSelected);
             form = strListForm;
             break;
 
         case stringListLinkingArticlesId:
-            // TODO:
             strListForm = new StringListForm(*this, (uint_t)stringListForm, (uint_t)stringList, (uint_t)selectButton, (uint_t)cancelButton);
-            // strListForm->SetStringList(dbNameStringCount_, dbNameStrList_, appDbnameStringSelected);
+            strListForm->SetStringList(strListSize_, strList_, appLinkingArticlesStringSelected);
             form = strListForm;
             break;
 
