@@ -225,6 +225,7 @@ ArsLexis::status_t iPediaConnection::handleField(const String& name, const Strin
     if (transactionIdField==name)
     {
         error=numericValue(value, numValue, 16);
+        assert(errNone==error);
         if (error || ((ulong_t)numValue!=transactionId_))
             error=errResponseMalformed;
     }
@@ -235,7 +236,8 @@ ArsLexis::status_t iPediaConnection::handleField(const String& name, const Strin
     else if (formatVersionField==name)
     {
         error=numericValue(value, numValue);
-        if (error)
+        assert(errNone==error);
+        if (errNone!=error)
             error=errResponseMalformed;
         else
             formatVersion_=numValue;
@@ -247,7 +249,8 @@ ArsLexis::status_t iPediaConnection::handleField(const String& name, const Strin
     else if (articleBodyField==name)
     {
         error=numericValue(value, numValue);
-        if (error)
+        assert(errNone==error);
+        if (errNone!=error)
             error=errResponseMalformed;
         else
         {
@@ -259,7 +262,8 @@ ArsLexis::status_t iPediaConnection::handleField(const String& name, const Strin
     else if (reverseLinksField==name)
     {
         error=numericValue(value, numValue);
-        if (error)
+        assert(errNone==error);
+        if (errNone!=error)
             error = errResponseMalformed;
         else
         {
@@ -271,6 +275,7 @@ ArsLexis::status_t iPediaConnection::handleField(const String& name, const Strin
     else if (searchResultsField==name)
     {
         error=numericValue(value, numValue);
+        assert(errNone==error);
         if (error)
             error=errResponseMalformed;
         else
@@ -282,6 +287,7 @@ ArsLexis::status_t iPediaConnection::handleField(const String& name, const Strin
     }
     else if (cookieField==name)
     {
+        assert(value.length()==iPediaApplication::Preferences::cookieLength);
         if (value.length()>iPediaApplication::Preferences::cookieLength)
             error=errResponseMalformed;
         else
@@ -290,6 +296,7 @@ ArsLexis::status_t iPediaConnection::handleField(const String& name, const Strin
     else if (errorField==name)
     {
         error=numericValue(value, numValue);
+        assert(errNone==error);
         if (error)
             return errResponseMalformed;
         if (numValue>=serverErrorFirst && numValue<=serverErrorLast)
@@ -300,6 +307,7 @@ ArsLexis::status_t iPediaConnection::handleField(const String& name, const Strin
     else if (articleCountField==name)
     {
         error=numericValue(value, numValue);
+        assert(errNone==error);
         if (error)
             error=errResponseMalformed;
         else
@@ -312,9 +320,11 @@ ArsLexis::status_t iPediaConnection::handleField(const String& name, const Strin
     else if (regCodeValidField==name)
     {
         error=numericValue(value, numValue);
+        assert(errNone==error);
         if (error)
             return errResponseMalformed;
 
+        assert((0==numValue) || (1==numValue));
         if (1==numValue)
             regCodeValid_ = regCodeTypeValid;
         else if (0==numValue)
@@ -322,7 +332,7 @@ ArsLexis::status_t iPediaConnection::handleField(const String& name, const Strin
         else
             error=errResponseMalformed;
     }
-    else 
+    else
         error=FieldPayloadProtocolConnection::handleField(name, value);
     return error;
 }
@@ -353,15 +363,14 @@ ArsLexis::status_t iPediaConnection::notifyFinished()
         lookupManager_.setLastFoundTerm(articleTitle_);
         if (getRandom_)
             lookupManager_.setLastSearchTerm(articleTitle_);
-        data.outcome=data.outcomeArticleBody;
+        data.outcome = data.outcomeArticleBody;
     }
 
     if (NULL!=reverseLinksResultsHandler_)
     {
         // TODO: we don't handle Reverse-Links field yet in the client
         assert(NULL != definitionParser_);
-        lookupManager_.setLastReverseLinks(reverseLinksResultsHandler_->reverseLinksResults());
-        
+        lookupManager_.setLastReverseLinks(reverseLinksResultsHandler_->reverseLinksResults());        
     }
 
     if (NULL!=searchResultsHandler_)
@@ -369,22 +378,26 @@ ArsLexis::status_t iPediaConnection::notifyFinished()
         assert(NULL == definitionParser_);
         lookupManager_.setLastExtendedSearchResults(searchResultsHandler_->searchResults());
         lookupManager_.setLastExtendedSearchTerm(articleTitle_);
-        data.outcome=data.outcomeList;
+        data.outcome = data.outcomeList;
     }
 
     if (notFound_)
-        data.outcome=data.outcomeNotFound;
+        data.outcome = data.outcomeNotFound;
 
     if (regCodeTypeValid==regCodeValid_)
     {
         assert(data.outcomeNothing==data.outcome);
-        data.outcome=data.outcomeRegCodeValid;
+        data.outcome = data.outcomeRegCodeValid;
     }
     else if (regCodeTypeInvalid==regCodeValid_)
     {
         assert(data.outcomeNothing==data.outcome);
-        data.outcome=data.outcomeRegCodeInvalid;
+        data.outcome = data.outcomeRegCodeInvalid;
     }        
+
+    assert(data.outcomeNothing!=data.outcome);
+    if (data.outcomeNothing==data.outcome)
+        return errResponseMalformed;
 
     ArsLexis::sendEvent(LookupManager::lookupFinishedEvent, data);
 
