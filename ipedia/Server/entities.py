@@ -533,3 +533,10 @@ def convertEntities(text, term = None):
     text = convertNamedEntities(term, text)
     text = convertNumberedEntities(term, text)
     return text
+
+def convertEntities23(text, term = None):
+    if term is None:
+        term = text
+    text = convertNamedEntities(term, text)
+    text = convertNumberedEntities23(term, text)
+    return text
