@@ -9,7 +9,7 @@
 
 class LookupManager;
 class LookupHistory;
-
+struct LookupFinishedEventData;
 #define serverLocalhost        "127.0.0.1:9000"
 //#define serverLocalhost    "192.168.0.1:9000"
 #define serverOfficial   "ipedia.arslexis.com:9000"
@@ -108,6 +108,9 @@ public:
     
     static iPediaApplication& instance()
     {return static_cast<iPediaApplication&>(Application::instance());}
+
+    static void sendFinishedLookupEvent(uint_t event, LookupFinishedEventData& data)
+    { ArsLexis::sendEvent(event, data); }
     
     bool inStressMode() const
     {return stressMode_;}

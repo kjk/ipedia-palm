@@ -298,7 +298,7 @@ ArsLexis::status_t iPediaConnection::notifyFinished()
             data.outcome=data.outcomeServerError;
             data.serverError=serverError_;
         }
-        ArsLexis::sendEvent(LookupManager::lookupFinishedEvent, data);               
+        iPediaApplication::sendFinishedLookupEvent(LookupManager::lookupFinishedEvent, data);
     }
     return error;        
 }
@@ -307,7 +307,7 @@ void iPediaConnection::handleError(ArsLexis::status_t error)
 {
     log().error()<<_T("handleError(): error code ")<<error;
     LookupFinishedEventData data(LookupFinishedEventData::outcomeError, error);
-    ArsLexis::sendEvent(LookupManager::lookupFinishedEvent, data);
+    iPediaApplication::sendFinishedLookupEvent(LookupManager::lookupFinishedEvent, data);
     SimpleSocketConnection::handleError(error);
 }
 

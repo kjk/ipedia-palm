@@ -2,6 +2,7 @@
 #define __DEFINITION_REQUEST_CONNECTION_HPP__
 
 #include "LookupManager.hpp"
+#include "SysUtils.hpp"
 #include <FieldPayloadProtocolConnection.hpp>
 #include <BaseTypes.hpp>
 
