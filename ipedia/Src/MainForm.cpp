@@ -18,12 +18,12 @@ MainForm::MainForm(iPediaApplication& app):
     displayMode_(showSplashScreen),
     lastPenDownTimestamp_(0),
     updateDefinitionOnEntry_(false),
-    checkedArticleCount_(false),
     enableInputFieldAfterUpdate_(false),
     forceSplashRecalculation_(false),
     articleCountElement_(0),
-    articleCountSet_(iPediaApplication::Preferences::articleCountNotChecked)
+    articleCountSet_(-1)
 {
+    articleCountSet_ = app.preferences().articleCount;
     article_.setRenderingProgressReporter(&renderingProgressReporter_);
     article_.setHyperlinkHandler(&app.hyperlinkHandler());
     about_.setHyperlinkHandler(&app.hyperlinkHandler());
@@ -96,8 +96,14 @@ void MainForm::updateScrollBar()
 Err MainForm::renderDefinition(Definition& def, ArsLexis::Graphics& graphics, const ArsLexis::Rectangle& rect)
 {
     volatile Err error=errNone;
+    bool  fForceRecalculate = false;
+    if ( showSplashScreen==displayMode() )
+    {
+        fForceRecalculate = forceSplashRecalculation_;
+        forceSplashRecalculation_ = false;
+    }
     ErrTry {
-        def.render(graphics, rect, renderingPreferences(), showSplashScreen==displayMode()?forceSplashRecalculation_:false);
+        def.render(graphics, rect, renderingPreferences(), fForceRecalculate);
     }
     ErrCatch (ex) {
         error=ex;
@@ -145,7 +151,6 @@ void MainForm::drawDefinition(Graphics& graphics, const ArsLexis::Rectangle& bou
     }
     if (!doubleBuffer)
         error=renderDefinition(def, graphics, rect);
-    forceSplashRecalculation_=false;
     if (errNone!=error) 
     {
         def.clear();
@@ -321,12 +326,7 @@ void MainForm::handleLookupFinished(const EventType& event)
     if (app.preferences().articleCount!=articleCountSet_) 
     {
         articleCountSet_=app.preferences().articleCount;
-        assert(0!=articleCountElement_);
-        ArsLexis::String articleCountText="Number of articles: ";
-        char buffer[16];
-        int len=StrPrintF(buffer, "%ld", app.preferences().articleCount);
-        articleCountText.append(buffer, len);
-        articleCountElement_->setText(articleCountText);
+        updateArticleCountEl(articleCountSet_);
         forceSplashRecalculation_=true;
     }
     
@@ -353,6 +353,16 @@ void MainForm::handleLookupFinished(const EventType& event)
         EvtAddEventToQueue(&event);
         randomArticle();
     }        
+}
+
+void MainForm::updateArticleCountEl(long articleCount)
+{
+    assert(0!=articleCountElement_);
+    ArsLexis::String articleCountText="Number of articles: ";
+    char buffer[16];
+    int len=StrPrintF(buffer, "%ld",articleCount);
+    articleCountText.append(buffer, len);
+    articleCountElement_->setText(articleCountText);
 }
 
 void MainForm::handleExtendSelection(const EventType& event, bool finish)
@@ -411,11 +421,6 @@ bool MainForm::handleEvent(EventType& event)
         case LookupManager::lookupProgressEvent:
             update(redrawProgressIndicator);
             handled=true;
-            break;
-
-        case iPediaApplication::appGetArticlesCountEvent:
-            checkArticleCount();
-            handled = true;
             break;
 
         case penDownEvent:
@@ -648,8 +653,6 @@ bool MainForm::handleWindowEnter(const struct _WinEnterEventType& data)
             }
             setControlsState(!lookupManager->lookupInProgress());
         }
-        if (!checkedArticleCount_ && app.preferences().checkArticleCountAtStartup)
-            ArsLexis::sendEvent(iPediaApplication::appGetArticlesCountEvent);
     }
     return iPediaForm::handleWindowEnter(data);
 }
@@ -781,16 +784,6 @@ void MainForm::RenderingProgressReporter::reportProgress(uint_t percent)
 #endif    
 }
 
-void MainForm::checkArticleCount() 
-{
-    assert(!checkedArticleCount_);
-    checkedArticleCount_=true;
-    iPediaApplication& app=static_cast<iPediaApplication&>(application());
-    LookupManager* lookupManager=app.getLookupManager(true);
-    if (lookupManager && !lookupManager->lookupInProgress())
-        lookupManager->checkArticleCount();
-}
-
 void MainForm::prepareSplashScreen()
 {
     Definition::Elements_t elems;
@@ -842,6 +835,8 @@ void MainForm::prepareSplashScreen()
 
     elems.push_back(new LineBreakElement());
     elems.push_back(articleCountElement_=new FormattedTextElement(" "));
+    if (-1!=articleCountSet_)
+        updateArticleCountEl(articleCountSet_);
     articleCountElement_->setJustification(DefinitionElement::justifyCenter);
 
     elems.push_back(new LineBreakElement());

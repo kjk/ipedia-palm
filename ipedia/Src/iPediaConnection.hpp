@@ -86,6 +86,9 @@ public:
     
     void setRetrieveArticleCount(bool value=true)
     {getArticleCount_=value;}
+
+    void setGetDatabaseTime(bool value=true)
+    {getDatabaseTime_=true;}
     
 private:
     
@@ -96,6 +99,7 @@ private:
     bool performFullTextSearch_:1;
     bool getRandom_:1;
     bool getArticleCount_:1;
+    bool getDatabaseTime_:1;
     
 };
 

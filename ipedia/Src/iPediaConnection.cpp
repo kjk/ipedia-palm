@@ -22,7 +22,8 @@ iPediaConnection::iPediaConnection(LookupManager& lookupManager):
     registering_(false),
     performFullTextSearch_(false),
     getRandom_(false),
-    getArticleCount_(false)
+    getArticleCount_(false),
+    getDatabaseTime_(false)
 {
 }
 
@@ -51,10 +52,20 @@ iPediaConnection::~iPediaConnection()
 #define searchResultsField      _T("Search-Results")
 #define getArticleCountField    _T("Get-Article-Count")
 #define articleCountField       _T("Article-Count")
+#define getDatabaseTimeField    _T("Get-Database-Time")
+#define databaseTimeField       _T("Database-Time")
 
 void iPediaConnection::prepareRequest()
 {
     iPediaApplication& app=iPediaApplication::instance();
+    // get number of articles in the first request to the server. do it only once
+    // per application launch
+    if (!app.fArticleCountChecked_)
+    {
+        getArticleCount_ = true;
+        app.fArticleCountChecked_ = true; // or do it later, when we process the response
+    }
+
     String request;
     appendField(request, protocolVersionField, protocolVersion);
     appendField(request, clientVersionField, appVersion);
@@ -86,6 +97,9 @@ void iPediaConnection::prepareRequest()
     
     if (getArticleCount_)
         appendField(request, getArticleCountField);
+
+    if (getDatabaseTime_)
+        appendField(request, getDatabaseTimeField);
 
     request+='\n';
     NarrowString req;
@@ -184,6 +198,8 @@ ArsLexis::status_t iPediaConnection::handleField(const String& name, const Strin
 {
     long numValue;
     ArsLexis::status_t error=errNone;
+    iPediaApplication& app=iPediaApplication::instance();
+
     if (0==name.find(transactionIdField))
     {
         error=numericValue(value, numValue, 16);
@@ -228,7 +244,6 @@ ArsLexis::status_t iPediaConnection::handleField(const String& name, const Strin
     }
     else if (0==name.find(cookieField))
     {
-        iPediaApplication& app=iPediaApplication::instance();
         if (value.length()>iPediaApplication::Preferences::cookieLength)
             error=errResponseMalformed;
         else
@@ -252,11 +267,15 @@ ArsLexis::status_t iPediaConnection::handleField(const String& name, const Strin
         error=numericValue(value, numValue);
         if (!error)
         {
-            iPediaApplication& app=iPediaApplication::instance();
             app.preferences().articleCount=numValue;
         }
         else
             error=errResponseMalformed;
+    }
+    else if (0==name.find(databaseTimeField))
+    {
+        // TODO: remember the database time
+        //app.preferences().databaseTime.assign(value);
     }
     else 
         error=FieldPayloadProtocolConnection::handleField(name, value);

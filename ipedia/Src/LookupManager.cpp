@@ -174,10 +174,3 @@ void LookupManager::moveHistory(bool forward)
     }
 }
 
-void LookupManager::checkArticleCount()
-{
-    iPediaConnection* conn=new iPediaConnection(*this);
-    conn->setAddress(iPediaApplication::instance().server());
-    conn->setRetrieveArticleCount();
-    conn->enqueue();
-}

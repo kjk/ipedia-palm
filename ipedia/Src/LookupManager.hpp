@@ -100,8 +100,6 @@ public:
     
     void handleLookupFinishedInForm(const LookupFinishedEventData& data);
     
-    void checkArticleCount();
-    
 private:
     
     void handleServerError(iPediaServerError serverError);

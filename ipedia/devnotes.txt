@@ -3,4 +3,20 @@
 iPediaApplication.hpp
 look for serverLocalhost, serverOfficial
 
+## Things to do ##
+
+# BEFORE SHIPPING v1.0
+* add in-program tutorial invoked by "tutorial" link
+* retrieve (and show) database last update time
+
+# POSSIBLY AFTER v1.0
+* it would be possible to DOS the server by sending a lot of mal-formatted
+  requests (i.e. when server thinks that there's still data to be read from the client)
+  We could improve things  by using a timeout (i.e. kill connections after 60 secs
+  of inactivity)
+* convert tables into a list of things see e.g. "Seattle"
+* remove {{disambig}} tags (and possible others). First step: get a list of
+  all those tags
+* display when the database was last updated, possibly in "N days ago" format
+  instead of a date
 

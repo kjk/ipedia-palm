@@ -18,10 +18,10 @@ struct LookupFinishedEventData;
 
 class iPediaApplication: public ArsLexis::RichApplication 
 {
-    iPediaHyperlinkHandler hyperlinkHandler_;
-    LookupHistory* history_;
-    LookupManager* lookupManager_;
-    ArsLexis::String server_;
+    iPediaHyperlinkHandler  hyperlinkHandler_;
+    LookupHistory*          history_;
+    LookupManager*          lookupManager_;
+    ArsLexis::String        server_;
     
     void detectViewer();
     
@@ -67,16 +67,12 @@ public:
         ArsLexis::String serialNumber;
         
         bool serialNumberRegistered;
-        bool checkArticleCountAtStartup;
-        
-        enum {articleCountNotChecked=-1L};
         
         long articleCount;
         
         Preferences():
             serialNumberRegistered(false),
-            checkArticleCountAtStartup(true),
-            articleCount(articleCountNotChecked)            
+            articleCount(-1)            
         {}
         
     };
@@ -96,7 +92,6 @@ public:
     {
         appLookupEventFirst=appFirstAvailableEvent,
         appLookupEventLast=appLookupEventFirst+reservedLookupEventsCount,
-        appGetArticlesCountEvent,
         appFirstAvailableEvent
     };
     
@@ -126,7 +121,10 @@ public:
     
     iPediaHyperlinkHandler& hyperlinkHandler()
     {return hyperlinkHandler_;}    
-    
+
+    // intentional lack of accessor functions, treat it like a property
+    bool fArticleCountChecked_;
+
 private:
     
     Preferences preferences_;

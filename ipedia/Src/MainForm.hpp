@@ -81,13 +81,13 @@ class MainForm: public iPediaForm
     
     RenderingProgressReporter renderingProgressReporter_;
     
-    void checkArticleCount();
-    
     Definition& currentDefinition()
     {return showArticle==displayMode()?article_:about_;}
     
     void prepareSplashScreen();
-    
+
+    void updateArticleCountEl(long articleCount);
+
 protected:
 
     void resize(const ArsLexis::Rectangle& screenBounds);
@@ -141,7 +141,6 @@ private:
     UInt32 lastPenDownTimestamp_;
     DisplayMode displayMode_:4;
     bool updateDefinitionOnEntry_:1;
-    bool checkedArticleCount_:1;
     bool enableInputFieldAfterUpdate_:1;
     
 };
