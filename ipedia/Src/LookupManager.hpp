@@ -102,7 +102,8 @@ public:
 
     void lookupRandomTerm();
 
-    //! @return @c true if lookup is started, @c false otherwise.
+    bool LookupManager::lastSearchTermDifferent(const ArsLexis::String& term);
+
     bool lookupIfDifferent(const String& term);
 
     void moveHistory(bool forward=false);
@@ -117,7 +118,7 @@ public:
     const String& lastSearchTerm() const
     {return lastSearchTerm_;}
 
-    const String& lastReverseLinks() const
+    String& lastReverseLinks()
     {return lastReverseLinks_;}
 
     void handleLookupFinishedInForm(const LookupFinishedEventData& data);

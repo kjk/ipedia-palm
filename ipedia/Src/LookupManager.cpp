@@ -162,18 +162,25 @@ void LookupManager::handleLookupFinished(const LookupFinishedEventData& data)
         handleDefinition();
 }
 
+// return true if last search term is different than term
+bool LookupManager::lastSearchTermDifferent(const ArsLexis::String& term)
+{
+    using ArsLexis::equalsIgnoreCase;
+    if (lastSearchTerm().empty() || !equalsIgnoreCase(lastSearchTerm(), term))
+        return true;
+    return false;
+}
+
 // if search term is different than the last one, initiate lookup and return true.
 // otherwise return false.
 bool LookupManager::lookupIfDifferent(const ArsLexis::String& term)
 {
-    using ArsLexis::equalsIgnoreCase;
-    if (lastSearchTerm().empty() || !equalsIgnoreCase(lastSearchTerm(), term))
-    {
-        lastSearchTerm_ = term;
-        lookupTerm(term);
-        return true;
-    }
-    return false;
+    if (!lastSearchTermDifferent(term))
+        return false;
+
+    lastSearchTerm_ = term;
+    lookupTerm(term);
+    return true;
 }
 
 void LookupManager::lookupTerm(const ArsLexis::String& term)
