@@ -2,7 +2,7 @@
 #define __LOOKUP_MANAGER_HPP__
 
 #include <LookupManagerBase.hpp>
-#include "iPediaApplication.hpp"
+#include <iPediaApplication.hpp>
 #include "Definition.hpp"
 
 class LookupHistory;
