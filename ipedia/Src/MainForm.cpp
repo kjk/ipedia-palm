@@ -311,8 +311,8 @@ void MainForm::handleLookupFinished(const EventType& event)
                 Field field(*this, termInputField);
                 field.select();
             }
-            break;
-
+            // No break is intentional.
+            
         default:
             update();
     }
