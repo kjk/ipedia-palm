@@ -152,7 +152,7 @@ bool LookupManager::lookupIfDifferent(const ArsLexis::String& term)
 {
     using ArsLexis::equalsIgnoreCase;
     bool result=false;
-    if (lastDefinitionElements_.empty() || !equalsIgnoreCase(lastInputTerm(), term))
+    if (lastInputTerm().empty() || !equalsIgnoreCase(lastInputTerm(), term))
     {
         lookupTerm(lastInputTerm_=term);
         result=true;
@@ -182,7 +182,7 @@ void LookupManager::search(const ArsLexis::String& expression)
 {
     historyChange_=historyReplaceForward;
     iPediaConnection* conn=new iPediaConnection(*this);
-    conn->setTerm(expression);
+    conn->setTerm(lastInputTerm_=expression);
     conn->setPerformFullTextSearch(true);
     conn->setAddress(iPediaApplication::instance().server());
     conn->enqueue();
