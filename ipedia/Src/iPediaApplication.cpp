@@ -71,7 +71,7 @@ iPediaApplication::~iPediaApplication()
 
 Err iPediaApplication::normalLaunch()
 {
-    history_=new LookupHistory();
+    history_ = new LookupHistory();
     loadPreferences();
 #ifdef INTERNAL_BUILD
     // make it easier for me to run the app
@@ -81,6 +81,10 @@ Err iPediaApplication::normalLaunch()
         server_ = SERVER_OFFICIAL;
     }
 #endif
+
+    // TODO: temporary
+    preferences().currentLang = "de";
+
     gotoForm(mainForm);
     runEventLoop();
     savePreferences();

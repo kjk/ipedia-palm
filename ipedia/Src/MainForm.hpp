@@ -95,6 +95,8 @@ class MainForm: public iPediaForm
 
     void doLinkingArticles();
 
+    void changeDatabase();
+
 protected:
 
     void resize(const ArsLexis::Rectangle& screenBounds);
@@ -154,6 +156,8 @@ public:
     void prepareHowToRegister();
 
     void prepareWikipedia();
+
+    iPediaApplication& app() { return static_cast<iPediaApplication&>(application()); }
 
 private:
     

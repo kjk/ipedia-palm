@@ -10,8 +10,30 @@
 #include <LineBreakElement.hpp>
 #include <ParagraphElement.hpp>
 
-
 using namespace ArsLexis;
+
+static const char_t* GetLangNameByLangCode(const String& langCode)
+{
+    if (langCode.empty() || "en"==langCode)
+    {
+        return "English";
+    }
+    else if ("fr" == langCode)
+    {
+        return "French";
+    }
+    else if ("de" == langCode)        
+    {
+        return "German";
+    }
+    else
+    {
+        assert(false);
+        return "Unknown";
+    }
+    assert(false);
+    return NULL;
+}
 
 MainForm::MainForm(iPediaApplication& app):
     iPediaForm(app, mainForm),
@@ -133,10 +155,9 @@ void MainForm::drawDefinition(Graphics& graphics, const ArsLexis::Rectangle& bou
     }
     else
         rect.explode(2, 2, -12, -4);
-    Err error=errNone;
-    bool doubleBuffer=true;
-    const iPediaApplication& app=static_cast<const iPediaApplication&>(application());
-    if (app.romVersionMajor()<5 && app.diaSupport() && app.diaSupport().hasSonySilkLib())
+    Err error = errNone;
+    bool doubleBuffer = true;
+    if (app().romVersionMajor()<5 && app().diaSupport() && app().diaSupport().hasSonySilkLib())
         doubleBuffer=false;
         
     if (doubleBuffer)
@@ -188,10 +209,9 @@ void MainForm::draw(UInt16 updateCode)
         drawDefinition(graphics, rect);
     }
 
-    iPediaApplication& app=static_cast<iPediaApplication&>(application());
-    if (app.fLookupInProgress())
+    if (app().fLookupInProgress())
     {
-        app.getLookupManager()->showProgress(graphics, progressArea);
+        app().getLookupManager()->showProgress(graphics, progressArea);
     }
 
     if (enableInputFieldAfterUpdate_)
@@ -222,9 +242,8 @@ void MainForm::scrollDefinition(int units, MainForm::ScrollUnit unit, bool updat
     bool doubleBuffer=true;
     if (-1==units || 1==units)
         doubleBuffer=false;
-        
-    const iPediaApplication& app=static_cast<const iPediaApplication&>(application());
-    if (app.romVersionMajor()<5 && app.diaSupport() && app.diaSupport().hasSonySilkLib())
+
+    if (app().romVersionMajor()<5 && app().diaSupport() && app().diaSupport().hasSonySilkLib())
         doubleBuffer=false;
 
     if (doubleBuffer)
@@ -257,8 +276,7 @@ void MainForm::scrollDefinition(int units, MainForm::ScrollUnit unit, bool updat
 
 void MainForm::moveHistory(bool forward)
 {
-    iPediaApplication& app=static_cast<iPediaApplication&>(application());
-    LookupManager* lookupManager=app.getLookupManager(true);
+    LookupManager* lookupManager=app().getLookupManager(true);
     if (lookupManager && !lookupManager->lookupInProgress())
         lookupManager->moveHistory(forward);
 }
@@ -267,11 +285,14 @@ void MainForm::moveHistory(bool forward)
 void MainForm::handleControlSelect(const EventType& event)
 {
     iPediaApplication& app=static_cast<iPediaApplication&>(application());
+    bool fFullText = false;
     switch (event.data.ctlSelect.controlID)
     {
         case searchButton:
-             // If button held for more than ~300msec, perform full text search.
-            search(TimGetTicks()-lastPenDownTimestamp_>app.ticksPerSecond()/3);
+            // If button held for more than ~300msec, perform full text search.
+            if (TimGetTicks()-lastPenDownTimestamp_ > app.ticksPerSecond()/3)
+                fFullText = true;
+            search(fFullText);
             break;
             
         case backButton:
@@ -335,19 +356,18 @@ void MainForm::handleLookupFinished(const EventType& event)
             update();
     }
     
-    iPediaApplication& app=static_cast<iPediaApplication&>(application());
-    if (app.preferences().articleCount!=articleCountSet_) 
+    if (app().preferences().articleCount!=articleCountSet_) 
     {
-        articleCountSet_=app.preferences().articleCount;
-        updateArticleCountEl(articleCountSet_,app.preferences().databaseTime);
-        forceAboutRecalculation_=true;
+        articleCountSet_ = app().preferences().articleCount;
+        updateArticleCountEl(articleCountSet_, app().preferences().databaseTime);
+        forceAboutRecalculation_ = true;
     }
     
-    LookupManager* lookupManager=app.getLookupManager();
+    LookupManager* lookupManager=app().getLookupManager();
     assert(lookupManager);
     lookupManager->handleLookupFinishedInForm(data);
 
-    if (app.inStressMode())
+    if (app().inStressMode())
     {
         EventType event;
         MemSet(&event, sizeof(event), 0);
@@ -378,7 +398,13 @@ void MainForm::updateArticleCountEl(long articleCount, ArsLexis::String& dbTime)
     assert(len != -1 );
     String articleCountText;
     articleCountText.append(buffer, len);
-    articleCountText.append(" articles, database updated on ");
+    articleCountText.append(" articles. ");
+
+    String langCode = app().preferences().currentLang;
+    const char_t *langName = GetLangNameByLangCode(langCode);
+    articleCountText.append(langName);
+
+    articleCountText.append(" encyclopedia last updated on ");
     articleCountText.append(dbTime, 0, 4);
     articleCountText.append(1, '-');
     articleCountText.append(dbTime, 4, 2);
@@ -389,8 +415,7 @@ void MainForm::updateArticleCountEl(long articleCount, ArsLexis::String& dbTime)
 
 void MainForm::handleExtendSelection(const EventType& event, bool finish)
 {
-    iPediaApplication& app=static_cast<iPediaApplication&>(application());
-    const LookupManager* lookupManager=app.getLookupManager();
+    const LookupManager* lookupManager=app().getLookupManager();
     if (lookupManager && lookupManager->lookupInProgress())
         return;
     Definition& def=currentDefinition();
@@ -398,7 +423,7 @@ void MainForm::handleExtendSelection(const EventType& event, bool finish)
         return;
     ArsLexis::Point point(event.screenX, event.screenY);
     Graphics graphics(windowHandle());
-    def.extendSelection(graphics, app.preferences().renderingPreferences, point, finish);
+    def.extendSelection(graphics, app().preferences().renderingPreferences, point, finish);
 }
 
 inline void MainForm::handlePenDown(const EventType& event)
@@ -517,8 +542,7 @@ void MainForm::updateNavigationButtons()
 
 void MainForm::updateAfterLookup()
 {
-    iPediaApplication& app=static_cast<iPediaApplication&>(application());
-    LookupManager* lookupManager=app.getLookupManager();
+    LookupManager* lookupManager=app().getLookupManager();
     assert(lookupManager!=0);
     if (lookupManager)
     {
@@ -591,8 +615,7 @@ bool MainForm::handleKeyPress(const EventType& event)
 
 void MainForm::switchServer(const char* server)
 {
-    iPediaApplication& app=static_cast<iPediaApplication&>(application());
-    app.setServer(server);    
+    app().setServer(server);    
 }
 
 bool MainForm::handleMenuCommand(UInt16 itemId)
@@ -619,22 +642,27 @@ bool MainForm::handleMenuCommand(UInt16 itemId)
             
         case registerMenuItem:
             Application::popupForm(registrationForm);
-            handled=true;
+            handled = true;
             break;
             
         case copyMenuItem:
             copySelectionToClipboard();
-            handled=true;
+            handled = true;
             break;
             
         case searchResultsMenuItem:
             Application::popupForm(searchResultsForm);
-            handled=true;
+            handled = true;
             break;
 
         case randomMenuItem:
             randomArticle();
-            handled=true;
+            handled = true;
+            break;
+
+        case changeDatabaseMenuItem:
+            changeDatabase();
+            handled = true;
             break;
 
         case arslexisWebsiteMenuItem:
@@ -731,10 +759,15 @@ void MainForm::doLinkingArticles()
 
 }
 
+void MainForm::changeDatabase()
+{
+
+
+}
+
 void MainForm::randomArticle()
 {
-    iPediaApplication& app=static_cast<iPediaApplication&>(application());
-    LookupManager* lookupManager=app.getLookupManager(true);
+    LookupManager* lookupManager=app().getLookupManager(true);
     if (lookupManager && !lookupManager->lookupInProgress())
         lookupManager->lookupRandomTerm();
 }
@@ -757,8 +790,7 @@ bool MainForm::handleWindowEnter(const struct _WinEnterEventType& data)
         FormObject object(*this, termInputField);
         object.focus();
         
-        iPediaApplication& app=static_cast<iPediaApplication&>(application());
-        LookupManager* lookupManager=app.getLookupManager();
+        LookupManager* lookupManager=app().getLookupManager();
         if (lookupManager)
         {
             if (updateDefinitionOnEntry_)
@@ -774,12 +806,11 @@ bool MainForm::handleWindowEnter(const struct _WinEnterEventType& data)
 
 void MainForm::handleToggleStressMode()
 {
-    iPediaApplication& app=static_cast<iPediaApplication&>(application());
-    if (app.inStressMode())
-        app.toggleStressMode(false);
+    if (app().inStressMode())
+        app().toggleStressMode(false);
     else
     {
-        app.toggleStressMode(true);
+        app().toggleStressMode(true);
         randomArticle();
     }        
 }
@@ -792,8 +823,7 @@ void MainForm::search(bool fullText)
     if (0==text || 0==(textLen=StrLen(text)))
         return;
         
-    iPediaApplication& app=static_cast<iPediaApplication&>(application());
-    LookupManager* lookupManager=app.getLookupManager(true);
+    LookupManager* lookupManager=app().getLookupManager(true);
     if (!lookupManager || lookupManager->lookupInProgress())
         return;
 
@@ -825,11 +855,12 @@ void MainForm::RenderingProgressReporter::reportProgress(uint_t percent)
     if (percent==lastPercent_)
         return;
 
-    if (0==(lastPercent_=percent))
+    lastPercent_ = percent;
+    if (0==percent)
     {
-        ticksAtStart_=TimGetTicks();
-        showProgress_=false;
-        afterTrigger_=false;
+        ticksAtStart_ = TimGetTicks();
+        showProgress_ = false;
+        afterTrigger_ = false;
         return;
     }
     
@@ -837,45 +868,45 @@ void MainForm::RenderingProgressReporter::reportProgress(uint_t percent)
     {
         // Delay before we start displaying progress meter in milliseconds. Timespans < 300ms are typically perceived "instant"
         // so we shouldn't distract user if the time is short enough.
-        static const uint_t delay=100; 
-        UInt32 ticksDiff=TimGetTicks()-ticksAtStart_;
+        static const uint_t delay = 100; 
+        UInt32 ticksDiff = TimGetTicks()-ticksAtStart_;
         iPediaApplication& app=static_cast<iPediaApplication&>(form_.application());
-        ticksDiff*=1000;
-        ticksDiff/=app.ticksPerSecond();
+        ticksDiff *= 1000;
+        ticksDiff /= app.ticksPerSecond();
         if (ticksDiff>=delay)
-            afterTrigger_=true;
+            afterTrigger_ = true;
         if (afterTrigger_ && percent<=20)
-            showProgress_=true;
+            showProgress_ = true;
     }
     
     if (!showProgress_)
         return;
-        
+
     Graphics graphics(form_.windowHandle());
-    Rectangle bounds=form_.bounds();
+    Rectangle bounds = form_.bounds();
     bounds.explode(2, 17, -12, -37);
 
     ActivateGraphics act(graphics);
 #if IPEDIA_USES_TEXT_RENDERING_PROGRESS
     Font f;
     Graphics::FontSetter fset(graphics, f);
-    uint_t height=graphics.fontHeight();
+    uint_t height = graphics.fontHeight();
     Rectangle rect(bounds.x(), bounds.y()+(bounds.height()-height)/2, bounds.width(), height);
     graphics.erase(rect);
     char buffer[100];
     StrPrintF(buffer, waitText_.c_str(), percent);
     graphics.drawCenteredText(buffer, rect.topLeft, rect.width());
 #else
-    uint_t height=10;
+    uint_t height = 10;
     Rectangle rect(bounds.x()+16, bounds.y()+(bounds.height()-height)/2, bounds.width()-22, height);
-    PatternType oldPattern=WinGetPatternType();
+    PatternType oldPattern = WinGetPatternType();
     WinSetPatternType(blackPattern);
     RectangleType nativeRec=toNative(rect);
-    nativeRec.extent.x*=percent;
-    nativeRec.extent.x/=100;
+    nativeRec.extent.x *= percent;
+    nativeRec.extent.x /= 100;
     WinPaintRectangle(&nativeRec, 0);
-    nativeRec.topLeft.x+=nativeRec.extent.x;
-    nativeRec.extent.x=rect.width()-nativeRec.extent.x;
+    nativeRec.topLeft.x += nativeRec.extent.x;
+    nativeRec.extent.x = rect.width()-nativeRec.extent.x;
     WinSetPatternType(grayPattern);
     WinPaintRectangle(&nativeRec, 0);
     WinSetPatternType(oldPattern);        
@@ -978,8 +1009,7 @@ void MainForm::prepareAbout()
     text->setJustification(DefinitionElement::justifyCenter);
     elems.push_back(new LineBreakElement(1,4));
 
-    iPediaApplication& app=static_cast<iPediaApplication&>(application());
-    if (app.preferences().regCode.empty())
+    if (app().preferences().regCode.empty())
     {
         elems.push_back(text=new FormattedTextElement("Unregistered ("));
         text->setJustification(DefinitionElement::justifyCenter);
@@ -1016,16 +1046,16 @@ void MainForm::prepareAbout()
     text->setHyperlink("", hyperlinkTerm);
     text->setActionCallback( wikipediaActionCallback, static_cast<void*>(this) );
 
-    elems.push_back(new LineBreakElement());
+    elems.push_back(new LineBreakElement(1,2));
+
     elems.push_back(articleCountElement_=new FormattedTextElement(" "));
-    if (-1!=articleCountSet_)
+    if (-1!=articleCountSet_)    
     {
-        iPediaApplication& app=static_cast<iPediaApplication&>(application());
-        updateArticleCountEl(articleCountSet_,app.preferences().databaseTime);
+        updateArticleCountEl(articleCountSet_,app().preferences().databaseTime);
     }
     articleCountElement_->setJustification(DefinitionElement::justifyCenter);
 
-    elems.push_back(new LineBreakElement(3,2));
+    elems.push_back(new LineBreakElement(1,2));
     elems.push_back(text=new FormattedTextElement("Using iPedia: "));
     text->setJustification(DefinitionElement::justifyLeft);
 

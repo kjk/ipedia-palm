@@ -18,6 +18,8 @@ BEGIN
          MENUITEM "Random article" ID randomMenuItem  "R"
          MENUITEM SEPARATOR ID AUTOID
          MENUITEM "Copy to clipboard" ID copyMenuItem "C"
+         MENUITEM SEPARATOR ID AUTOID
+         MENUITEM "Change database" ID changeDatabaseMenuItem "D"
 #ifdef  INTERNAL_BUILD
          MENUITEM SEPARATOR ID AUTOID
          MENUITEM "localhost" ID useLocalhostMenuItem  

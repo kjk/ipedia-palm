@@ -93,10 +93,8 @@ void iPediaConnection::prepareRequest()
 
     if (!app.preferences().currentLang.empty())
     {
-        // appendField(request, useLangField, app.preferences().currentLang);
+        appendField(request, useLangField, app.preferences().currentLang);
     }
-    // TODO: temporary fix the lang to "fr"
-    appendField(request, useLangField, "fr");
 
     if (!term_.empty())
     {
