@@ -502,6 +502,7 @@ getCookieLogSql = """CREATE TABLE get_cookie_log (
     user_id         INT(10) NOT NULL REFERENCES users(user_id),
     client_ip       VARCHAR(24) NOT NULL,
     log_date        TIMESTAMP(14) NOT NULL,
+    device_info     VARCHAR(255) NOT NULL,
     cookie          VARCHAR(64) NOT NULL,
 ) TYPE=MyISAM;"""
 

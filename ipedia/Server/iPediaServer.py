@@ -483,6 +483,22 @@ class iPediaProtocol(basic.LineReceiver):
             self.error=iPediaServerError.serverFailure
         return False
 
+    # Log all Get-Cookie requests    
+    def logGetCookie(self,userId,deviceInfo,cookie):
+        cursor=None
+        try:
+            db = self.getManagementDatabase()
+            cursor = db.cursor()
+            clientIpEscaped = db.escape_string(self.getClientIp())
+            deviceInfoEscaped = db.escape_string(deviceInfo)
+            cookieEscaped = db.escape_string(cookie)
+            cursor.execute("""INSERT INTO get_cookie_log (user_id, client_ip, log_date, device_info, cookie) VALUES (%d, '%s', now(), '%s', '%s');""" % (userId, clientIpEscaped, deviceInfoEscaped, cookieEscaped))
+            cursor.close()
+        except _mysql_exceptions.Error, ex:
+            if cursor:
+                cursor.close()        
+            dumpException(ex)
+        
     # Log all attempts to verify registration code. We ignore all errors from here
     def logRegCodeToVerify(self,userId,regCode,fRegCodeValid):
         reg_code_valid_p = 'f'
@@ -790,32 +806,32 @@ class iPediaProtocol(basic.LineReceiver):
             cursor = db.cursor()
             deviceInfoEscaped = db.escape_string(deviceInfo)
 
+            fNeedsCookie = True
             if fDeviceInfoUnique(deviceInfo):
                 cursor.execute("SELECT user_id,cookie,reg_code FROM users WHERE device_info='%s';" % deviceInfoEscaped)
                 row = cursor.fetchone()
                 if row:
                     self.userId = int(row[0])
-                    self.outputField(cookieField, row[1])
+                    cookie = row[1]
+                    fNeedsCookie = False
                     # TODO: what to do if reg_code exists for this row?
                     # This can happen in the scenario:
                     #  - Get-Cookie
                     #  - register
                     #  - delete the app, re-install
                     #  - Get-Cookie - we reget the cookie
-                    cursor.close()
-                    return True
 
-            # generate new entry in users table
-            cookie = getUniqueCookie(cursor)
-            # it's probably still possible (but very unlikely) to have a duplicate
-            # cookie, in which case we'll just abort
-            query = """INSERT INTO users (cookie, device_info, cookie_issue_date, reg_code, registration_date, disabled_p)
-                                VALUES   ('%s',   '%s',              now(),       NULL,     NULL,              'f')""" % (cookie, deviceInfoEscaped)
-            cursor.execute(query)
-            self.userId=cursor.lastrowid
-            cursor.close()
+            if fNeedsCookie:
+                # generate new entry in users table
+                cookie = getUniqueCookie(cursor)
+                # it's probably still possible (but very unlikely) to have a duplicate
+                # cookie, in which case we'll just abort
+                query = """INSERT INTO users (cookie, device_info, cookie_issue_date, reg_code, registration_date, disabled_p) VALUES ('%s', '%s', now(), NULL, NULL, 'f');""" % (cookie, deviceInfoEscaped)
+                cursor.execute(query)
+                self.userId=cursor.lastrowid
+
             self.outputField(cookieField, cookie)
-            return True
+            cursor.close()
 
         except _mysql_exceptions.Error, ex:
             dumpException(ex)
@@ -823,6 +839,9 @@ class iPediaProtocol(basic.LineReceiver):
                 cursor.close()
             self.error=iPediaServerError.serverFailure
             return False
+
+        self.logGetCookie(self.userId,deviceInfo,cookie)
+        return True
             
     # figure out user id and set self.userId
     # Possible cases:

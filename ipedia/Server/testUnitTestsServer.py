@@ -162,7 +162,9 @@ class ArsUtils(unittest.TestCase):
         self.getResponse([transactionIdField,cookieField,formatVersionField,articleBodyField,articleTitleField,reverseLinksField])
         self.assertFieldEqual(self.rsp, formatVersionField, DEFINITION_FORMAT_VERSION)
 
-    def test_GetSeattleWithValidRegcode(self):
+    # TODO: doesn't work yet since we need to have a user with this reg_code
+    # we either have to pre-create a test user or register a user from here
+    def disable_test_GetSeattleWithValidRegcode(self):
         title = "seattle"
         self.req = Request()
         self.req.addField(getArticleField,title)
@@ -176,12 +178,10 @@ class ArsUtils(unittest.TestCase):
         self.req = getRequestHandleCookie(getArticleField, "asdfasdflkj324;l1kjasd13214aasdf341l324")
         self.getResponse([transactionIdField,cookieField,notFoundField])
 
-    # TODO: doesn't work yet since we need to have a user with this reg_code
-    # we either have to pre-create a test user or register a user from here
-    def disable_test_SearchSeattle(self):
+    def test_SearchSeattle(self):
         searchTerm = "seattle"
         self.req = getRequestHandleCookie(searchField, searchTerm)
-        self.getResponse([transactionIdField,cookieField,articleTitleField,articleBodyField,reverseLinksField,searchResultsField])
+        self.getResponse([transactionIdField,cookieField,articleTitleField,searchResultsField])
         self.assertFieldEqual(self.rsp,articleTitleField,searchTerm)
         count = searchResultsCount(self.rsp.getField(searchResultsField))
         #print "search result count: '%d'" % count
