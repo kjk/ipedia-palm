@@ -23,10 +23,12 @@ IMPLEMENT_APPLICATION_CREATOR(appFileCreator)
 
 using namespace ArsLexis;
 
+//#pragma inline_depth(0)
+
+#pragma inline_bottom_up on
 iPediaApplication::iPediaApplication():
     history_(0),
     lookupManager_(0),
-    server_(SERVER_TO_USE),
     stressMode_(false),
     fArticleCountChecked(false),
     strList(NULL),
@@ -63,6 +65,8 @@ Err iPediaApplication::initialize()
     return error;
 }
 
+//#pragma inline_depth(2)
+
 iPediaApplication::~iPediaApplication()
 {
     // Don't remove if or expect crash on non-global launch. I really KNOW that you can delete NULL. But not here.
@@ -77,13 +81,14 @@ iPediaApplication::~iPediaApplication()
 
 Err iPediaApplication::normalLaunch()
 {
+    server_ = SERVER_TO_USE;
     preferences_.currentLang = _T("en");
     history_ = new LookupHistory();
     loadPreferences();
 #ifdef INTERNAL_BUILD
     // make it easier for me to run the app
     // if running on Treo 600 set the default server to my server
-    if (isTreo600())
+    if (runningOnTreo600() && !underSimulator())
     {
         server_ = SERVER_OFFICIAL;
     }

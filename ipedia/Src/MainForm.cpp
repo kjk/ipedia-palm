@@ -15,29 +15,25 @@
 
 using namespace ArsLexis;
 
-static char_t **ExtractLinksFromDefinition(Definition& def, int& strListSize)
+static char_t** ExtractLinksFromDefinition(Definition& def, int& strListSize)
 {
     int       strCount;
     char_t ** strList;
     for (int phase=0; phase<=1; phase++)
     {
-        if (1==phase)
+        if (1 == phase)
         {
             strListSize = strCount;
             strList = new char_t *[strCount];
         }
         strCount = 0;
 
-        Definition::ElementPosition_t posCur;
-        Definition::ElementPosition_t posStart = def.firstElementPosition();
-        Definition::ElementPosition_t posEnd   = def.lastElementPosition();
-        DefinitionElement *currEl;
-        for (posCur=posStart; posCur!=posEnd; posCur++)
+        Definition::const_iterator end = def.end();
+        for (Definition::const_iterator it = def.begin(); it != end; ++it)
         {
-            currEl = *posCur;
-            if (currEl->isTextElement())
+            if ((*it)->isTextElement())
             {
-                GenericTextElement *txtEl=(GenericTextElement*)currEl;
+                GenericTextElement* txtEl = static_cast<GenericTextElement*>(*it);
                 if ((txtEl->isHyperlink()) &&
                     ((txtEl->hyperlinkProperties()->type==hyperlinkTerm) ||
                      (txtEl->hyperlinkProperties()->type==hyperlinkExternal)))
@@ -470,7 +466,7 @@ void MainForm::updateArticleCountEl(long articleCount, ArsLexis::String& dbTime)
     articleCountElement_->setText(articleCountText);
 }
 
-void MainForm::handleExtendSelection(const EventType& event, bool finish)
+void MainForm::handleExtendSelection(const EventType& event)
 {
     const LookupManager* lookupManager=app().getLookupManager();
     if (lookupManager && lookupManager->lookupInProgress())
@@ -480,7 +476,10 @@ void MainForm::handleExtendSelection(const EventType& event, bool finish)
         return;
     ArsLexis::Point point(event.screenX, event.screenY);
     Graphics graphics(windowHandle());
-    def.extendSelection(graphics, app().preferences().renderingPreferences, point, finish);
+    uint_t tapCount = 0;
+    if (penUpEvent == event.eType)
+        tapCount = event.tapCount;
+    def.extendSelection(graphics, app().preferences().renderingPreferences, point, tapCount);
 }
 
 inline void MainForm::handlePenDown(const EventType& event)
@@ -511,7 +510,7 @@ bool MainForm::handleEvent(EventType& event)
                 handled = true;
                 break;
             }
-            handleExtendSelection(event, true);
+            handleExtendSelection(event);
             break;
     
         case penMoveEvent:
@@ -1267,6 +1266,10 @@ void MainForm::prepareAbout()
 // TODO: make those on-demand only to save memory
 void MainForm::prepareTutorial()
 {
+    tutorial_.setInteractionBehavior(
+            Definition::behavDoubleClickSelection | Definition::behavMouseSelection | 
+            Definition::behavUpDownScroll | Definition::behavHyperlinkNavigation
+        );
     Definition::Elements_t elems;
     FormattedTextElement* text;
 

@@ -65,7 +65,7 @@ class MainForm: public iPediaForm
     
     void updateNavigationButtons();
     
-    void handleExtendSelection(const EventType& event, bool endTracking=false);
+    void handleExtendSelection(const EventType& event);
     
     Err renderDefinition(Definition& def, ArsLexis::Graphics& graphics, const ArsLexis::Rectangle& rect);
 
