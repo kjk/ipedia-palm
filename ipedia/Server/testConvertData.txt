@@ -80,7 +80,7 @@ start
 <br>
 end
 @s14 this is a larch: <img src="larch.png">*this is a larch: 
-@s15 start [[de:mordfabrik]] [[image:axis_of_evil-front.jpg]] [[media:suicide_commando-axis_of_evil-05-mordfabrik.mp3]] end*start    end
+@s15 start [[de:mordfabrik]] [[image:axis_of_evil-front.jpg]] [[media:suicide_commando-axis_of_evil-05-mordfabrik.mp3]] end*start [[de:mordfabrik]]   end
 @s16 [[Category:test]]*
 @17
 start
@@ -278,3 +278,8 @@ Nevertheless, Grace has returned to help Jefferson Starship -- The Next Generati
 Grace's personal life has also continued to attract occasional public notice. On September 16, 1993, her Marin County home was destroyed by fire caused by careless county workers. Around this time, her 18-year marriage to Skip Johnson ended. Then, in March 1994, Grace was arrested at her home for pointing an unloaded shotgun at police officers who responded to a disturbance caused by her then-boyfriend. The incident, which uncannily resembled the lyrics to Grace's 1971 song, Lawman, resulted in her being sentenced to probation. 
 
 Over the years, Grace has been the subject of two biographies. The first, written by Barbara Rowes, was published in 1980. The second, Grace's own Somebody to Love? A Rock and Roll Memoir, co-authored with Andrea Cagan, appeared in September 1998.
+@39
+{{this is a multiline macro
+test
+}}
+@

@@ -217,7 +217,7 @@ wikiMacrosReplacements = {
 
 wikiMacroRe=re.compile("\{\{((msg)|(subst))\:.*?\}\}", re.I)
 
-wikiTemplateRe=re.compile("\{\{.*\}\}", re.I)
+wikiTemplateRe=re.compile("\{\{.*\}\}", re.I+re.S)
 
 #categoryRe=re.compile("\[\[Category:.*\]\]", re.I)
 
