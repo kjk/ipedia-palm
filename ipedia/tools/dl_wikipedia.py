@@ -12,7 +12,7 @@
 # requires process module from
 # http://starship.python.net/crew/tmick/index.html#process
 
-import sys,string,re,time,urllib2,os,os.path,process
+import sys,string,re,time,urllib2,os,os.path,process,smtplib
 
 # this is the whole text that was logged during this session
 g_logTotal = ""
@@ -22,7 +22,8 @@ g_workingDir = "g:\\wikipedia\\"
 # Which mail server to use when sending an e-mail
 MAILHOST = None
 # list of e-mail addresses to which send the e-mail
-TO_LIST = ["krzysztofk@pobox.com", "kkowalczyk@gmail.com"]
+TO_LIST = ["krzysztofk@pobox.com", "kkowalczyk@gmail.com", "kjk@arslexis.com", "support@arslexis.com"]
+FROM = None
 
 g_machine = ""
 
@@ -30,6 +31,7 @@ if sys.platform == "linux2":
     # this is our rackshack server
     g_workingDir = "/ipedia/wikipedia"
     MAILHOST = "localhost"
+    FROM = "ipedia-dl-bot@localhost"
     g_machine = "ipedia.arslexis.com"
 else:
     # this must be windows
@@ -38,12 +40,14 @@ else:
         g_workingDir = "c:\\wikipedia\\"
         # this will only work when I'm connected to nwlink.com
         MAILHOST = "mail.nwlink.com"
+        FROM = "kjk@nwlink.com"
         g_machine = "KJKLAP1"
     if "DVD"==os.getenv("USERDOMAIN"):
         # this must be my desktop machine
         g_workingDir = "g:\\wikipedia\\"
         # this will only work when I'm connected to nwlink.com
         MAILHOST = "mail.nwlink.com"
+        FROM = "kjk@nwlink.com"
         g_machine = "DVD"
 
 #print "Working dir: %s" % g_workingDir
@@ -201,25 +205,22 @@ def downloadDb(url):
         downloadUrl(url)
 
 def mailLog():
-    global g_logTotal, MAILHOST, TO_LIST, g_machine
+    global g_logTotal, MAILHOST, FROM, TO_LIST, g_machine
     if None == MAILHOST:
         return
-    import smtplib
-    FROM = "ipedia-dl-bot@arslexis.com"
-    TO = string.join(TO_LIST, "; ")
     curDate = time.strftime( "%Y-%m-%d", time.localtime() )
     SUBJECT = "ipedia db download status %s (%s)" % (curDate,g_machine)
     BODY = g_logTotal
     body = string.join((
         "From: %s" % FROM,
-        "To: %s" % TO,
+        "To: %s" % string.join(TO_LIST,", "),
         "Subject: %s" % SUBJECT,
         "",
         BODY), "\r\n")
     #print body
     #print "SERVER: %s" % MAILHOST
     server = smtplib.SMTP(MAILHOST)
-    server.sendmail(FROM, TO, body)
+    server.sendmail(FROM, TO_LIST, body)
     server.quit()
  
 if __name__=="__main__":
