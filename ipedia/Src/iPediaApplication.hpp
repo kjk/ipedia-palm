@@ -41,7 +41,7 @@ protected:
     
 public:
 
-    static const UInt32 requiredRomVersion=sysMakeROMVersion(3,5,0,sysROMStageDevelopment,0);
+    static const UInt32 requiredRomVersion=sysMakeROMVersion(4,0,0,sysROMStageDevelopment,0);
     static const UInt32 creatorId=appFileCreator;
     static const UInt16 notEnoughMemoryAlertId=notEnoughMemoryAlert;
     static const UInt16 romIncompatibleAlertId=romIncompatibleAlert;

@@ -43,7 +43,7 @@ void LookupManager::handleConnectionError(status_t error)
     switch (error)
     {
         case SocketConnection::errResponseTooLong:
-            alertId=definitionTooBigAlert;
+            alertId=articleTooLongAlert;
             break;
             
         case SocketConnection::errResponseMalformed:
@@ -93,7 +93,7 @@ void LookupManager::handleDefinition()
 void LookupManager::handleDefinitionMissing()
 {
     iPediaApplication& app=iPediaApplication::instance();
-    app.sendDisplayCustomAlertEvent(definitionNotFoundAlert, lastInputTerm());
+    app.sendDisplayCustomAlertEvent(articleNotFoundAlert, lastInputTerm());
 }
 
 

@@ -740,10 +740,7 @@ MainForm::RenderingProgressReporter::RenderingProgressReporter(MainForm& form):
     showProgress_(false),
     afterTrigger_(false)
 {
-
-    Err error=ArsLexis::getResource(layoutProgressWaitText, waitText_);
-    if (error || waitText_.empty())
-        waitText_.assign("%d%%");
+    waitText_.assign("Wait... %d%%");
     waitText_.c_str(); // We don't want reallocation to occur while rendering...
 }
         
