@@ -1187,7 +1187,7 @@ void PediaMainForm::setDisplayMode(PediaMainForm::DisplayMode mode)
             infoRenderer_.hide();
             const LookupHistory& history = getHistory();
             if (history.hasCurrentTerm())
-                setTitle(history.currentTerm());
+                setTitle(history.currentTerm().c_str());
             else
                 setTitle("iPedia");
             articleRenderer_.show();

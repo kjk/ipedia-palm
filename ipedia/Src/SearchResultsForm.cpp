@@ -1,8 +1,12 @@
 #include <Text.hpp>
-#include "SearchResultsForm.hpp"
+#include <DynStr.hpp>
+
 #include <FormObject.hpp>
+
 #include "LookupManager.hpp"
 #include "LookupHistory.hpp"
+
+#include "SearchResultsForm.hpp"
 #include "MainForm.hpp"
 
 using ArsLexis::String;
@@ -15,8 +19,12 @@ using ArsLexis::formatNumber;
 
 void SearchResultsForm::updateSearchResults()
 {
+    DynStr *title = NULL;
+
     iPediaApplication& app = static_cast<iPediaApplication&>(application());
     LookupManager* lookupManager = app.getLookupManager();
+
+
     if (lookupManager)
     {
         listPositionsString_=lookupManager->lastExtendedSearchResults();    
@@ -36,15 +44,17 @@ void SearchResultsForm::updateSearchResults()
         }
         if (!lookupManager->lastExtendedSearchTerm().empty())
         {
-            String title = lookupManager->lastExtendedSearchTerm();
+            title = DynStrFromCharP(lookupManager->lastExtendedSearchTerm().c_str(), 32);
+            if (NULL == title)
+                goto Exit;
             size_t resultsCount = listPositions_.size();
-            char buffer[32];
+            char buffer[32] = {0};
             int len = formatNumber(resultsCount, buffer, sizeof(buffer));
             assert(len != -1 );
-            title.append(" (");
-            title.append(buffer, len);
-            title.append(" results)");
-            setTitle(title);
+            DynStrAppendCharP(title, _T(" ("));
+            DynStrAppendCharP(title, buffer);
+            DynStrAppendCharP(title, _T(" results"));
+            setTitle(DynStrGetCStr(title));
         }
 
     }
@@ -56,7 +66,10 @@ void SearchResultsForm::updateSearchResults()
         Field field(*this, refineSearchInputField);
         field.erase();
     }                
+Exit:
     update();
+    if (NULL != title)
+        DynStrDelete(title);
 }
 
 SearchResultsForm::SearchResultsForm(iPediaApplication& app):
