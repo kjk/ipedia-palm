@@ -1,5 +1,11 @@
 import re, random, sys
 
+DB_HOST = 'localhost'
+DB_USER = 'ipedia'
+DB_PWD  = 'ipedia'
+
+MANAGEMENT_DB = 'ipedia_manage'
+
 redirectCommand =    "#REDIRECT"
 termStartDelimiter = "[["
 termEndDelimiter =   "]]"

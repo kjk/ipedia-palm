@@ -24,12 +24,6 @@ except:
     print "psyco not available. You should consider using it (http://psyco.sourceforge.net/)"
     g_fPsycoAvailable = False
 
-DB_HOST = 'localhost'
-DB_USER = 'ipedia'
-DB_PWD  = 'ipedia'
-
-MANAGEMENT_DB = 'ipedia_manage'
-
 g_unregisteredLookupsLimit=10
 g_unregisteredLookupsDailyLimit=2    
     
@@ -608,11 +602,11 @@ class iPediaFactory(protocol.ServerFactory):
 
     def createArticlesConnection(self):
         print "creating articles connection"
-        return MySQLdb.Connect(host=DB_HOST, user=DB_USER, passwd=DB_PWD, db=self.dbName)
+        return MySQLdb.Connect(host=iPediaDatabase.DB_HOST, user=iPediaDatabase.DB_USER, passwd=iPediaDatabase.DB_PWD, db=self.dbName)
 
     def createManagementConnection(self):
         print "creating management connection"
-        return MySQLdb.Connect(host=DB_HOST, user=DB_USER, passwd=DB_PWD, db=MANAGEMENT_DB)
+        return MySQLdb.Connect(host=iPediaDatabase.DB_HOST, user=iPediaDatabase.DB_USER, passwd=iPediaDatabase.DB_PWD, db=iPediaDatabase.MANAGEMENT_DB)
 
     def __init__(self, dbName):
         global g_articleCount
@@ -636,7 +630,7 @@ class iPediaFactory(protocol.ServerFactory):
 ipediaRe = re.compile("ipedia_[0-9]{8}", re.I)
 
 def getDbList():
-    conn = MySQLdb.Connect(host=DB_HOST, user=DB_USER, passwd=DB_PWD, db=MANAGEMENT_DB)
+    conn = MySQLdb.Connect(host=iPediaDatabase.DB_HOST, user=iPediaDatabase.DB_USER, passwd=iPediaDatabase.DB_PWD, db=iPediaDatabase.MANAGEMENT_DB)
     cur = conn.cursor()
     cur.execute("SHOW DATABASES;")
     dbs = []
