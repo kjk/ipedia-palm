@@ -55,7 +55,7 @@ void DefinitionParser::clear()
         free(lastListNesting_);
         lastListNesting_ = NULL;
     }
-    std::for_each(elements_.begin(), elements_.end(), ObjectDeleter<DefinitionElement>());
+    DestroyElements(elements_);
     elements_.clear();
 }
     
