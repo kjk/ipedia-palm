@@ -29,7 +29,6 @@ static const uint_t serverErrorToAlertMap[][2]=
     { serverErrorRequestArgumentMissing, requestArgumentMissingAlert},
     { serverErrorInvalidProtocolVersion, invalidProtocolVersionAlert},
     { serverErrorUserDisabled, userDisabledAlert},
-    { serverErrorLangNotAvailable, langNotAvailableAlert},
 };
 
 } // namespace
@@ -63,6 +62,12 @@ void LookupManager::handleServerError(iPediaServerError serverError)
         // special treatment - this doesn't map to a simple alert, so we
         // need to trigger more complicated handling
         sendEvent(iPediaApplication::appForceUpgrade);
+        return;
+    }
+    if (serverErrorLangNotAvailable == serverError)
+    {
+        sendEvent(iPediaApplication::appLangNotAvailable);
+        return;
     }
     uint_t alertId = getAlertIdFromServerError(serverError);
     if (0==alertId)
@@ -200,6 +205,14 @@ void LookupManager::switchDatabase(const char_t* langCode)
     iPediaConnection* conn = new iPediaConnection(*this);
     conn->setAddress(iPediaApplication::instance().server());
     conn->switchDatabase(langCode);
+    conn->enqueue();
+}
+
+void LookupManager::getAvailableLangs()
+{
+    iPediaConnection* conn = new iPediaConnection(*this);
+    conn->getAvailableLangs();
+    conn->setAddress(iPediaApplication::instance().server());
     conn->enqueue();
 }
 

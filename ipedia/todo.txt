@@ -2,22 +2,21 @@
 
 ## 2. add spanish (?)
 
-## 3. modify client to take advantage of multi-lingual features
+## 4. modify manage.py to work with multi-lingual interface
 
-## 3.5 when server sends langNotAvailable we need to switch to en (we assume 
-that english is always available) and display about
+## 5. add unit tests for new multi-langual features
 
-## 3.6 make sure it works if we try to change database if we haven't downloaded
-list of available langs yet. Currently we just pretend that we only have en
-database (see MainForm::changeDatabase)
+## 20. remove timeline in the parser e.g. "List of Federal Presidents of Austria"
 
-## 4. add unit tests for new multi-langual features
-
-## 5. remove timeline in the parser e.g. "List of Federal Presidents of Austria"
-
-## 6. change "trail expired" dialog to "Unregistered version expired. Please
+## 21. change "trail expired" dialog to "Unregistered version expired. Please
 register by purchasing registration code.\nEnter registration code?
 Yes/NO". Just like in iPedia/SM
+
+## 22. add text-to-speech functions. The idea would be to either do synthesis
+on the device (which will be tricky) or do text-to-speech on the server (see
+festival speech synthesis system for links and info related to freely available
+text-to-speech systems) and stream them to the client in speex format (speex
+is a efficient sound compression for speech).
 
                 DONE
 
@@ -26,5 +25,14 @@ Yes/NO". Just like in iPedia/SM
 ## 3.3 store currently selected lang in preferences
 ## 3.4 ability to choose available lang
 (2004-09-11)
+
+## 3.6 make sure it works if we try to change database if we haven't downloaded
+list of available langs yet. Currently we just pretend that we only have en
+database (see MainForm::changeDatabase)
+(2004-09-12)
+
+## 3.5 when server sends langNotAvailable we need to switch to en (we assume 
+that english is always available) and display about
+(2004-09-12)
 
 

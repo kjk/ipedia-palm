@@ -37,9 +37,8 @@ static const char_t* GetLangNameByLangCode(const String& langCode)
 
 static char_t **ExtractLinksFromDefinition(Definition& def, int& strListSize)
 {
-
-    int strCount;
-    char_t **strList;
+    int       strCount;
+    char_t ** strList;
     for (int phase=0; phase<=1; phase++)
     {
         if (1==phase)
@@ -126,25 +125,25 @@ void MainForm::resize(const ArsLexis::Rectangle& screenBounds)
 
     FormObject object(*this, definitionScrollBar);
     object.bounds(bounds);
-    bounds.x()=screenBounds.extent.x-8;
-    bounds.height()=screenBounds.extent.y-36;
+    bounds.x() = screenBounds.extent.x-8;
+    bounds.height() = screenBounds.extent.y-36;
     object.setBounds(bounds);
     
     object.attach(termInputField);
     object.bounds(bounds);
-    bounds.y()=screenBounds.extent.y-14;
-    bounds.width()=screenBounds.extent.x-63;
+    bounds.y() = screenBounds.extent.y-14;
+    bounds.width() = screenBounds.extent.x-63;
     object.setBounds(bounds);
 
     object.attach(searchButton);
     object.bounds(bounds);
-    bounds.x()=screenBounds.extent.x-34;
-    bounds.y()=screenBounds.extent.y-14;
+    bounds.x() = screenBounds.extent.x-34;
+    bounds.y() = screenBounds.extent.y-14;
     object.setBounds(bounds);
     
     object.attach(backButton);
     object.bounds(bounds);
-    bounds.y()=screenBounds.extent.y-14;
+    bounds.y() = screenBounds.extent.y-14;
     object.setBounds(bounds);
 
     object.attach(forwardButton);
@@ -393,6 +392,18 @@ void MainForm::handleLookupFinished(const EventType& event)
             update();
             break;
 
+        case data.outcomeAvailableLangs:
+            assert(!app().preferences().availableLangs.empty());
+            if (app().preferences().availableLangs.empty())
+            {
+                // this shouldn't happen but if it does, we want to break
+                // to avoid infinite loop (changeDatabase() will issue request
+                // to get available langs whose result we handle here
+                break;
+            }
+            changeDatabase();
+            break;
+
         case data.outcomeNotFound:
             {
                 Field field(*this, termInputField);
@@ -555,6 +566,21 @@ bool MainForm::handleEvent(EventType& event)
 
         case iPediaApplication::appLinkingArticlesStringSelected:
             doLookupSelectedTerm(event);
+            handled = true;
+            break;
+
+        case iPediaApplication::appLangNotAvailable:
+            // for whatever reason server told us that the language
+            // we were using is not available. That shouldn't happen
+            // because we only use langauges that server gives us, but
+            // it might becaues e.g. we might disable a given language on the
+            // server and the client might have outdated list of available
+            // languages. In this case we switch to "en" (English) which
+            // should always be available
+            FrmAlert(langNotAvailableAlert);
+            LookupManager* lookupManager = app().getLookupManager(true);
+            if (lookupManager && !lookupManager->lookupInProgress())
+                lookupManager->switchDatabase("en");
             handled = true;
             break;
 
@@ -815,13 +841,13 @@ bool MainForm::handleMenuCommand(UInt16 itemId)
 
 void MainForm::doHistory()
 {
-    Application::popupForm(stringListHistoryId);
     LookupManager* lookupManager=app().getLookupManager(true);
     if (NULL==lookupManager)
         return;
     LookupHistory& lookupHistory = lookupManager->getHistory();
     const StringList_t& history = lookupHistory.getHistory();
     app().strList_ = StringListFromStringList(history, app().strListSize_);
+    ReverseStringList(app().strList_, app().strListSize_);
     Application::popupForm(stringListHistoryId);
 }
 
@@ -877,10 +903,13 @@ void MainForm::doLinkingArticles()
 void MainForm::changeDatabase()
 {
     String availableLangs = app().preferences().availableLangs;
-    // TODO: a hack. we should request a list of available langs from the server
     if (availableLangs.empty())
     {
-        availableLangs.assign(_T("en"));
+        // if we don't have available langs, issue a request asking for it
+        LookupManager* lookupManager=app().getLookupManager(true);
+        if (lookupManager && !lookupManager->lookupInProgress())
+            lookupManager->getAvailableLangs();
+        return;
     }
     app().strList_ = StringListFromString(availableLangs, " ", app().strListSize_);
     Application::popupForm(stringListSelectDbId);
@@ -930,18 +959,18 @@ void MainForm::copySelectionToClipboard()
 
 bool MainForm::handleWindowEnter(const struct _WinEnterEventType& data)
 {
-    const FormType* form=*this;
+    const FormType* form = *this;
     if (data.enterWindow==static_cast<const void*>(form))
     {
         FormObject object(*this, termInputField);
         object.focus();
         
-        LookupManager* lookupManager=app().getLookupManager();
+        LookupManager* lookupManager = app().getLookupManager();
         if (lookupManager)
         {
             if (updateDefinitionOnEntry_)
             {
-                updateDefinitionOnEntry_=false;
+                updateDefinitionOnEntry_ = false;
                 updateAfterLookup();
             }
             setControlsState(!lookupManager->lookupInProgress());
@@ -964,7 +993,7 @@ void MainForm::handleToggleStressMode()
 void MainForm::search(bool fullText)
 {
     Field field(*this, termInputField);
-    const char* text=field.text();
+    const char* text = field.text();
     uint_t textLen;
     if (0==text || 0==(textLen=StrLen(text)))
         return;

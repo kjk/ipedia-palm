@@ -56,7 +56,7 @@ testDisabledRegCode = "2347"
 g_fForceUpgrade = False
 
 # contains info about all available databases. databse name is the key, value
-# is a number of articles in the database
+# is a DbInfo class describing given database
 g_allDbsInfo = None
 
 # list of all database names
@@ -91,11 +91,11 @@ def log(sev,txt):
 
 g_dbInfoPerLang = {}
 
-def setDbPerLang(lang,dbInfo):
+def setCurrDbForLang(lang,dbInfo):
     global g_dbInfoPerLang
     g_dbInfoPerLang[lang] = dbInfo
 
-def getDbInfoPerLang(lang):
+def getCurrDbForLang(lang):
     global g_dbInfoPerLang
     if g_dbInfoPerLang.has_key(lang):
         return g_dbInfoPerLang[lang]
@@ -929,7 +929,7 @@ class iPediaProtocol(basic.LineReceiver):
             if lang not in g_supportedLangs:
                 return self.finish(ServerErrors.langNotAvailable)
 
-            self.dbInfo = getDbInfoPerLang(lang)
+            self.dbInfo = getCurrDbForLang(lang)
             if self.dbInfo == None:
                 return self.finish(ServerErrors.langNotAvailable)
 
@@ -1035,14 +1035,6 @@ def getDbInfo(dbName):
     dbInfo = DbInfo(dbName,lang, articlesCount, dbDate, redirectsCount, minDefinitionId, maxDefinitionId)
     return dbInfo
 
-def changeDatabase(dbName):
-    global g_allDbsInfo
-    dbInfo = g_allDbsInfo[dbName]
-    print "Switching to database %s, lang=%s" % (dbInfo.dbName, dbInfo.lang)
-    print "Number of Wikipedia articles: %d" % dbInfo.articlesCount
-    print "Number of redirects: %d" % dbInfo.redirectsCount
-    print "Databse date: %s" % dbInfo.dbDate
-
 class iPediaFactory(protocol.ServerFactory):
 
     def __init__(self):
@@ -1099,6 +1091,13 @@ def getIpediaDbs():
     conn.close()
     return dbsInfo
 
+def getDbByName(dbName):
+    global g_allDbsInfo
+    for dbInfo in g_allDbsInfo.values():
+            if dbInfo.dbName == dbName:
+                return dbInfo
+    return None
+
 class iPediaTelnetProtocol(basic.LineReceiver):
 
     listRe=re.compile(r'\s*list\s*', re.I)
@@ -1106,51 +1105,75 @@ class iPediaTelnetProtocol(basic.LineReceiver):
     
     def __init__(self):
         self.delimiter='\n'
-    
+
+    # lists available databases. The format is:
+    # fr:
+    # dbOne
+    # *dbTwo
+    # dbThree
+    # en:
+    # *dbOne
+    # etc.
     def listDatabases(self):
-        dbsInfo = None
+        global g_supportedLangs
         try:
-            dbsInfo = getIpediaDbs()
-            dbNames = dbsInfo.keys()
-            dbNames.sort()
-            for name in dbNames:
-                articlesCount = dbsInfo[name]
-                self.transport.write( "%s (%d articles)\r\n" % (name,articlesCount))
-            self.transport.write("currently using: %s\r\n" % self.factory.iPediaFactory.dbName)
+            dbInfos = getAllDbInfos(True)
+            for lang in g_supportedLangs:
+                currDbForLang = getCurrDbForLang(lang)
+                if None != currDbForLang:
+                    self.transport.write("%s:\n" % lang)
+                    for dbInfo in dbInfos.values():
+                        if dbInfo.lang == lang:
+                            if dbInfo.dbName == currDbForLang.dbName:
+                                self.transport.write("*%s %d\n" % (dbInfo.dbName, dbInfo.articlesCount))
+                            else:
+                                self.transport.write("%s %d\n" % (dbInfo.dbName, dbInfo.articlesCount))
         except _mysql_exceptions.Error, ex:
+            txt = arsutils.exceptionAsStr(ex)
             log(SEV_HI, txt)
             self.transport.write("exception: %s \r\n" % txt)
 
     def useDatabase(self, dbName):
-        if dbName == self.factory.iPediaFactory.dbName:
-            self.transport.write("already using %s database\r\n" % dbName)
-            return
-        self.transport.write("currently using: %s\r\n" % self.factory.iPediaFactory.dbName)
         dbsInfo = None
         try:
-            dbsInfo = getIpediaDbs()
+            dbInfos = getAllDbInfos(True)           
+
+            dbInfo = getDbByName(dbName)
+            if None == dbInfo:
+                self.transport.write("Database '%s' doesn't exist\n" % dbName)
+                self.transport.write("Available databases:\n")
+                self.listDatabases()
+                return
+
+            dbForLang = getCurrDbForLang(dbInfo.lang)
+            assert dbInfo.lang == dbForLang.lang
+            if dbInfo.dbName == dbForLang.dbName:
+                self.transport.write("This is already current database\n");
+                return
+
+            if "en" == dbInfo.lang:
+                requiredCount = 300000
+            elif "fr" == dbInfo.lang:
+                requiredCount = 40000
+            elif "de" == dbInfo.lang:
+                requiredCount = 120000
+            else:
+                assert False
+
+            if dbInfo.articlesCount < requiredCount:
+                self.transport.write("Database '%s' doesn't have enough articles ('%d', at least %d required)\r\n" % (dbInfo.dbName, dbInfo.articlesCount, requiredCount))
+                return
+            setCurrDbForLang(dbInfo.lang, dbInfo)
+            self.transport.write("Switching to database %s, lang=%s\n" % (dbInfo.dbName, dbInfo.lang))
+            self.transport.write("Number of Wikipedia articles: %d\n" % dbInfo.articlesCount)
+            self.transport.write("Number of redirects: %d\n" % dbInfo.redirectsCount)
+            self.transport.write("Databse date: %s\n" % dbInfo.dbDate)
+
         except _mysql_exceptions.Error, ex:
             txt = arsutils.exceptionAsStr(ex)
             log(SEV_HI, txt)
             self.transport.write("exception: %s \r\n" % txt)
             return
-        if not dbsInfo.has_key(dbName):
-            self.transport.write("Database '%s' doesn't exist\r\n" % dbName)
-            self.transport.write("Available databases:\r\n")
-            dbNames = dbsInfo.keys()
-            dbNames.sort()
-            for name in dbNames:
-                articlesCount = dbsInfo[name]
-                self.transport.write( "%s (%d articles)\r\n" % (name,articlesCount))
-            return
-        articlesCount = dbsInfo[dbName]
-        # don't switch if articlesCount is smaller than 100.000 - such a database
-        # can't be good
-        if articlesCount < 100000:
-            self.transport.write("Database '%s' doesn't have enough articles ('%d', at least 100.000 required)\r\n" % (dbName, articlesCount))
-            return
-        changeDatabase(dbName)
-        self.transport.write("Switched to database '%s'\r\n" % dbName)
 
     def lineReceived(self, request):
         # print "telnet: '%s'" % request
@@ -1239,11 +1262,15 @@ def getLatestDbForLang(lang):
     return latestDb
         
 def main():
-    global g_fPsycoAvailable, g_acceptedLogSeverity, g_supportedLangs
+    global g_fPsycoAvailable, g_acceptedLogSeverity, g_supportedLangs, g_fDisableRegistrationCheck
 
     fDemon = arsutils.fDetectRemoveCmdFlag("-demon")
     if not fDemon:
         fDemon = arsutils.fDetectRemoveCmdFlag("-daemon")
+
+    fNoCheck = arsutils.fDetectRemoveCmdFlag("-nolimits")
+    if fNoCheck:
+        g_fDisableRegistrationCheck = True
 
     g_acceptedLogSeverity = SEV_NONE
     if None != arsutils.fDetectRemoveCmdFlag( "-verbose" ):
@@ -1272,16 +1299,15 @@ def main():
     if len(sys.argv) != 1:
         usageAndExit()
 
-    # set 
     for lang in g_supportedLangs:
         dbInfo = getLatestDbForLang(lang)
         if None != dbInfo:
-            setDbPerLang(lang,dbInfo)
+            setCurrDbForLang(lang,dbInfo)
 
     allDbNames = getAllDbNames()
 
     for lang in g_supportedLangs:
-        dbInfo = getDbInfoPerLang(lang)
+        dbInfo = getCurrDbForLang(lang)
         if None == dbInfo:
             print "No database for lang '%s'" % lang
         else:

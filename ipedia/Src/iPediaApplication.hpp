@@ -112,6 +112,7 @@ public:
         appHistoryStringSelected,
         appLinkedArticlesStringSelected,
         appLinkingArticlesStringSelected,
+        appLangNotAvailable,
         appFirstAvailableEvent
     };
     

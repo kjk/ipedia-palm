@@ -29,7 +29,7 @@ enum iPediaServerError
     serverErrorUserDisabled     = 11,
     serverErrorForceUpgrade     = 12,
     serverErrorLangNotAvailable = 13,
-    serverErrorLast=serverErrorForceUpgrade // WATCH THIS WHEN ADDING NEW ERRORS!
+    serverErrorLast=serverErrorLangNotAvailable // WATCH THIS WHEN ADDING NEW ERRORS!
 };
 
 struct LookupFinishedEventData
@@ -45,12 +45,13 @@ struct LookupFinishedEventData
         outcomeRegCodeValid, // set if server sends Registration-Code-Valid with value "1"
         outcomeRegCodeInvalid, // set if server sends Registratoin-Code-Valid with value "0"
         outcomeDatabaseSwitched,
+        outcomeAvailableLangs
     } outcome;
     
     union
     {
         ArsLexis::status_t error;
-        iPediaServerError serverError;
+        iPediaServerError  serverError;
     };        
     
     LookupFinishedEventData(Outcome o=outcomeNothing, ArsLexis::status_t err=errNone):
@@ -128,6 +129,8 @@ public:
     void verifyRegistrationCode(const String& regCode);
 
     void switchDatabase(const char_t* langCode);
+
+    void getAvailableLangs();
 
     LookupHistory& getHistory()
     {

@@ -4,12 +4,12 @@
 # Implement remote management interface to ipedia so that it's easy to
 # control the server without the need to restart it
 
-import sys, re, socket, random, arsutils
+import sys, string, re, socket, random, arsutils
 
 # server string must be of form "name:port"
 g_serverList = ["localhost:9001", "ipedia.arslexis.com:9001"]
 
-g_defaultServerNo = 1 # index within g_serverList
+g_defaultServerNo = 0 # index within g_serverList
 
 def usageAndExit():
     print "manage.py [-listdbs] [-use dbName]"
@@ -45,42 +45,74 @@ def socket_readAll(sock):
         result += data
     return result
 
-g_dbList = []
-g_curDbNum = None
+g_dbList = {}
 
-def readAndDisplayListOfDatabases():
-    global g_dbList, g_curDbNum
-    resp = getReqResponse("list\n")
-    dbNames = {}
-    g_dbList = []
-    dbNum = 1
-    for db in resp.split("\n"):
-        db = db.strip()
-        if 0 == len(db):
-            continue
-        if 0 == db.find("ipedia_"):
-            # this is a database name
-            (dbName, articleCount, txt) = db.split()
-            # print dbName
-            articleCount = int(articleCount[1:])
-            dbNames[dbName] = (dbNum, articleCount)
-            g_dbList.append(dbName)
-            dbNum += 1
-        else:
-            (tmp1, tmp2, curDbName) = db.split()
-            assert( tmp1 == "currently" )
-            assert( tmp2 == "using:")
+class DbInfo:
+    def __init__(self,name,lang,articlesCount,fCurrent):
+        self.name = name
+        self.lang = lang
+        self.articlesCount = articlesCount
+        self.fCurrent = fCurrent
+        self.num = -1
+
+def dbListSortFunc(db1,db2):
+    if db1.name == db2.name:
+        return 0
+    if db1.name > db2.name:
+        return 1
+    return -1
+
+def displayListOfDatabases():
+    global g_dbList
+    if 0 == len(g_dbList):
+        print "there are no databases"
+        return
 
     print "list of databases:"
-    g_curDbNum = dbNames[curDbName][0]
-    for dbName in g_dbList:
-        #print db
-        (dbNum,articleCount) = dbNames[dbName]
-        if g_curDbNum == dbNum:
-            print "--> %d) %s having %d articles" % (dbNum, dbName, articleCount)
-        else:
-            print "%d) %s having %d articles" % (dbNum, dbName, articleCount)
+    num = 1
+    for lang in g_dbList.keys():
+        print lang
+        dbList = g_dbList[lang]
+        dbList.sort(dbListSortFunc)
+        for dbInfo in dbList:
+            dbInfo.num = num
+            num += 1
+            if dbInfo.fCurrent:
+                print "--> %d) %s having %d articles" % (dbInfo.num, dbInfo.name, dbInfo.articlesCount)
+            else:
+                print "%d) %s having %d articles" % (dbInfo.num, dbInfo.name, dbInfo.articlesCount)
 
+def readAndDisplayListOfDatabases():
+    global g_dbList
+    resp = getReqResponse("list\n")
+    print resp
+    currLang = None
+    for line in resp.split("\n"):
+        if 0==len(line):
+            continue
+        if 3==len(line) and ':'==line[2]:
+            # this is a language line
+            currLang = line[:2]
+            continue
+        fCurrentDb = False
+        if '*' == line[0]:
+            fCurrentDb = True
+            line = line[1:]
+        (dbName,articlesCount) = string.split(line," ")
+        articlesCount = int(articlesCount)
+        dbInfo = DbInfo(dbName, currLang, articlesCount, fCurrentDb)
+        if g_dbList.has_key(currLang):
+            g_dbList[currLang].append(dbInfo)
+        else:
+            g_dbList[currLang] = [dbInfo]
+    displayListOfDatabases()
+
+def findDbByNum(num):
+    for dbList in g_dbList.values():
+        for dbInfo in dbList:
+            if dbInfo.num == num:
+                return dbInfo
+    return None
 
 if __name__=="__main__":
     print "using server %s" % g_serverList[g_defaultServerNo]
@@ -97,14 +129,17 @@ if __name__=="__main__":
             continue
         if 0 == num:
             break
-        if num == g_curDbNum:
-            print "this is the same database as currently used"
-            continue
-        if num > len(g_dbList):
+
+        dbInfo = findDbByNum(num)
+        if None == dbInfo:
             print "invalid input: no database with number %d exists" % num
             continue
-        dbName = g_dbList[num-1]
+        if dbInfo.fCurrent:
+            print "this is the same database as currently used"
+            continue
+        dbName = dbInfo.name
         print "chosen db: %s" % dbName
         resp = getReqResponse("use %s\n" % dbName)
         print resp
-        # readAndDisplayListOfDatabases()
+        #displayListOfDatabases()
+        #print

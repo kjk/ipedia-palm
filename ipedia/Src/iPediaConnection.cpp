@@ -23,7 +23,8 @@ iPediaConnection::iPediaConnection(LookupManager& lookupManager):
     performFullTextSearch_(false),
     getRandom_(false),
     regCodeValid_(regCodeTypeUnset),
-    newDbLangCode_(NULL)
+    newDbLangCode_(NULL),
+    fGetAvailableLangs_(false)
 {
 }
 
@@ -171,7 +172,7 @@ ArsLexis::status_t iPediaConnection::enqueue()
 #ifdef DETAILED_CONNECTION_STATUS
     lookupManager_.setStatusText(_T("Opening connection..."));
 #else
-    lookupManager_.setStatusText(_T("Downloading article..."));
+    lookupManager_.setStatusText(_T("Downloading data..."));
 #endif
     lookupManager_.setPercentProgress(LookupManager::percentProgressDisabled);
     ArsLexis::sendEvent(LookupManager::lookupStartedEvent);
@@ -190,7 +191,7 @@ ArsLexis::status_t iPediaConnection::open()
     // but for users we simplify as much as possible
     lookupManager_.setStatusText(_T("Sending requests..."));
 #else    
-    lookupManager_.setStatusText(_T("Downloading article..."));
+    lookupManager_.setStatusText(_T("Downloading data..."));
 #endif
 
     ArsLexis::sendEvent(LookupManager::lookupProgressEvent);
@@ -231,11 +232,11 @@ ArsLexis::status_t iPediaConnection::notifyProgress()
         if (response().empty())
             status = _T("Waiting for server\'s answer...");
         else
-            status = _T("Downloading article...");
+            status = _T("Downloading data...");
     }
     lookupManager_.setStatusText(status.c_txt());
 #else
-    lookupManager_.setStatusText(_T("Downloading article..."));
+    lookupManager_.setStatusText(_T("Downloading data..."));
 #endif
     uint_t progress=LookupManager::percentProgressDisabled;
     if (inPayload_)
@@ -335,7 +336,7 @@ ArsLexis::status_t iPediaConnection::handleField(const String& name, const Strin
         if (error)
             return errResponseMalformed;
         if (numValue>=serverErrorFirst && numValue<=serverErrorLast)
-            serverError_=static_cast<iPediaServerError>(numValue);
+            serverError_ = static_cast<iPediaServerError>(numValue);
         else
         {
             assert(false);
@@ -441,8 +442,16 @@ ArsLexis::status_t iPediaConnection::notifyFinished()
 
     if (NULL!=newDbLangCode_)
     {
+        assert(data.outcomeNothing==data.outcome);
         data.outcome = data.outcomeDatabaseSwitched;
         app.preferences().currentLang.assign(newDbLangCode_);
+    }
+
+    if (fGetAvailableLangs_)
+    {
+        assert(data.outcomeNothing==data.outcome);
+        data.outcome = data.outcomeAvailableLangs;
+        // we already have available langs in  app.preferences().availableLangs
     }
 
     assert(data.outcomeNothing!=data.outcome);
