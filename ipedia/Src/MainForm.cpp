@@ -383,7 +383,7 @@ bool MainForm::handleEvent(EventType& event)
                 if (0==buttonId)
                 {
                     // this is "Update" button so take them to a web page
-                    if ( errNone != WebBrowserCommand(false, 0, sysAppLaunchCmdGoToURL, "http://www.arslexis.com/updates/palm-ipedia-1-2.html",NULL) )
+                    if ( errNone != WebBrowserCommand(false, 0, sysAppLaunchCmdGoToURL, updateCheckURL ,NULL) )
                         FrmAlert(noWebBrowserAlert);
                 }
                 handled = true;
@@ -525,7 +525,7 @@ bool MainForm::handleMenuCommand(UInt16 itemId)
             break;
 
         case checkUpdatesMenuItem:
-            if ( errNone != WebBrowserCommand(false, 0, sysAppLaunchCmdGoToURL, "http://www.arslexis.com/updates/palm-ipedia-1-2.html",NULL) )
+            if ( errNone != WebBrowserCommand(false, 0, sysAppLaunchCmdGoToURL, updateCheckURL ,NULL) )
                 FrmAlert(noWebBrowserAlert);
             handled = true;
             break;

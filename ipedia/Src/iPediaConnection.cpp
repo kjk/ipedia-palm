@@ -74,7 +74,7 @@ void iPediaConnection::prepareRequest()
     appendField(request, protocolVersionField, protocolVersion);
 
 #if defined(_PALM_OS)
-    appendField(request, clientInfoField, _T("Palm 1.2"));
+    appendField(request, clientInfoField, clientInfo);
 #endif
 #if defined(WIN32_PLATFORM_PSPC)
     appendField(request, clientInfoField, _T("PocketPC 1.0"));
