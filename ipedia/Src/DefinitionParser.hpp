@@ -181,8 +181,7 @@ public:
     
     ArsLexis::status_t handleIncrement(const ArsLexis::char_t * text, ulong_t& length, bool finish = 0);
 
-    Definition::Elements_t& elements()
-    {return elements_;}    
+    DefinitionModel* createModel();
     
     ~DefinitionParser();
     

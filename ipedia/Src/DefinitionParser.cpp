@@ -900,3 +900,12 @@ void DefinitionParser::parseDefinitionListLine()
         popParent();
 }
 
+DefinitionModel* DefinitionParser::createModel()
+{
+    DefinitionModel* model = new_nt DefinitionModel();
+    if (NULL == model)
+        return NULL;
+    
+   elements_.swap(model->elements);
+   return model;
+}
