@@ -81,6 +81,7 @@ def displayListOfDatabases():
                 print "--> %d) %s having %d articles" % (dbInfo.num, dbInfo.name, dbInfo.articlesCount)
             else:
                 print "%d) %s having %d articles" % (dbInfo.num, dbInfo.name, dbInfo.articlesCount)
+        print
 
 def readAndDisplayListOfDatabases():
     global g_dbList
@@ -117,7 +118,6 @@ def findDbByNum(num):
 if __name__=="__main__":
     print "using server %s" % g_serverList[g_defaultServerNo]
     readAndDisplayListOfDatabases()
-    print
     while True:
         input = raw_input("Enter db number to use or 0 to exit: ")
         num = None
