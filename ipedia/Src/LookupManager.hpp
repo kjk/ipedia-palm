@@ -7,7 +7,9 @@
 
 class LookupHistory;
 
-// for description of errors, see iPediaServer.py, class iPediaServerError
+// For description of errors, see iPediaServer.py, class iPediaServerError
+// When adding new errors, don't forget to update serverErrorToAlertMap
+// in LookupManager.cpp
 enum iPediaServerError
 {
     serverErrorNone,

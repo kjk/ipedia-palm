@@ -16,24 +16,51 @@ namespace {
 #pragma pcrelconstdata on
 #endif
 
-    static const ushort_t serverErrorAlerts[]=
-    {   
-        serverFailureAlert,
-        unsupportedDeviceAlert,
-        invalidAuthorizationAlert,
-        malformedRequestAlert,
-        trialExpiredAlert
+/*
+    serverErrorInvalidRequest=6,
+    serverErrorUnexpectedRequestArgument=7,
+    serverErrorRequestArgumentMissing=8,
+    serverErrorInvalidProtocolVersion=9,
+    serverErrorInvalidCookie=10,
+*/
+    // TODO: add alerts for the above
+    static const uint_t serverErrorToAlertMap[][2]=
+    {
+        { serverErrorFailure, serverFailureAlert},
+        { serverErrorUnsupportedDevice, unsupportedDeviceAlert},
+        { serverErrorInvalidAuthorization, invalidAuthorizationAlert},
+        { serverErrorMalformedRequest, malformedRequestAlert },
+        { serverErrorLookupLimitReached, trialExpiredAlert},
+        { serverErrorInvalidCookie, invalidAuthorizationAlert}
     };
-
 }
 
 using ArsLexis::status_t;
 
-void LookupManager::handleServerError(iPediaServerError serverError)
+// 0 means not found
+static uint_t getAlertFromServerError(iPediaServerError serverError)
 {
     assert(serverErrorNone!=serverError);
     assert(serverErrorLast>=serverError);
-    iPediaApplication::sendDisplayAlertEvent(serverErrorAlerts[serverError-1]);
+    
+    uint_t error = (uint_t)serverError;
+    int arrSize = sizeof(serverErrorToAlertMap)/sizeof(serverErrorToAlertMap[0]);
+    assert( 6 == arrSize );
+    for (int i=0; i<arrSize; i++)
+    {
+        if (error==serverErrorToAlertMap[i][0])
+            return serverErrorToAlertMap[i][1];
+    }
+    return 0;
+}
+
+void LookupManager::handleServerError(iPediaServerError serverError)
+{
+    uint_t alertId = getAlertFromServerError(serverError);
+    if (0==alertId)
+        iPediaApplication::sendDisplayAlertEvent(serverFailureAlert);
+    else
+        iPediaApplication::sendDisplayAlertEvent(alertId);
 }
 
 void LookupManager::handleConnectionError(status_t error)
