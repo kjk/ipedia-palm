@@ -1,11 +1,10 @@
 #include "iPediaConnection.hpp"
-#include <iPediaApplication.hpp>
+#include "iPediaApplication.hpp"
 #include "DefinitionParser.hpp"
 #include <SysUtils.hpp>
 #include <DeviceInfo.hpp>
 #include <Text.hpp>
 #include "LookupManager.hpp"
-#include "ipedia.h"
 
 using namespace ArsLexis;
 
@@ -35,18 +34,10 @@ iPediaConnection::~iPediaConnection()
 
 #define protocolVersion _T("1")
 
-#define transactionIdField      _T("Transaction-ID")
-#define protocolVersionField    _T("Protocol-Version")
-#define clientVersionField      _T("Client-Version")
-#define getCookieField          _T("Get-Cookie")
 #define getDefinitionField      _T("Get-Definition")
 #define getRandomDefField       _T("Get-Random-Definition")
-#define cookieField             _T("Cookie")
-#define registerField           _T("Register")
-#define formatVersionField      _T("Format-Version")
 #define resultsForField         _T("Results-For")
 #define definitionField         _T("Definition")
-#define errorField              _T("Error")
 #define notFoundField           _T("Not-Found")
 #define searchField             _T("Search")
 #define searchResultsField      _T("Search-Results")
@@ -201,15 +192,15 @@ ArsLexis::status_t iPediaConnection::handleField(const String& name, const Strin
     ArsLexis::status_t  error=errNone;
     iPediaApplication&  app=iPediaApplication::instance();
 
-    if (0==name.find(transactionIdField))
+    if (name==transactionIdField)
     {
         error=numericValue(value, numValue, 16);
         if (error || (numValue!=transactionId_))
             error=errResponseMalformed;
     }
-    else if (0==name.find(notFoundField))
+    else if (name==notFoundField)
         notFound_=true;
-    else if (0==name.find(formatVersionField))
+    else if (name==formatVersionField)
     {
         error=numericValue(value, numValue);
         if (!error)
@@ -217,9 +208,9 @@ ArsLexis::status_t iPediaConnection::handleField(const String& name, const Strin
         else
             error=errResponseMalformed;
     }
-    else if (0==name.find(resultsForField))
+    else if (name==resultsForField)
         resultsFor_=value;
-    else if (0==name.find(definitionField))
+    else if (name==definitionField)
     {
         error=numericValue(value, numValue);
         if (!error)
@@ -231,7 +222,7 @@ ArsLexis::status_t iPediaConnection::handleField(const String& name, const Strin
         else
             error=errResponseMalformed;
     }
-    else if (0==name.find(searchResultsField))
+    else if (name==searchResultsField)
     {
         error=numericValue(value, numValue);
         if (!error)
@@ -243,14 +234,14 @@ ArsLexis::status_t iPediaConnection::handleField(const String& name, const Strin
         else
             error=errResponseMalformed;
     }
-    else if (0==name.find(cookieField))
+    else if (name==cookieField)
     {
         if (value.length()>iPediaApplication::Preferences::cookieLength)
             error=errResponseMalformed;
         else
             app.preferences().cookie=value;
     }
-    else if (0==name.find(errorField))
+    else if (name==errorField)
     {
         error=numericValue(value, numValue);
         if (!error)
@@ -263,7 +254,7 @@ ArsLexis::status_t iPediaConnection::handleField(const String& name, const Strin
         else
             error=errResponseMalformed;
     }
-    else if (0==name.find(articleCountField))
+    else if (name==articleCountField)
     {
         error=numericValue(value, numValue);
         if (!error)
@@ -273,7 +264,7 @@ ArsLexis::status_t iPediaConnection::handleField(const String& name, const Strin
         else
             error=errResponseMalformed;
     }
-    else if (0==name.find(databaseTimeField))
+    else if (name==databaseTimeField)
     {
         app.preferences().databaseTime=value;
     }
