@@ -1,0 +1,136 @@
+This file describes how we track users on the server and what things do we
+log.
+
+** Requirements
+
+We need user tracking (i.e. being able to uniquely identify a user) so that
+we can:
+- know which requests he makes so that we can build usage statistics of ipedia
+- have a registration process that forces people to pay for our software and
+  can't be hacked (anti-piracy)
+
+Note: neither of those two requirements can be met 100%, but we'll try our best.
+
+Also, we need to allow some common scenarios like users changing devices they
+use (upgrading to a newer/different model or replacing a broken device).
+
+As for logging, we need to log the following:
+- search requests
+-- search type (search vs. extended search)
+-- search term
+-- when it was performed
+-- what was the result
+- every Get-Cookie request
+-- when
+-- device info
+-- cookie we assigned
+- every Verify-Registration-Code request
+-- when
+-- cookie
+-- reg code
+-- was it succesful
+
+** Protocol part
+
+To track users we use a http techinique - cookies. When a client application
+doesn't have a cookie, he has to add Get-Cookie field to the first request he
+sends and provide device info. Unfortunately, device info cannot be guaranteed
+to be unique, but we can tell if it's unique or not based on what information
+is in it.
+
+For Palm, device info is unique if serial number (SN), or phone number (PN) or
+handspring serial number (HN) is provided.
+
+In response to Get-Cookie, server sends Cookie field with a random, unique
+cookie.
+
+It's possible that user re-install the application from scratch (either due
+to crash or because he wants to sidestep our anti-piracy features) in which 
+case he looses the cookie and will try to re-get it. If the device info is 
+unique we re-use previously assigned cookie for this device.
+
+Unregistered clients send this cookie in all requests to the server.
+
+Registered clients send registration code instead using Registration-Code field.
+
+Since we don't want to loose history of requests before registration, we tie 
+reg code with cookie. We do that during Verify-Registration-Code request because
+this is the only time we're supposed to get both reg code and cookie.
+
+Q: are there holes in this i.e. scenarios that I haven't considered?
+
+** Database schema
+
+Users table keeps data about users. Users are essentially synonimous with 
+cookies/reg codes i.e. there is exactly one user per cookie/reg code.
+
+Users can be registered or not.
+
+Users can be disabled, in which case we'll refuse all their requests with
+some error message that they can contact us. This is anti-piracy feature (we 
+might want to disable suspicious users). We need to be able to disable/enable 
+users remotely.
+
+Unregistered users send us cookie that we assigned them. Registered users send us reg 
+code.
+
+Our users table:
+
+--- TODO: find standard SQL equivalent of INT(10). Or maybe it is standard SQL?
+CREATE TABLE users (
+  user_id           INT(10) NOT NULL auto_increment,
+  cookie            VARCHAR(64)  NOT NULL,
+  device_info       VARCHAR(255) NOT NULL,
+  cookie_issue_date TIMESTAMP(14) NOT NULL,
+  reg_code          VARCHAR(64) NULL,
+  registration_date TIMESTAMP(14) NOT NULL
+  disabled_p        CHAR(1) NOT NULL default 'f'
+  PRIMARY KEY(id)
+) TYPE=MyISAM;
+
+CREATE TABLE request_log (
+    user_id          INT(10) NOT NULL REFERENCES users(user_id)
+    client_ip        VARCHAR(24) NOT NULL,
+    -- when a request has been made
+    when             TIMESTAMP(14) NOT NULL,
+
+    if not NULL, this is a SEARCH request
+    search_term  VARCHAR(255) NULL,
+    -- if not NULL, this is EXTENDED SEARCH request. search_term and
+    -- extended_search_title can't be both NULL or not NULL
+    extended_search_term VARCHAR(255) NULL,
+    -- if not NULL, there was an error processing the request and this is the 
+    -- error number
+    error            INT(10) NULL,
+    -- if not NULL, this is the article that was returned for SEARCH request
+    -- (taking redirects into account)
+    article_title    VARCHAR(255) NULL,
+) TYPE=MyISAM;
+
+CREATE TABLE get_cookie_log (
+    user_id         INT(10) NOT NULL REFERENCES users(user_id),
+    client_ip       VARCHAR(24) NOT NULL,
+    when            TIMESTAME(14) NOT NULL
+    cookie          VARCHAR(64) NOT NULL
+) TYPE=MyISAM;
+
+CREATE TABLE verify_reg_code_log (
+    user_id         INT(10) NOT NULL REFERENCES users(user_id),
+    client_ip       VARCHAR(24) NOT NULL,
+    when            TIMESTAME(14) NOT NULL
+    cookie          VARCHAR(64) NOT NULL
+    reg_code        VARCHAR(64) NULL,
+    reg_code_valid_p CHAR(1) NOT NULL
+) TYPE=MyISAM;
+
+** Scenarios to watch out for (and test):
+
+1. Client asks for cookie during Verify-Registration-Code
+
+2. 
+- client gets cookie
+- registration => enters reg code
+- clean re-install
+- asks for cookie again, if we can tie it with previous cookie, we get
+
+@TODO: some more

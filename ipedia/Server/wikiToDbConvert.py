@@ -409,34 +409,6 @@ regCodesSql = """CREATE TABLE reg_codes (
     PRIMARY KEY (reg_code)
 ) TYPE=MyISAM;""";
 
-# TODO: we need to improve that. We'll have users table. Users can be registered
-# or not. Unregistered users send us cookie that we assigned them. Registered
-# users send us reg code.
-# We use user_id for logging since that can be used to get cookie and/or reg code
-# without the need to log them. Also, we'll try to not use MySQL specific SQL.
-# We'll get rid of "cookies" table and combine it's info with "users" table (since
-# for our purposes, a new cookie essentially means a new user).
-# So our tables will look like:
-# CREATE TABLE users (
-#  id          INT(10) NOT NULL auto_increment, --- TODO: find standard SQL equivalent of INT(10). Or maybe it is standard SQL?
-#  cookie      VARCHAR(64) NOT NULL,
-#  device_info VARCHAR(255) NOT NULL,
-#  cookie_issue_date TIMESTAMP(14) NOT NULL,
-#  reg_code    VARCHAR(64) NULL,  -- if not NULL, user is registered
-#  registration_date TIMESTAMP(14) NOT NULL
-#  PRIMARY KEY(id)
-# ) TYPE=MyISAM;
-#
-# CREATE TABLE request_log (
-#   user_id    INT(10) NOT NULL REFERENCES users(id) # REFERENCES probably doesn't work on MySQL
-#   client_ip  INT(1) NOT NULL,
-#   requested_title VARCHAR(255) NULL, -- if not NULL, this is a SEARCH request
-#   extended_search_term VARCHAR(255) NULL, -- if not NULL, this is EXTENDED SEARCH request. requested_title and extended_search_title can't be both NULL or not NULL
-#   request_date TIMESTAMP(14) NOT NULL, -- when a request has been made
-#   error  INT(10) NULL, -- if not NULL, there was an error processing the request
-#   article_title VARCHAR(255) NULL, -- if not NULL, this is the article that was returned for SEARCH request
-# ) TYPE=MyISAM;
-
 regUsersSql = """CREATE TABLE `registered_users` (
   `id` int(10) unsigned NOT NULL auto_increment,
   `cookie_id` int(10) unsigned default '0',
