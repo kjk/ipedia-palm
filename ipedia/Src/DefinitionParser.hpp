@@ -1,13 +1,15 @@
-#ifndef __DEFINITION_PARSER_HPP__
-#define __DEFINITION_PARSER_HPP__
+#ifndef IPEDIA_DEFINITION_PARSER_HPP__
+#define IPEDIA_DEFINITION_PARSER_HPP__
 
-#include "Definition.hpp"
 
 #include <Debug.hpp>
+#include <BaseTypes.hpp>
+
+#include <Definition.hpp>
+
 #include <FieldPayloadProtocolConnection.hpp>
 #include <list>
 #include <vector>
-#include <BaseTypes.hpp>
 
 
 class DefinitionElement;
@@ -145,7 +147,7 @@ class DefinitionParser: public ArsLexis::FieldPayloadProtocolConnection::Payload
     void parseText(uint_t end, ElementStyle style);
     
     void parse();
-    
+
     void decodeHTMLCharacterEntityRefs(ArsLexis::String& text) const;
     
     void appendElement(DefinitionElement* element);

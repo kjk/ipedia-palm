@@ -5,6 +5,10 @@
 #include "ParagraphElement.hpp"
 #include "HorizontalLineElement.hpp"
 
+#ifdef INFOMAN
+#include "HyperlinkHandler.hpp"
+#endif
+
 #include <memory>
 #include <Utility.hpp>
 #include <Text.hpp>
@@ -315,6 +319,8 @@ bool DefinitionParser::detectHTMLTag(uint_t end)
 bool DefinitionParser::detectHyperlink(uint_t end)
 {
     bool result=false;
+    bool hyperlinkIsTerm = false;
+        
     assert(linkOpenChar==textLine_[textPosition_] || linkCloseChar==textLine_[textPosition_]);
     if (!insideHyperlink_ && linkOpenChar==textLine_[textPosition_++])
     {
@@ -323,13 +329,22 @@ bool DefinitionParser::detectHyperlink(uint_t end)
         String::size_type separatorPos;
         if (linkOpenChar==textLine_[textPosition_])
         {
-            hyperlinkType_=hyperlinkTerm;
+            hyperlinkIsTerm = true;
+#ifdef INFOMAN
+            hyperlinkType_ = hyperlinkUrl;
+#else 
+            hyperlinkType_ = hyperlinkTerm;
+#endif            
             ++textPosition_;
             separatorPos=textLine_.find_first_of(_T("|]"), textPosition_);
         }
         else
         {
-            hyperlinkType_=hyperlinkExternal;
+#ifdef INFOMAN
+            hyperlinkType_ = hyperlinkUrl;
+#else 
+            hyperlinkType_ = hyperlinkExternal;
+#endif            
             separatorPos=textLine_.find_first_of(_T(" ]"), textPosition_);
         }
         bool hasSeparator=true;
@@ -341,7 +356,7 @@ bool DefinitionParser::detectHyperlink(uint_t end)
         else if (linkCloseChar==textLine_[separatorPos])
             hasSeparator=false;
             
-        hyperlinkTarget_.assign(textLine_, textPosition_, separatorPos-textPosition_);
+        hyperlinkTarget_.assign(textLine_, textPosition_, separatorPos - textPosition_);
         
         if (hasSeparator)
         {
@@ -351,7 +366,13 @@ bool DefinitionParser::detectHyperlink(uint_t end)
         }
         else
         {
-            if (hyperlinkExternal==hyperlinkType_) 
+            if (hyperlinkIsTerm)
+            {
+#ifdef INFOMAN
+                hyperlinkTarget_.insert(0, urlSchemaEncyclopediaTerm _T(":"));
+#endif                
+            }
+            else
             {
                 textPosition_=separatorPos;
                 ++unnamedLinksCount_;
@@ -453,8 +474,17 @@ void DefinitionParser::parseText(uint_t end, ElementStyle style)
 GenericTextElement* DefinitionParser::createTextElement(const String& text, String::size_type start, String::size_type length)
 {
     String copy(text, start, length);
+    bool hyperlinkIsTerm = false;
+#ifdef INFOMAN
+    hyperlinkIsTerm = (0 == hyperlinkTarget_.find(urlSchemaEncyclopediaTerm _T(":")));
+    String::size_type pos = copy.find(urlSchemaEncyclopediaTerm _T(":"));
+    if (0 == pos)
+        copy.erase(0, pos + 1);
+#else
+    hyperlinkIsTerm = (hyperlinkTerm == hyperlinkType_);
+#endif    
     String::size_type colonPos = hyperlinkTarget_.find(_T(':'));
-    if (insideHyperlink_ && (hyperlinkTerm == hyperlinkType_) && (String::npos != colonPos))
+    if (insideHyperlink_ && hyperlinkIsTerm && (String::npos != colonPos))
     {
         if (copy == hyperlinkTarget_)
             copy.erase(0, colonPos+1);
