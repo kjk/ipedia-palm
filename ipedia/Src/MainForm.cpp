@@ -849,7 +849,7 @@ void MainForm::doLookupSelectedTerm(EventType& event)
 
     LookupManager* lookupManager=app().getLookupManager(true);
     if (lookupManager && !lookupManager->lookupInProgress())
-        lookupManager->lookupIfDifferent(term);
+        lookupManager->lookupIfDifferent(term, app().preferences().currentLang);
 
 Exit:
     if (NULL!=app().strList)
@@ -1025,7 +1025,7 @@ void MainForm::search(bool fullText)
     String term(text, textLen);
     if (!fullText)
     {
-        if (!lookupManager->lookupIfDifferent(term) && showArticle!=displayMode())
+        if (!lookupManager->lookupIfDifferent(term, app().preferences().currentLang) && showArticle!=displayMode())
             updateAfterLookup();
     }
     else

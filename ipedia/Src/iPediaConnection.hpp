@@ -18,6 +18,8 @@ class iPediaConnection: public ArsLexis::FieldPayloadProtocolConnection
     DefinitionParser*   definitionParser_;
     ArsLexis::String    newDbLangCode_;
     bool                fGetAvailableLangs_;
+    bool isSwitchLangRequest_;
+    
 
     class SearchResultsHandler: public ArsLexis::FieldPayloadProtocolConnection::PayloadHandler
     {
@@ -127,7 +129,11 @@ public:
     void switchDatabase(const char_t* langCode)
     {
         newDbLangCode_.assign(langCode);
+        isSwitchLangRequest_ = true;
     }
+    
+    void setLang(const String& lang)
+    {newDbLangCode_ = lang;}
 
     void getAvailableLangs()
     {

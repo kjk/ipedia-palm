@@ -72,6 +72,9 @@ class LookupManager: public ArsLexis::LookupManagerBase<iPediaApplication::appLo
     String lastExtendedSearchTerm_;
     String lastExtendedSearchResults_;
     String lastReverseLinks_;
+    
+    String lastSearchLang_;
+    String lastFoundLang_;
 
     enum HistoryChange
     {
@@ -86,11 +89,8 @@ protected:
 
 public:
 
-    LookupManager(LookupHistory& history):
-        history_(history),
-        historyChange_(historyMoveForward)
-    {}
-    
+    LookupManager(LookupHistory& history);
+
     ~LookupManager();
 
     const String& lastExtendedSearchResults() const
@@ -101,13 +101,13 @@ public:
     
     void search(const String& expression);
 
-    void lookupTerm(const String& term);
+    void lookupTerm(const String& term, const String& lang = String());
 
     void lookupRandomTerm();
 
-    bool lastSearchTermDifferent(const ArsLexis::String& term);
+    bool lastSearchTermDifferent(const ArsLexis::String& term, const String& lang = String());
 
-    bool lookupIfDifferent(const String& term);
+    bool lookupIfDifferent(const String& term, const String& lang = String());
 
     void moveHistory(bool forward=false);
     

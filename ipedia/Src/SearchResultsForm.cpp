@@ -206,7 +206,7 @@ void SearchResultsForm::handleListSelect(const EventType& event)
         if (history.hasCurrentTerm() && history.currentTerm()==term)
             closePopup();
         else
-            lookupManager->lookupTerm(term);
+            lookupManager->lookupTerm(term, app.preferences().currentLang);
     }        
 }
 
@@ -275,7 +275,7 @@ bool SearchResultsForm::handleKeyPress(const EventType& event)
                         if (history.hasCurrentTerm() && history.currentTerm()==title)
                             closePopup();
                         else
-                            lookupManager->lookupTerm(title);
+                            lookupManager->lookupTerm(title, app.preferences().currentLang);
                     }
                 }
                 handled = true;

@@ -23,7 +23,8 @@ iPediaConnection::iPediaConnection(LookupManager& lookupManager):
     performFullTextSearch_(false),
     getRandom_(false),
     regCodeValid_(regCodeTypeUnset),
-    fGetAvailableLangs_(false)
+    fGetAvailableLangs_(false),
+    isSwitchLangRequest_(false)
 {
 }
 
@@ -135,7 +136,7 @@ void iPediaConnection::prepareRequest()
         fNeedsToGetArticleCount = true;
     }
 
-#ifndef _PALM_OS
+#ifdef _WIN32
     // wince only code
     SYSTEMTIME currTime;
     GetSystemTime(&currTime);
@@ -150,7 +151,7 @@ void iPediaConnection::prepareRequest()
         appendField(request, getArticleCountField);
         appendField(request, getDatabaseTimeField);
         appendField(request, getAvailableLangsField);
-#ifndef _PALM_OS
+#ifdef _WIN32
         // wince only code
         GetSystemTime(&app.lastArticleCountCheckTime);
 #endif
@@ -401,10 +402,18 @@ ArsLexis::status_t iPediaConnection::notifyFinished()
     }
 
     iPediaApplication& app=iPediaApplication::instance();
+    if (!newDbLangCode_.empty() && isSwitchLangRequest_)
+    {
+        assert(data.outcomeNothing==data.outcome);
+        data.outcome = data.outcomeDatabaseSwitched;
+        app.preferences().currentLang.assign(newDbLangCode_);
+    }
+
     if (NULL!=definitionParser_)
     {
         std::swap(definitionParser_->elements(), lookupManager_.lastDefinitionElements());
         lookupManager_.setLastFoundTerm(articleTitle_);
+        lookupManager_.lastFoundLang_ = lookupManager_.lastSearchLang_;
         if (getRandom_)
             lookupManager_.setLastSearchTerm(articleTitle_);
         data.outcome = data.outcomeArticleBody;
@@ -438,13 +447,6 @@ ArsLexis::status_t iPediaConnection::notifyFinished()
         assert(data.outcomeNothing==data.outcome);
         data.outcome = data.outcomeRegCodeInvalid;
     }        
-
-    if (!newDbLangCode_.empty())
-    {
-        assert(data.outcomeNothing==data.outcome);
-        data.outcome = data.outcomeDatabaseSwitched;
-        app.preferences().currentLang.assign(newDbLangCode_);
-    }
 
     if (fGetAvailableLangs_)
     {

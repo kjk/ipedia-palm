@@ -36,6 +36,16 @@ static const uint_t serverErrorToAlertMap[][2]=
 using ArsLexis::status_t;
 using ArsLexis::sendEvent;
 
+LookupManager::LookupManager(LookupHistory& history):
+    history_(history),
+    historyChange_(historyMoveForward)
+{
+    iPediaApplication& app = iPediaApplication::instance();
+    lastFoundLang_ = lastSearchLang_ = app.preferences().currentLang;
+}
+    
+
+
 // map errors that can be returned from the server to alerts that we display
 // in the ui for this error. 
 // returning 0 means there's no mapping for this error
@@ -75,8 +85,8 @@ void LookupManager::handleServerError(iPediaServerError serverError)
     
     iPediaApplication::sendDisplayAlertEvent(alertId);
 
-    lastSearchTerm_ = _T("");
-    lastExtendedSearchTerm_ = _T("");
+    lastSearchTerm_.clear();
+    lastExtendedSearchTerm_.clear();
 }
 
 void LookupManager::handleConnectionError(status_t error)
@@ -113,8 +123,8 @@ void LookupManager::handleConnectionError(status_t error)
 
     }
 
-    lastSearchTerm_ = _T("");
-    lastExtendedSearchTerm_ = _T("");
+    lastSearchTerm_.clear();
+    lastExtendedSearchTerm_.clear();
 
     iPediaApplication::sendDisplayAlertEvent(alertId);
 }
@@ -124,15 +134,15 @@ void LookupManager::handleDefinition()
     switch (historyChange_)
     {
         case historyReplaceForward:
-            history_.replaceAllNext(lastFoundTerm_);
+            history_.replaceAllNext(lastFoundTerm_, lastFoundLang_);
             break;
         
         case historyMoveBack:
-            history_.movePrevious(lastFoundTerm_);
+            history_.movePrevious(lastFoundTerm_, lastFoundLang_);
             break;
         
         case historyMoveForward:
-            history_.moveNext(lastFoundTerm_);
+            history_.moveNext(lastFoundTerm_, lastFoundLang_);
             break;
     }
 }
@@ -169,32 +179,37 @@ void LookupManager::handleLookupFinished(const LookupFinishedEventData& data)
 }
 
 // return true if last search term is different than term
-bool LookupManager::lastSearchTermDifferent(const ArsLexis::String& term)
+bool LookupManager::lastSearchTermDifferent(const String& term, const String& lang)
 {
     using ArsLexis::equalsIgnoreCase;
-    if (lastSearchTerm().empty() || !equalsIgnoreCase(lastSearchTerm(), term))
+    if (lastSearchTerm().empty() || !equalsIgnoreCase(lastSearchTerm(), term) || (!lang.empty() && lang != lastSearchLang_))
         return true;
     return false;
 }
 
 // if search term is different than the last one, initiate lookup and return true.
 // otherwise return false.
-bool LookupManager::lookupIfDifferent(const ArsLexis::String& term)
+bool LookupManager::lookupIfDifferent(const String& term, const String& lang)
 {
-    if (!lastSearchTermDifferent(term))
+    if (!lastSearchTermDifferent(term, lang))
         return false;
 
     lastSearchTerm_ = term;
-    lookupTerm(term);
+    lookupTerm(term, lang);
     return true;
 }
 
-void LookupManager::lookupTerm(const ArsLexis::String& term)
+void LookupManager::lookupTerm(const String& term, const String& lang)
 {
     historyChange_ = historyReplaceForward;
     iPediaConnection* conn = new iPediaConnection(*this);
     lastSearchTerm_ = term;
+    if (!lang.empty())
+        lastSearchLang_ = lang;
+    else
+        lastSearchLang_ = lastFoundLang_;
     conn->setTerm(term);
+    conn->setLang(lastSearchLang_);
     conn->setAddress(iPediaApplication::instance().server());
     conn->enqueue();
 }
@@ -221,7 +236,9 @@ void LookupManager::lookupRandomTerm()
     historyChange_ = historyReplaceForward;
     iPediaConnection* conn = new iPediaConnection(*this);
     conn->setRandom();
-    conn->setAddress(iPediaApplication::instance().server());
+    iPediaApplication& app = iPediaApplication::instance();
+    conn->setLang(lastSearchLang_ = app.preferences().currentLang);
+    conn->setAddress(app.server());
     conn->enqueue();
 }
 
@@ -231,6 +248,8 @@ void LookupManager::search(const ArsLexis::String& expression)
     iPediaConnection* conn = new iPediaConnection(*this);
     lastSearchTerm_ = expression;
     conn->setTerm(expression);
+    iPediaApplication& app = iPediaApplication::instance();
+    conn->setLang(lastSearchLang_ = app.preferences().currentLang);
     conn->setPerformFullTextSearch(true);
     conn->setAddress(iPediaApplication::instance().server());
     conn->enqueue();
@@ -245,11 +264,18 @@ void LookupManager::moveHistory(bool forward)
             historyChange_ = historyMoveForward;
         iPediaConnection* conn=new iPediaConnection(*this);
         if (forward)
+        {
             lastSearchTerm_ = history_.nextTerm();
+            lastSearchLang_ = history_.nextLang();
+        }
         else
+        {
             lastSearchTerm_ = history_.previousTerm();
+            lastSearchLang_ = history_.previousLang();
+        }
 
         conn->setTerm(lastSearchTerm_);
+        conn->setLang(lastSearchLang_);
         conn->setAddress(iPediaApplication::instance().server());
         conn->enqueue();
     }

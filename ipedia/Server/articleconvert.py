@@ -268,7 +268,7 @@ def convertArticle(term, text):
         text=entities.convertNumberedEntities(term, text)
         text=stripMultipleNewLines(text)
         text=text.strip()
-        #text+='\n'
+        text+='\n'
         return text
     except Exception, ex:
         print "Exception while converting term: ", term

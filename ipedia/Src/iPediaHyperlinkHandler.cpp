@@ -39,7 +39,15 @@ bool iPediaHyperlinkHandler::handleTermHyperlink(const ArsLexis::String& term)
     if (lookupManager && !lookupManager->lookupInProgress())
     {
         result=true;
-        lookupManager->lookupIfDifferent(term);
+        String lang;
+        String realTerm = term;
+        String::size_type pos = term.find(_T(':'));
+        if (String::npos != pos)
+        {
+            lang.assign(term, 0, pos);
+            realTerm.erase(0, pos+1);
+        }
+        lookupManager->lookupIfDifferent(realTerm, lang);
     }
     return result;        
 }

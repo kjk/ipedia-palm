@@ -71,6 +71,7 @@ iPediaApplication::~iPediaApplication()
 
 Err iPediaApplication::normalLaunch()
 {
+    preferences_.currentLang = _T("en");
     history_ = new LookupHistory();
     loadPreferences();
 #ifdef INTERNAL_BUILD
@@ -228,18 +229,16 @@ void iPediaApplication::loadPreferences()
     prefs.databaseTime = text;
     if (errNone!=(error=prefs.renderingPreferences.serializeIn(*reader, renderingPrefsFirstPrefId)))
         goto OnError;
+    if (errNone!=(error=reader->ErrGetStr(currentLangPrefId, &text))) 
+        goto OnError;
+    prefs.currentLang = text;
+    if (errNone!=(error=reader->ErrGetStr(availableLangsPrefId, &text))) 
+        goto OnError;
+    prefs.availableLangs = text;
     preferences_=prefs;    
     assert(0!=history_);
     if (errNone!=(error=history_->serializeIn(*reader, lookupHistoryFirstPrefId)))
         goto OnError;
-
-    if (errNone!=(error=reader->ErrGetStr(currentLangPrefId, &text))) 
-        goto OnError;
-    prefs.currentLang = text;
-
-    if (errNone!=(error=reader->ErrGetStr(availableLangsPrefId, &text))) 
-        goto OnError;
-    prefs.availableLangs = text;
 
 OnError:
     return;        
