@@ -421,7 +421,7 @@ namespace {
 
 }
 
-void DefinitionParser::parseText(uint_t end, ElementStyle style)
+void DefinitionParser::parseText(uint_t end, const DefinitionStyle* style)
 {
     openEmphasize_=false;
     openStrong_=false;
@@ -762,7 +762,7 @@ void DefinitionParser::parseTextLine()
         appendElement(para.get());
         pushParent(para.release());
     }
-    parseText(lineEnd_, styleDefault);                
+    parseText(lineEnd_, getStaticStyle(styleIndexDefault));                
 }
 
 status_t DefinitionParser::handleIncrement(const char_t * text, ulong_t& length, bool finish)
@@ -856,7 +856,7 @@ void DefinitionParser::parseHeaderLine()
     ParagraphPtr para(new ParagraphElement());
     appendElement(para.get());
     pushParent(para.release());
-    parseText(lineEnd, styleHeader);
+    parseText(lineEnd, getStaticStyle(styleNameHeader));
     if (!lineAllowsContinuation(headerLine))
         popParent();
 }
@@ -878,7 +878,7 @@ void DefinitionParser::parseListElementLine()
     parsePosition_ = start;
     while (parsePosition_ < lineEnd_ && isSpace((*text_)[parsePosition_]))
         ++parsePosition_;
-    parseText(lineEnd_, styleDefault);
+    parseText(lineEnd_, getStaticStyle(styleIndexDefault));
 }
 
 void DefinitionParser::parseDefinitionListLine()
@@ -891,7 +891,7 @@ void DefinitionParser::parseDefinitionListLine()
     ParagraphPtr para(new ParagraphElement());
     appendElement(para.get());
     pushParent(para.release());
-    parseText(lineEnd, styleDefault);
+    parseText(lineEnd, getStaticStyle(styleIndexDefault));
     if (!lineAllowsContinuation(definitionListLine))
         popParent();
 }

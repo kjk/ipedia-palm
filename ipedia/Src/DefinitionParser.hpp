@@ -122,8 +122,7 @@ class DefinitionParser: public FieldPayloadProtocolConnection::PayloadHandler
     LineType lineType_:4;
     LineType previousLineType_:4;
 
-    ElementStyle currentStyle_:4;
-    
+    const DefinitionStyle* currentStyle_;
 
     uint_t openTypewriter_;
     uint_t openSmall_;
@@ -144,7 +143,7 @@ class DefinitionParser: public FieldPayloadProtocolConnection::PayloadHandler
     
     ArsLexis::String hyperlinkTarget_;
     
-    void parseText(uint_t end, ElementStyle style);
+    void parseText(uint_t end, const DefinitionStyle* style);
     
     void parse();
 
