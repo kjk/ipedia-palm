@@ -362,7 +362,7 @@ cookiesSql = """CREATE TABLE `cookies` (
 regusersSql = """CREATE TABLE `registered_users` (
   `id` int(10) unsigned NOT NULL auto_increment,
   `cookie_id` int(10) unsigned default '0',
-  `user_name` varchar(255) NOT NULL default '',
+  `user_name` varchar(255) default '',
   `serial_number` varchar(255) binary NOT NULL default '',
   `registration_date` timestamp(14) NOT NULL,
   PRIMARY KEY  (`id`)
