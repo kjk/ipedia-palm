@@ -1,5 +1,7 @@
 ## bug: 5-way left still wraps-around links when at the top
 
+## bug: conversion error for german "Teck"
+
 ## bug: sometimes rendering of centered text is broken e.g. about page for 
 French encyclopedia updated on 4/12/09 has:
 
