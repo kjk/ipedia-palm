@@ -577,7 +577,7 @@ void PediaMainForm::doLinkedArticles()
         return;
 
     TextRenderer* renderer = &articleRenderer_;
-        
+    
     app().strList = ExtractLinksFromDefinition(*renderer, app().strListSize);
     int sel = showStringListForm(app().strList, app().strListSize);
     doLookupSelectedTerm(sel);    
@@ -624,7 +624,7 @@ void PediaMainForm::changeDatabase()
 
     for (int i=0; i<app().strListSize; i++)
     {
-        fullName = GetLangNameByLangCode(strList[i]);
+        fullName = GetLangNameByLangCode(strList[i], tstrlen(strList[i]));
         if (NULL != fullName)
             nameToDisplay.assign(fullName);
         else
@@ -697,7 +697,7 @@ void PediaMainForm::copySelectionOrAllToClipboard()
      
     if (renderer->empty())
         return;
-    ArsLexis::String text;
+    String text;
     renderer->copySelectionOrAll();
 }
 
@@ -796,7 +796,7 @@ static void randomArticleActionCallback(void *data)
     sendEvent(iPediaApplication::appRandomWord);
 }
 
-static void prepareArticleCountEl(GenericTextElement *articleCountElement, long articleCount, const ArsLexis::String& dbTime)
+static void prepareArticleCountEl(GenericTextElement *articleCountElement, long articleCount, const String& dbTime)
 {
     assert(NULL!=articleCountElement);
 
@@ -811,7 +811,7 @@ static void prepareArticleCountEl(GenericTextElement *articleCountElement, long 
 
     iPediaApplication& app = iPediaApplication::instance();
     const String& langCode = app.preferences().currentLang;
-    const char_t* langName = GetLangNameByLangCode(langCode.c_str());
+    const char_t* langName = GetLangNameByLangCode(langCode.c_str(), langCode.length());
     if (NULL == langName)
         langName = _T("Unknown");
         

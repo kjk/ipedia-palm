@@ -491,33 +491,43 @@ GenericTextElement* DefinitionParser::createTextElement(const String& text, Stri
     if (insideHyperlink_ && hyperlinkIsTerm)
     {
         String::size_type colonPos;
-        const char_t* langCode = defaultLanguage;
-#ifdef INFOMAN        
-        if (schemaLen == hyperlinkTarget_.find(copy, schemaLen))
-        {
-#else
-        if (copy == hyperlinkTarget_)
-        {
-#endif         
-            colonPos = copy.find(_T(':'));
-            if (String::npos != colonPos)
-                copy.erase(0, colonPos+1);
-        }
-        
-#ifdef INFOMAN        
-        colonPos = hyperlinkTarget_.find(_T(':'), schemaLen);
-        if (schemaLen + 2 == colonPos)
-            langCode = hyperlinkTarget_.c_str() + schemaLen;
-#else              
-        colonPos = hyperlinkTarget_.find(_T(':'));
-        if (2 == colonPos)
-            langCode = hyperlinkTarget_.c_str();
-#endif                
-                    
         const char_t* langName = NULL;
-        if (0 != tstrncmp(langCode, defaultLanguage, 2))
-            langName = GetLangNameByLangCode(langCode);
-        if (NULL != langName)
+        const char_t* langCode = NULL;
+        ulong_t langCodeLen = 0;
+#ifdef INFOMAN        
+        ulong_t startPos = schemaLen;
+#else
+        ulong_t startPos = 0;
+#endif
+        if (startPos == hyperlinkTarget_.find(copy, startPos))
+        {
+            colonPos = copy.find(_T(':'));
+            // This is to remove possible lang: part from hyperlink caption.
+            if (String::npos != colonPos)
+            {
+                langName = GetLangNameByLangCode(copy.c_str(), colonPos); 
+                if (NULL != langName)
+                {
+                    copy.erase(0, colonPos + 1);
+                    langCode = hyperlinkTarget_.c_str() + startPos;
+                    langCodeLen = colonPos;
+                }
+            }
+        }
+        if (NULL == langName)
+        {
+            colonPos = hyperlinkTarget_.find(_T(':'), startPos);
+            if (String::npos != colonPos)
+            {
+                langName = GetLangNameByLangCode(hyperlinkTarget_.c_str() + startPos, colonPos - startPos);
+                if (NULL != langName)
+                {
+                    langCode = hyperlinkTarget_.c_str() + startPos;
+                    langCodeLen = colonPos - startPos;
+                }
+            }
+        }
+        if (NULL != langCode && 0 != tstrncmp(langCode, defaultLanguage, langCodeLen))
             copy.append(_T(" (")).append(langName).append(1, _T(')'));
     }
     // andrzej: We no longer send HTML entity refs

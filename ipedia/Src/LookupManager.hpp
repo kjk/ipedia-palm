@@ -5,8 +5,6 @@
 #include <iPediaApplication.hpp>
 #include "Definition.hpp"
 
-using ArsLexis::String;
-
 class LookupHistory;
 
 // For description of errors, see iPediaServer.py, class iPediaServerError
@@ -50,11 +48,11 @@ struct LookupFinishedEventData
     
     union
     {
-        ArsLexis::status_t error;
+        status_t error;
         iPediaServerError  serverError;
     };        
     
-    LookupFinishedEventData(Outcome o=outcomeNothing, ArsLexis::status_t err=errNone):
+    LookupFinishedEventData(Outcome o=outcomeNothing, status_t err=errNone):
         outcome(o),
         error(err)
     {}
@@ -105,7 +103,7 @@ public:
 
     void lookupRandomTerm();
 
-    bool lastSearchTermDifferent(const ArsLexis::String& term, const String& lang = String());
+    bool lastSearchTermDifferent(const String& term, const String& lang = String());
 
     bool lookupIfDifferent(const String& term, const String& lang = String());
 
@@ -143,7 +141,7 @@ private:
     
     void handleDefinitionMissing();
     
-    void handleConnectionError(ArsLexis::status_t error);
+    void handleConnectionError(status_t error);
     
     void handleDefinition();
     

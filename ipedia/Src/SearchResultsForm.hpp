@@ -6,7 +6,7 @@
 
 class SearchResultsForm: public iPediaForm
 {
-    ArsLexis::String listPositionsString_;
+    String listPositionsString_;
 
     std::vector<const char*> listPositions_;
 

@@ -10,7 +10,7 @@ class RegistrationForm: public iPediaForm
 
     void handleLookupFinished(const EventType& event);
 
-    ArsLexis::String newRegCode_;
+    String newRegCode_;
 
 protected:
 

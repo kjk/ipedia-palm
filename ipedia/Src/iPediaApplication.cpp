@@ -21,8 +21,6 @@
 
 IMPLEMENT_APPLICATION_CREATOR(appFileCreator)
 
-using namespace ArsLexis;
-
 #ifndef NDEBUG
 #pragma inline_depth 0
 #endif
