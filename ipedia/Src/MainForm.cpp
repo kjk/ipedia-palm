@@ -409,14 +409,14 @@ void MainForm::updateNavigationButtons()
     const LookupHistory& history=getHistory();
 
     bool enabled = history.hasPrevious();
-//    backButton_.setEnabled(enabled);
+    backButton_.setEnabled(enabled);
     if (enabled)
         backButton_.setGraphics(backBitmap);
     else
         backButton_.setGraphics(backDisabledBitmap);
         
     enabled = history.hasNext();
-//    forwardButton_.setEnabled(enabled);
+    forwardButton_.setEnabled(enabled);
     if (enabled)
         forwardButton_.setGraphics(forwardBitmap);
     else

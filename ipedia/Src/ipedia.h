@@ -9,7 +9,7 @@
 #define appPrefID               0x00
 #define appPrefVersionNum       0x01
 
-#define appVersion              _T("1.1")
+#define appVersion              _T("1.2")
 
 #define appPrefDatabase   appName _T(" Prefs")
 
