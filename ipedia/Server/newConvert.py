@@ -294,9 +294,8 @@ def convertArticles(sqlDump,dbName,articleLimit):
                     redirect = redirect.replace("_", " ")
                     ipedia_write_cur.execute("""INSERT INTO redirects (title, redirect) VALUES ('%s', '%s')""" % (dbEscape(title), dbEscape(redirect)))
                 except:
-                    print "REDERICT for '%s' => '%s' failed (probably due to case-insensitivity)" % (title, redirect)
+                    print "DUP REDERICT '%s' => '%s'" % (title, redirect)
         else:
-            print "ARTICLE '%s'" % title
             title = title.replace("_", " ")
             if g_fVerbose:
                 log_txt = "title: %s " % title
