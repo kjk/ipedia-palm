@@ -5,8 +5,8 @@
 #include <RichApplication.hpp>
 #include <StringListForm.hpp>
 #include "RenderingPreferences.hpp"
-#include "iPediaHyperlinkHandler.hpp"
 #include <SysUtils.hpp>
+#include "iPediaHyperlinkHandler.hpp"
 
 class LookupManager;
 class LookupHistory;
@@ -17,7 +17,7 @@ class LookupHistory;
 
 class iPediaApplication: public ArsLexis::RichApplication 
 {
-    iPediaHyperlinkHandler  hyperlinkHandler_;
+    iPediaHyperlinkHandler*  hyperlinkHandler_;
     LookupHistory*          history_;
     LookupManager*          lookupManager_;
     ArsLexis::String        server_;
@@ -150,7 +150,7 @@ public:
     
     iPediaHyperlinkHandler& hyperlinkHandler()
     {
-        return hyperlinkHandler_;
+        return *hyperlinkHandler_;
     }
 
     // intentional lack of accessor functions, treat it like a property

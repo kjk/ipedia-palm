@@ -98,3 +98,6 @@ void iPediaHyperlinkHandler::handleHyperlink(Definition& definition, DefinitionE
     }
 */    
 }
+
+iPediaHyperlinkHandler::~iPediaHyperlinkHandler()
+{}

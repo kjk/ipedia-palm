@@ -32,7 +32,8 @@ iPediaApplication::iPediaApplication():
     stressMode_(false),
     fArticleCountChecked(false),
     strList(NULL),
-    strListSize(0)
+    strListSize(0),
+    hyperlinkHandler_(NULL)
 {
 #ifdef INTERNAL_BUILD
 # ifndef NDEBUG    
@@ -53,15 +54,15 @@ inline void iPediaApplication::detectViewer()
 
     if (fDetectViewer(&cardNo,&dbID))
     {
-        assert(dbID!=0);
-        hyperlinkHandler_.setViewerLocation(cardNo, dbID);
+        assert(dbID != 0);
+        assert(NULL != hyperlinkHandler_);
+        hyperlinkHandler_->setViewerLocation(cardNo, dbID);
     }
 }
 
 Err iPediaApplication::initialize()
 {
     Err error=RichApplication::initialize();
-    detectViewer();
     return error;
 }
 
@@ -74,6 +75,9 @@ iPediaApplication::~iPediaApplication()
         delete lookupManager_;
     if (NULL != history_)
         delete history_;
+    
+    if (NULL != hyperlinkHandler_)
+        delete hyperlinkHandler_;
         
     if (NULL != strList)
         FreeStringList(strList, strListSize);
@@ -83,6 +87,8 @@ Err iPediaApplication::normalLaunch()
 {
     server_ = SERVER_TO_USE;
     preferences_.currentLang = _T("en");
+    hyperlinkHandler_ = new iPediaHyperlinkHandler();
+    detectViewer();
     history_ = new LookupHistory();
     loadPreferences();
 #ifdef INTERNAL_BUILD

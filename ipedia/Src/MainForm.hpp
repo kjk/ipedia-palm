@@ -4,7 +4,7 @@
 #include <Logging.hpp>
 
 #include "iPediaForm.hpp"
-#include "Definition.hpp"
+#include <TextRenderer.hpp>
 #include "iPediaApplication.hpp"
 
 class LookupHistory;
@@ -13,11 +13,17 @@ class RenderingPreferences;
 
 class MainForm: public iPediaForm
 {
-    Definition article_;
-    Definition about_;
-    Definition register_;
-    Definition tutorial_;
-    Definition wikipedia_;
+
+    ArsLexis::FormObject graffiti_;
+    ArsLexis::Field termInputField_;
+    ArsLexis::ScrollBar scrollBar_;
+    ArsLexis::Control backButton_;
+    ArsLexis::Control forwardButton_;
+    ArsLexis::Control searchButton_;
+
+    ArsLexis::TextRenderer articleRenderer_;
+    ArsLexis::TextRenderer infoRenderer_;
+
     GenericTextElement* articleCountElement_;
     bool forceAboutRecalculation_;    
     long articleCountSet_;
@@ -33,16 +39,10 @@ class MainForm: public iPediaForm
         return static_cast<const iPediaApplication&>(application()).renderingPreferences();
     }
     
-    void handleScrollRepeat(const EventType& data);
-    
     void handleControlSelect(const EventType& data);
     
     bool handleKeyPress(const EventType& event);
     
-    void drawDefinition(ArsLexis::Graphics& graphics, const ArsLexis::Rectangle& bounds);
-    
-    void updateScrollBar();
- 
     void randomArticle();
     
     void copySelectionToClipboard();
@@ -65,10 +65,6 @@ class MainForm: public iPediaForm
     
     void updateNavigationButtons();
     
-    void handleExtendSelection(const EventType& event);
-    
-    Err renderDefinition(Definition& def, ArsLexis::Graphics& graphics, const ArsLexis::Rectangle& rect);
-
     class RenderingProgressReporter: public Definition::RenderingProgressReporter
     {
         MainForm& form_;
@@ -90,11 +86,9 @@ class MainForm: public iPediaForm
     
     RenderingProgressReporter renderingProgressReporter_;
     
-    Definition& currentDefinition();
-
     void prepareAbout();
 
-    void updateArticleCountEl(long articleCount, ArsLexis::String& dbTime);
+    void updateArticleCountEl(long articleCount, const ArsLexis::String& dbTime);
 
     void doLookupSelectedTerm(int sel);
 
@@ -117,7 +111,7 @@ protected:
 
     void resize(const ArsLexis::Rectangle& screenBounds);
     
-    void draw(UInt16 updateCode=frmRedrawUpdateCode);
+    void draw(UInt16 updateCode = frmRedrawUpdateCode);
     
     bool handleWindowEnter(const struct _WinEnterEventType& data);
     
@@ -127,20 +121,10 @@ protected:
     
     bool handleOpen();
     
+    void attachControls();
+    
 public:
 
-    enum ScrollUnit
-    {
-        scrollLine,
-        scrollPage
-    };
-    
-private:
-    
-    void scrollDefinition(int units, ScrollUnit unit, bool updateScrollbar);
-    
-public:
-    
     MainForm(iPediaApplication& app);
     
     enum DisplayMode
@@ -152,33 +136,11 @@ public:
         showWikipedia
     };
     
-    DisplayMode displayMode() const
-    {
-        return displayMode_;
-    }
+    DisplayMode displayMode() const {return displayMode_;}
 
-    bool fCanScrollDef() const
-    {
-        if (showAbout==displayMode_)
-            return false;
-        else
-            return true;
-    }
+    void setDisplayMode(DisplayMode displayMode);
 
-    void setDisplayMode(DisplayMode displayMode)
-    {
-        displayMode_ = displayMode;
-    }
-
-    void setUpdateDefinitionOnEntry(bool val=true)
-    {
-        updateDefinitionOnEntry_=val;
-    }
-
-    void scrollDefinition(int units, ScrollUnit unit)
-    {
-        scrollDefinition(units, unit, true);
-    }
+    void setUpdateDefinitionOnEntry(bool val = true) {updateDefinitionOnEntry_=val;}
 
     void prepareTutorial();    
 
@@ -191,9 +153,9 @@ public:
 private:
     
     UInt32      lastPenDownTimestamp_;
-    DisplayMode displayMode_:4;
-    bool        updateDefinitionOnEntry_:1;
-    bool        enableInputFieldAfterUpdate_:1;
+    DisplayMode displayMode_;
+    bool        updateDefinitionOnEntry_;
+    bool        enableInputFieldAfterUpdate_;
     
 };
 

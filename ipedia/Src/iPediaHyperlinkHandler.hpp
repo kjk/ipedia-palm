@@ -21,6 +21,7 @@ public:
 
     void handleHyperlink(Definition& definition, DefinitionElement& hyperlinkElement);
     
+    ~iPediaHyperlinkHandler();
 };
 
 #endif

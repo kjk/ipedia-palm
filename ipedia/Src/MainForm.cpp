@@ -15,7 +15,7 @@
 
 using namespace ArsLexis;
 
-static char_t** ExtractLinksFromDefinition(Definition& def, int& strListSize)
+static char_t** ExtractLinksFromDefinition(const TextRenderer& renderer, int& strListSize)
 {
     int       strCount;
     char_t ** strList;
@@ -28,8 +28,8 @@ static char_t** ExtractLinksFromDefinition(Definition& def, int& strListSize)
         }
         strCount = 0;
 
-        Definition::const_iterator end = def.end();
-        for (Definition::const_iterator it = def.begin(); it != end; ++it)
+        TextRenderer::const_iterator end = renderer.end();
+        for (TextRenderer::const_iterator it = renderer.begin(); it != end; ++it)
         {
             if ((*it)->isTextElement())
             {
@@ -63,28 +63,43 @@ MainForm::MainForm(iPediaApplication& app):
     articleCountSet_(-1),
     penUpsToEat_(0),
     log_(_T("MainForm")),
-    ignoreEvents_(false)
+    ignoreEvents_(false),
+    graffiti_(*this),
+    termInputField_(*this),
+    scrollBar_(*this),
+    backButton_(*this),
+    forwardButton_(*this),
+    searchButton_(*this),
+    articleRenderer_(*this, app.preferences().renderingPreferences, &scrollBar_),
+    infoRenderer_(*this, app.preferences().renderingPreferences, &scrollBar_)
 {
     articleCountSet_ = app.preferences().articleCount;
-    article_.setRenderingProgressReporter(&renderingProgressReporter_);
-    article_.setHyperlinkHandler(&app.hyperlinkHandler());
+    articleRenderer_.setRenderingProgressReporter(&renderingProgressReporter_);
+    articleRenderer_.setHyperlinkHandler(&app.hyperlinkHandler());
 
-    article_.setInteractionBehavior(  
-        Definition::behavMouseSelection 
-        | Definition::behavDoubleClickSelection
-        | Definition::behavUpDownScroll 
-        | Definition::behavHyperlinkNavigation  
+    articleRenderer_.setInteractionBehavior(  
+        TextRenderer::behavMouseSelection 
+      | TextRenderer::behavDoubleClickSelection
+      | TextRenderer::behavUpDownScroll 
+      | TextRenderer::behavHyperlinkNavigation  
     );
 
-    about_.setHyperlinkHandler(&app.hyperlinkHandler());
-    tutorial_.setHyperlinkHandler(&app.hyperlinkHandler());
-    register_.setHyperlinkHandler(&app.hyperlinkHandler());
-    wikipedia_.setHyperlinkHandler(&app.hyperlinkHandler());
-    prepareAbout();    
-    // TODO: make those on-demand
-    prepareHowToRegister();
-    prepareTutorial();
-    prepareWikipedia();
+    infoRenderer_.setHyperlinkHandler(&app.hyperlinkHandler());
+    setFocusControlId(termInputField);
+}
+
+void MainForm::attachControls() 
+{
+    iPediaForm::attachControls();
+    
+    graffiti_.attachByIndex(getGraffitiStateIndex());
+    termInputField_.attach(termInputField);
+    scrollBar_.attach(definitionScrollBar);
+    backButton_.attach(backButton);
+    forwardButton_.attach(forwardButton);
+    searchButton_.attach(searchButton);
+    articleRenderer_.attach(articleRenderer);
+    infoRenderer_.attach(infoRenderer);
 }
 
 bool MainForm::handleOpen()
@@ -93,6 +108,7 @@ bool MainForm::handleOpen()
     updateNavigationButtons();
     // to prevent accidental selection of links in main About page
     penUpsToEat_ = 1;
+    setDisplayMode(displayMode_);
     return fOk;
 }
 
@@ -108,118 +124,18 @@ void MainForm::resize(const ArsLexis::Rectangle& screenBounds)
         return;
 
     setBounds(screenBounds);
-
-    FormObject object(*this, definitionScrollBar);
-    object.bounds(bounds);
-    bounds.x() = screenBounds.extent.x-8;
-    bounds.height() = screenBounds.extent.y-36;
-    object.setBounds(bounds);
     
-    object.attach(termInputField);
-    object.bounds(bounds);
-    bounds.y() = screenBounds.extent.y-14;
-    bounds.width() = screenBounds.extent.x-63;
-    object.setBounds(bounds);
+    infoRenderer_.anchor(screenBounds, anchorRightEdge, 12, anchorBottomEdge, 36);
+    articleRenderer_.anchor(screenBounds, anchorRightEdge, 12, anchorBottomEdge, 36);
+    scrollBar_.anchor(screenBounds, anchorLeftEdge, 8, anchorBottomEdge, 36);
+    termInputField_.anchor(screenBounds, anchorRightEdge, 78, anchorTopEdge, 14);
 
-    object.attach(searchButton);
-    object.bounds(bounds);
-    bounds.x() = screenBounds.extent.x-34;
-    bounds.y() = screenBounds.extent.y-14;
-    object.setBounds(bounds);
-    
-    object.attach(backButton);
-    object.bounds(bounds);
-    bounds.y() = screenBounds.extent.y-14;
-    object.setBounds(bounds);
-
-    object.attach(forwardButton);
-    object.bounds(bounds);
-    bounds.y() = screenBounds.extent.y-14;
-    object.setBounds(bounds);
-        
+    searchButton_.anchor(screenBounds, anchorLeftEdge, 34, anchorTopEdge, 14);
+    backButton_.anchor(screenBounds, anchorNot, 0, anchorTopEdge, 14);
+    forwardButton_.anchor(screenBounds, anchorNot, 0, anchorTopEdge, 14);
+    graffiti_.anchor(screenBounds, anchorLeftEdge, 46, anchorTopEdge, 16);
+            
     update();    
-}
-
-void MainForm::updateScrollBar()
-{
-    ScrollBar scrollBar(*this, definitionScrollBar);
-    if (showAbout==displayMode())
-    {
-        scrollBar.hide();
-    }
-    else
-    {
-        Definition& def = currentDefinition();
-        scrollBar.setPosition(def.firstShownLine(), 0, def.totalLinesCount()-def.shownLinesCount(), def.shownLinesCount());
-        scrollBar.show();
-    }
-}
-
-Err MainForm::renderDefinition(Definition& def, ArsLexis::Graphics& graphics, const ArsLexis::Rectangle& rect)
-{
-    bool         fForceRecalculate = false;
-    if ( showAbout==displayMode() )
-    {
-        fForceRecalculate = forceAboutRecalculation_;
-        forceAboutRecalculation_ = false;
-    }
-    return def.render(graphics, rect, renderingPreferences(), fForceRecalculate);
-}
-
-void MainForm::drawDefinition(Graphics& graphics, const ArsLexis::Rectangle& bounds)
-{
-    Definition& def=currentDefinition();
-    assert(!def.empty());
-    Graphics::ColorSetter setBackground(graphics, Graphics::colorBackground, renderingPreferences().backgroundColor());
-    Rectangle rect(bounds);
-    rect.explode(0, 15, 0, -33);
-    graphics.erase(rect);
-    if (showAbout==displayMode())
-    {
-        updateScrollBar(); //hide the scrollbar
-        rect.explode(2, 2, -4, -4);
-    }
-    else
-        rect.explode(2, 2, -12, -4);
-    Err error = errNone;
-    bool doubleBuffer = true;
-    if (app().romVersionMajor()<5 && app().diaSupport() && app().diaSupport().hasSonySilkLib())
-        doubleBuffer=false;
-        
-    if (doubleBuffer)
-    {
-        WinHandle wh=WinCreateOffscreenWindow(bounds.width(), bounds.height(), windowFormat(), &error);
-        if (wh!=0)
-        {
-            {
-            Graphics offscreen(wh);
-            ActivateGraphics act(offscreen);
-            error=renderDefinition(def, offscreen, rect);
-            if (!error)
-                offscreen.copyArea(rect, graphics, rect.topLeft);
-            }
-            WinDeleteWindow(wh, false);
-        }
-        else 
-            doubleBuffer=false;
-    }
-    if (!doubleBuffer)
-        error=renderDefinition(def, graphics, rect);
-    if (errNone!=error) 
-    {
-        if (showAbout!=displayMode())
-        {
-            def.clear();
-            setTitle(appName);
-            setDisplayMode(showAbout);
-            update();
-        }
-        iPediaApplication::sendDisplayAlertEvent(notEnoughMemoryAlert);
-    } 
-    else
-    {
-        updateScrollBar();
-    }
 }
 
 void MainForm::draw(UInt16 updateCode)
@@ -227,79 +143,25 @@ void MainForm::draw(UInt16 updateCode)
     Graphics graphics(windowHandle());
     Rectangle rect(bounds());
     Rectangle progressArea(rect.x(), rect.height()-17, rect.width(), 17);
-    if (redrawAll==updateCode)
+    if (redrawAll == updateCode)
     {
         if (visible())
             graphics.erase(progressArea);
         iPediaForm::draw(updateCode);
         graphics.drawLine(rect.x(), rect.height()-18, rect.width(), rect.height()-18);
-        drawDefinition(graphics, rect);
     }
 
     if (app().fLookupInProgress())
-    {
         app().getLookupManager()->showProgress(graphics, progressArea);
-    }
 
     if (enableInputFieldAfterUpdate_)
     {
-        enableInputFieldAfterUpdate_=false;
-        Field field(*this, termInputField);
-        field.show();
-        field.focus();
+        enableInputFieldAfterUpdate_ = false;
+        termInputField_.show();
+        termInputField_.focus();
     }
 }
 
-
-inline void MainForm::handleScrollRepeat(const EventType& event)
-{
-    scrollDefinition(event.data.sclRepeat.newValue-event.data.sclRepeat.value, scrollLine, false);
-}
-
-void MainForm::scrollDefinition(int units, MainForm::ScrollUnit unit, bool updateScrollbar)
-{
-    Definition& def=currentDefinition();
-    if (def.empty())
-        return;
-    WinHandle thisWindow=windowHandle();
-    Graphics graphics(thisWindow);
-    if (scrollPage==unit)
-        units*=(def.shownLinesCount());
-    
-    bool doubleBuffer=true;
-
-    if (-1==units || 1==units)
-        doubleBuffer=false;
-
-    if (app().romVersionMajor()<5 && app().diaSupport() && app().diaSupport().hasSonySilkLib())
-        doubleBuffer=false;
-
-    if (doubleBuffer)
-    {
-        Rectangle b = bounds();
-        Rectangle rect = b;
-        rect.explode(2, 17, -12, -37);
-        Err error = errNone;
-
-        WinHandle wh=WinCreateOffscreenWindow(b.width(), b.height(), windowFormat(), &error);
-        if (wh!=0)
-        {
-            Graphics offscreen(wh);
-            ActivateGraphics act(offscreen);
-            graphics.copyArea(b, offscreen, Point(0, 0));
-            def.scroll(offscreen, renderingPreferences(), units);
-            offscreen.copyArea(b, graphics, Point(0, 0));
-            WinDeleteWindow(wh, false);
-        }
-        else
-            doubleBuffer = false;
-    }            
-    if (!doubleBuffer)
-        def.scroll(graphics, renderingPreferences(), units);
-
-    if (updateScrollbar)
-        updateScrollBar();
-}
 
 void MainForm::moveHistory(bool forward)
 {
@@ -316,7 +178,7 @@ void MainForm::handleControlSelect(const EventType& event)
     {
         case searchButton:
             // If button held for more than ~300msec, perform full text search.
-            if (TimGetTicks()-lastPenDownTimestamp_ > app.ticksPerSecond()/3)
+            if (TimGetTicks() - lastPenDownTimestamp_ > app.ticksPerSecond()/3)
                 fFullText = true;
             search(fFullText);
             break;
@@ -336,24 +198,15 @@ void MainForm::handleControlSelect(const EventType& event)
 
 void MainForm::setControlsState(bool enabled)
 {
-    {  // Scopes will allow compiler to optimize stack space allocating both form objects in the same place
-        Control control(*this, backButton);
-        control.setEnabled(enabled);
-        control.attach(forwardButton);
-        control.setEnabled(enabled);
-        control.attach(searchButton);
-        control.setEnabled(enabled);
-    }
-
-    {        
-        if (enabled)
-            enableInputFieldAfterUpdate_ =true;
-        else
-        {
-            releaseFocus();
-            Field field(*this, termInputField);
-            field.hide();
-        }
+    backButton_.setEnabled(enabled);
+    forwardButton_.setEnabled(enabled);
+    searchButton_.setEnabled(enabled);
+    if (enabled)
+        enableInputFieldAfterUpdate_  = true;
+    else
+    {
+        releaseFocus();
+        termInputField_.hide();
     }
 }
 
@@ -375,11 +228,9 @@ void MainForm::handleLookupFinished(const EventType& event)
             // recalc about info and show about screen
             setDisplayMode(showAbout);
             updateArticleCountEl(app().preferences().articleCount, app().preferences().databaseTime);
+
             forceAboutRecalculation_ = true;
-            {
-                Field field(*this, termInputField);        
-                field.replace(_T(""));
-            }
+            termInputField_.replace("");
             update();
             break;
 
@@ -396,17 +247,14 @@ void MainForm::handleLookupFinished(const EventType& event)
             break;
 
         case data.outcomeNotFound:
-            {
-                Field field(*this, termInputField);
-                field.select();
-            }
+            termInputField_.select();
             // No break is intentional.
 
         default:
             update();
     }
     
-    if (app().preferences().articleCount!=articleCountSet_) 
+    if (app().preferences().articleCount != articleCountSet_) 
     {
         articleCountSet_ = app().preferences().articleCount;
         updateArticleCountEl(articleCountSet_, app().preferences().databaseTime);
@@ -419,30 +267,18 @@ void MainForm::handleLookupFinished(const EventType& event)
 
     if (app().inStressMode())
     {
-        EventType event;
-        MemSet(&event, sizeof(event), 0);
-        event.eType=penDownEvent;
-        event.penDown=true;
-        event.tapCount=1;
-        event.screenX=1;
-        event.screenY=50;
-        EvtAddEventToQueue(&event);
-        MemSet(&event, sizeof(event), 0);
-        event.eType=penUpEvent;
-        event.penDown=false;
-        event.tapCount=1;
-        event.screenX=1;
-        event.screenY=50;
-        EvtAddEventToQueue(&event);
+        EvtResetAutoOffTimer();
         randomArticle();
     }        
 }
 
-void MainForm::updateArticleCountEl(long articleCount, ArsLexis::String& dbTime)
+void MainForm::updateArticleCountEl(long articleCount, const ArsLexis::String& dbTime)
 {
-    assert(NULL!=articleCountElement_);
-    assert(-1!=articleCount);
-    assert(8==dbTime.length());
+    if (NULL == articleCountElement_)
+        return;
+    assert(NULL != articleCountElement_);
+    assert(-1 != articleCount);
+    assert(8 == dbTime.length());
     char buffer[32];
     int len = formatNumber(articleCount, buffer, sizeof(buffer));
     assert(len != -1 );
@@ -464,32 +300,16 @@ void MainForm::updateArticleCountEl(long articleCount, ArsLexis::String& dbTime)
     articleCountText.append(1, '-');
     articleCountText.append(dbTime, 6, 2);
     articleCountElement_->setText(articleCountText);
-}
-
-void MainForm::handleExtendSelection(const EventType& event)
-{
-    const LookupManager* lookupManager=app().getLookupManager();
-    if (lookupManager && lookupManager->lookupInProgress())
-        return;
-    Definition& def = currentDefinition();
-    if (def.empty())
-        return;
-    ArsLexis::Point point(event.screenX, event.screenY);
-    Graphics graphics(windowHandle());
-    uint_t tapCount = 0;
-    if (penUpEvent == event.eType)
-        tapCount = event.tapCount;
-    def.extendSelection(graphics, app().preferences().renderingPreferences, point, tapCount);
-}
-
-inline void MainForm::handlePenDown(const EventType& event)
-{
-    lastPenDownTimestamp_=TimGetTicks();
-    handleExtendSelection(event);
+    
 }
 
 bool MainForm::handleEvent(EventType& event)
 {
+    if (showArticle == displayMode_ && articleRenderer_.handleEventInForm(event))
+        return true;
+    if (showArticle != displayMode_ && infoRenderer_.visible() && infoRenderer_.handleEventInForm(event))
+        return true;
+        
     bool handled=false;
     if (ignoreEvents_)
         return false;
@@ -508,19 +328,9 @@ bool MainForm::handleEvent(EventType& event)
             {
                 --penUpsToEat_;
                 handled = true;
-                break;
             }
-            handleExtendSelection(event);
             break;
     
-        case penMoveEvent:
-            handleExtendSelection(event);
-            break;        
-                
-        case sclRepeatEvent:
-            handleScrollRepeat(event);
-            break;
-            
         case LookupManager::lookupFinishedEvent:
             handleLookupFinished(event);
             handled = true;
@@ -540,9 +350,8 @@ bool MainForm::handleEvent(EventType& event)
             break;
 
         case iPediaApplication::appRegistrationFinished:
-            // need to re-create about page just in case registration status
-            // has changed
-            prepareAbout();
+            if (showAbout == displayMode_)
+                prepareAbout();
             forceAboutRecalculation_=true;
             update();
             handled = true;
@@ -582,7 +391,7 @@ bool MainForm::handleEvent(EventType& event)
             break;
 
         case penDownEvent:
-            handlePenDown(event);
+            lastPenDownTimestamp_=TimGetTicks();
             break;
     
         default:
@@ -595,22 +404,19 @@ void MainForm::updateNavigationButtons()
 {
     const LookupHistory& history=getHistory();
 
-    Control control(*this, backButton);
     bool enabled = history.hasPrevious();
-    control.setEnabled(enabled);
+    backButton_.setEnabled(enabled);
     if (enabled)
-        control.setGraphics(backBitmap);
+        backButton_.setGraphics(backBitmap);
     else
-        control.setGraphics(backDisabledBitmap);
+        backButton_.setGraphics(backDisabledBitmap);
         
-    control.attach(forwardButton);
     enabled = history.hasNext();
-    control.setEnabled(enabled);
+    forwardButton_.setEnabled(enabled);
     if (enabled)
-        control.setGraphics(forwardBitmap);
+        forwardButton_.setGraphics(forwardBitmap);
     else
-        control.setGraphics(forwardDisabledBitmap);
-
+        forwardButton_.setGraphics(forwardDisabledBitmap);
 }
 
 void MainForm::updateAfterLookup()
@@ -619,7 +425,7 @@ void MainForm::updateAfterLookup()
     assert(lookupManager!=0);
     if (lookupManager)
     {
-        article_.replaceElements(lookupManager->lastDefinitionElements());
+        articleRenderer_.replaceElements(lookupManager->lastDefinitionElements());
         setDisplayMode(showArticle);
         const LookupHistory& history = getHistory();
         if (history.hasCurrentTerm())
@@ -627,9 +433,8 @@ void MainForm::updateAfterLookup()
         
         update();
         
-        Field field(*this, termInputField);        
-        field.replace(lookupManager->lastSearchTerm());
-        field.select();                    
+        termInputField_.replace(lookupManager->lastSearchTerm());
+        termInputField_.select();                    
     }
     updateNavigationButtons();
 }
@@ -640,46 +445,11 @@ bool MainForm::handleKeyPress(const EventType& event)
 
     switch (event.data.keyDown.chr)
     {
-        case chrPageDown:
-            if (fCanScrollDef())
-            {
-                scrollDefinition(1, scrollPage);
-                handled = true;
-            }
-            break;
-            
-        case chrPageUp:
-            if (fCanScrollDef())
-            {
-                scrollDefinition(-1, scrollPage);
-                handled = true;
-            }
-            break;
-        
-        case chrDownArrow:
-            if (fCanScrollDef())
-            {
-                scrollDefinition(1, scrollLine);
-                handled = true;
-            }
-            break;
-
-        case chrUpArrow:
-            if (fCanScrollDef())
-            {
-                scrollDefinition(-1, scrollLine);
-                handled = true;
-            }
-            break;
-            
         case vchrRockerCenter:
         case chrLineFeed:
         case chrCarriageReturn:
-            {
-                lastPenDownTimestamp_ = TimGetTicks();
-                Control control(*this, searchButton);
-                control.hit();
-            }                
+            lastPenDownTimestamp_ = TimGetTicks();
+            searchButton_.hit();
             handled = true;
             break;
     }
@@ -756,7 +526,7 @@ bool MainForm::handleMenuCommand(UInt16 itemId)
             break;
 
         case aboutMenuItem:
-            if (showAbout!=displayMode())
+            if (showAbout != displayMode_)
             {
                 setDisplayMode(showAbout);
                 update();
@@ -765,7 +535,7 @@ bool MainForm::handleMenuCommand(UInt16 itemId)
             break;
 
         case tutorialMenuItem:
-            if (showTutorial!=displayMode())
+            if (showTutorial != displayMode_)
             {
                 setDisplayMode(showTutorial);
                 update();
@@ -784,19 +554,13 @@ bool MainForm::handleMenuCommand(UInt16 itemId)
             break;
             
         case forwardMenuItem:
-            {
-                Control control(*this, forwardButton);
-                if (control.enabled())
-                    control.hit();
-            }
+            if (forwardButton_.enabled())
+                forwardButton_.hit();
             break;
             
         case backMenuItem:
-            {
-                Control control(*this, backButton);
-                if (control.enabled())
-                    control.hit();
-            }
+            if (backButton_.enabled())
+                backButton_.hit();
             break;
 
         case historyMenuItem:
@@ -856,8 +620,11 @@ Exit:
 
 void MainForm::doLinkedArticles()
 {
-    Definition& def = currentDefinition();
-    app().strList = ExtractLinksFromDefinition(def, app().strListSize);
+    TextRenderer* renderer = &infoRenderer_;
+    if (showArticle == displayMode_)
+        renderer = &articleRenderer_;
+        
+    app().strList = ExtractLinksFromDefinition(*renderer, app().strListSize);
     int sel = showStringListForm(app().strList, app().strListSize);
     doLookupSelectedTerm(sel);    
 }
@@ -963,12 +730,14 @@ void MainForm::randomArticle()
 
 void MainForm::copySelectionToClipboard()
 {
-    Definition& def=currentDefinition();
-    if (def.empty())
+    TextRenderer* renderer = &infoRenderer_;
+    if (showArticle == displayMode_)
+        renderer = &articleRenderer_;
+     
+    if (renderer->empty())
         return;
     ArsLexis::String text;
-    def.selectionToText(text);
-    ClipboardAddItem(clipboardText, text.data(), text.length());
+    renderer->copySelection();
 }
 
 bool MainForm::handleWindowEnter(const struct _WinEnterEventType& data)
@@ -976,9 +745,6 @@ bool MainForm::handleWindowEnter(const struct _WinEnterEventType& data)
     const FormType* form = *this;
     if (data.enterWindow==static_cast<const void*>(form))
     {
-        FormObject object(*this, termInputField);
-        object.focus();
-        
         LookupManager* lookupManager = app().getLookupManager();
         if (lookupManager)
         {
@@ -1006,8 +772,7 @@ void MainForm::handleToggleStressMode()
 
 void MainForm::search(bool fullText)
 {
-    Field field(*this, termInputField);
-    const char* text = field.text();
+    const char* text = termInputField_.text();
     uint_t textLen;
     if (0==text || 0==(textLen=StrLen(text)))
         return;
@@ -1106,7 +871,7 @@ static void wikipediaActionCallback(void *data)
 {
     assert(NULL!=data);
     MainForm * mf = static_cast<MainForm*>(data);
-    assert(MainForm::showWikipedia!=mf->displayMode());
+    assert(MainForm::showWikipedia != mf->displayMode());
     mf->setDisplayMode(MainForm::showWikipedia);
     mf->update();
 }
@@ -1115,7 +880,7 @@ static void tutorialActionCallback(void *data)
 {
     assert(NULL!=data);
     MainForm * mf = static_cast<MainForm*>(data);
-    assert(MainForm::showTutorial!=mf->displayMode());
+    assert(MainForm::showTutorial != mf->displayMode());
     mf->setDisplayMode(MainForm::showTutorial);
     mf->update();
 }
@@ -1133,7 +898,7 @@ static void aboutActionCallback(void *data)
 {
     assert(NULL!=data);
     MainForm * mf = static_cast<MainForm*>(data);
-    assert(MainForm::showAbout!=mf->displayMode());
+    assert(MainForm::showAbout != mf->displayMode());
     mf->setDisplayMode(MainForm::showAbout);
     mf->update();
 }
@@ -1142,34 +907,14 @@ static void randomArticleActionCallback(void *data)
 {
     assert(NULL!=data);
     MainForm * mf = static_cast<MainForm*>(data);
-    assert(MainForm::showTutorial==mf->displayMode());
+    assert(MainForm::showTutorial == mf->displayMode());
     sendEvent(iPediaApplication::appRandomWord);
-}
-
-Definition& MainForm::currentDefinition()
-{
-    switch( displayMode() )
-    {
-        case showArticle:
-            return article_;
-        case showAbout:
-            return about_;
-        case showRegister:
-            return register_;
-        case showTutorial:
-            return tutorial_;
-        case showWikipedia:
-            return wikipedia_;
-        default:
-            // shouldn't happen
-            assert(0);
-            break;
-    }
-    return about_;
 }
 
 void MainForm::prepareAbout()
 {
+    articleCountElement_ = NULL;
+
     Definition::Elements_t elems;
     FormattedTextElement* text;
 
@@ -1244,7 +989,7 @@ void MainForm::prepareAbout()
     elems.push_back(new LineBreakElement(1,2));
 
     elems.push_back(articleCountElement_=new FormattedTextElement(" "));
-    if (-1!=articleCountSet_)    
+    if (-1 != articleCountSet_)    
     {
         updateArticleCountEl(articleCountSet_,app().preferences().databaseTime);
     }
@@ -1258,22 +1003,18 @@ void MainForm::prepareAbout()
     text->setJustification(DefinitionElement::justifyLeft);
     // url doesn't really matter, it's only to establish a hotspot
     text->setHyperlink("", hyperlinkTerm);
-    text->setActionCallback( tutorialActionCallback, static_cast<void*>(this) );
+    text->setActionCallback(tutorialActionCallback, this);
 
-    about_.replaceElements(elems);    
+    infoRenderer_.replaceElements(elems);    
 }
 
 // TODO: make those on-demand only to save memory
 void MainForm::prepareTutorial()
 {
-    tutorial_.setInteractionBehavior(
-            Definition::behavDoubleClickSelection | Definition::behavMouseSelection | 
-            Definition::behavUpDownScroll | Definition::behavHyperlinkNavigation
-        );
+    articleCountElement_ = NULL;
+
     Definition::Elements_t elems;
     FormattedTextElement* text;
-
-    assert( tutorial_.empty() );
 
     FontEffects fxBold;
     fxBold.setWeight(FontEffects::weightBold);
@@ -1342,9 +1083,9 @@ void MainForm::prepareTutorial()
     text->setJustification(DefinitionElement::justifyLeft);
     // url doesn't really matter, it's only to establish a hotspot
     text->setHyperlink("", hyperlinkTerm);
-    text->setActionCallback( aboutActionCallback, static_cast<void*>(this) );
+    text->setActionCallback(aboutActionCallback, this);
 
-    tutorial_.replaceElements(elems);
+    infoRenderer_.replaceElements(elems);
 }
 
 static void registerActionCallback(void *data)
@@ -1357,10 +1098,10 @@ static void registerActionCallback(void *data)
 // TODO: make those on-demand only to save memory
 void MainForm::prepareHowToRegister()
 {
+    articleCountElement_ = NULL;
+
     Definition::Elements_t elems;
     FormattedTextElement* text;
-
-    assert( register_.empty() );
 
     FontEffects fxBold;
     fxBold.setWeight(FontEffects::weightBold);
@@ -1397,18 +1138,16 @@ void MainForm::prepareHowToRegister()
     text->setJustification(DefinitionElement::justifyLeft);
     // url doesn't really matter, it's only to establish a hotspot
     text->setHyperlink("", hyperlinkTerm);
-    text->setActionCallback( aboutActionCallback, static_cast<void*>(this) );
+    text->setActionCallback(aboutActionCallback, this);
 
-    register_.replaceElements(elems);
+    infoRenderer_.replaceElements(elems);
 }
 
 void MainForm::prepareWikipedia()
 {
+    articleCountElement_ = NULL;
     Definition::Elements_t elems;
     FormattedTextElement* text;
-
-    assert( wikipedia_.empty() );
-
     FontEffects fxBold;
     fxBold.setWeight(FontEffects::weightBold);
 
@@ -1428,7 +1167,47 @@ void MainForm::prepareWikipedia()
     text->setJustification(DefinitionElement::justifyLeft);
     // url doesn't really matter, it's only to establish a hotspot
     text->setHyperlink("", hyperlinkTerm);
-    text->setActionCallback( aboutActionCallback, static_cast<void*>(this) );
+    text->setActionCallback(aboutActionCallback, this);
 
-    wikipedia_.replaceElements(elems);
+    infoRenderer_.replaceElements(elems);
 }    
+
+void MainForm::setDisplayMode(MainForm::DisplayMode mode) 
+{
+    switch (mode) 
+    {
+        case showAbout:
+            articleRenderer_.hide();
+            prepareAbout();
+            infoRenderer_.show();
+            break;
+            
+        case showArticle:
+            infoRenderer_.hide();
+            articleRenderer_.show();
+            break;
+            
+        case showRegister:
+            articleRenderer_.hide();
+            prepareHowToRegister();
+            infoRenderer_.show();
+            break;
+            
+        case showTutorial:
+            articleRenderer_.hide();
+            prepareTutorial();
+            infoRenderer_.show();
+            break;
+            
+        case showWikipedia:
+            articleRenderer_.hide();
+            prepareWikipedia();
+            infoRenderer_.show();
+            break;
+ 
+        default:
+            assert(false);          
+    }
+    displayMode_ = mode;
+       
+}
