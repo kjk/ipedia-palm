@@ -14,7 +14,7 @@ class LookupHistory;
 //#define serverLocalhost    "192.168.0.1:9000"
 #define serverOfficial   "ipedia.arslexis.com:9000"
 
-#define defaultServer serverLocalhost
+#define defaultServer serverOfficial
 
 class iPediaApplication: public ArsLexis::RichApplication 
 {

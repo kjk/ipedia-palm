@@ -123,7 +123,7 @@ ArsLexis::status_t iPediaConnection::open()
     // but for users we simplify as much as possible
     status=_T("Sending requests...");
 #else
-    status=+T("Downloading article");
+    status=_T("Downloading article");
 #endif
 
     lookupManager_.setStatusText(status);
@@ -135,6 +135,9 @@ ArsLexis::status_t iPediaConnection::open()
         ArsLexis::SocketLinger linger;
         linger.portable.onOff=true;
         linger.portable.time=0;
+        ArsLexis::Application& app=ArsLexis::Application::instance();
+        if (5==app.romVersionMajor())
+            std::swap(linger.portable.onOff, linger.portable.time);
         error=socket().setLinger(linger);
         if (error)
         {
