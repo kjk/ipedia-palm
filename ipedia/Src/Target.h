@@ -12,11 +12,15 @@
 #include <PalmOS_Headers_Debug>
 #endif
 
-#define INTERNAL_BUILD
+#define INTERNAL_BUILD 1
+
+// define DETAILED_CONNECTION_STATUS to get more detailed info about the stages
+// of retrieving data from the server
+//#define DETAILED_CONNECTION_STATUS 1
 #define ARSLEXIS_USE_NEW_FRAMEWORK 1
 #define _PALM_OS  1
 
-#define ALLOCATION_LOG_PATH "\\var\\log\\iPedia_allocation.log"
+#define ALLOCATION_LOG_PATH "\\var\\log\\ipedia_allocation.log"
 
 #ifndef NDEBUG
 //! Some functions depend on this non-standard symbol instead of standard-compliant @c NDEBUG.

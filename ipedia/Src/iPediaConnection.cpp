@@ -67,7 +67,12 @@ void iPediaConnection::prepareRequest()
         appendField(request, cookieField, app.preferences().cookie);
 
     if (!term_.empty())
-        appendField(request, (performFullTextSearch_?searchField:getDefinitionField), term_);
+    {
+        if (performFullTextSearch_)
+            appendField(request, searchField, term_);
+        else
+            appendField(request, getDefinitionField, term_);
+    }
 
     registering_=!(app.preferences().serialNumberRegistered || chrNull==app.preferences().serialNumber[0]);
     if (registering_)
@@ -94,7 +99,7 @@ ArsLexis::status_t iPediaConnection::enqueue()
     if (error)
         return error;
 
-#ifdef INTERNAL_BUILD
+#ifdef DETAILED_CONNECTION_STATUS
     lookupManager_.setStatusText(_T("Opening connection..."));
 #else
     lookupManager_.setStatusText(_T("Downloading article"));
@@ -113,9 +118,9 @@ ArsLexis::status_t iPediaConnection::open()
         return error;
 
     String status;
-#ifdef INTERNAL_BUILD
-    // we want to see detailed info about the connection stages
-    // in internal build, but for users we simplify as much as possible
+#ifdef DETAILED_CONNECTION_STATUS
+    // sometimes we want to see detailed info about the connection stages
+    // but for users we simplify as much as possible
     status=_T("Sending requests...");
 #else
     status=+T("Downloading article");
@@ -147,7 +152,7 @@ ArsLexis::status_t iPediaConnection::notifyProgress()
     if (error)
         return error;
 
-#ifdef INTERNAL_BUILD
+#ifdef DETAILED_CONNECTION_STATUS
     String status;
     if (sending())
         status = _T("Sending request...");
