@@ -22,6 +22,9 @@ class MainForm: public iPediaForm
     bool forceAboutRecalculation_;    
     long articleCountSet_;
     int  penUpsToEat_;
+    bool ignoreEvents_;
+
+    int showStringListForm(char_t* strList[], int strListSize);
 
     const LookupHistory& getHistory() const;
     
@@ -93,7 +96,7 @@ class MainForm: public iPediaForm
 
     void updateArticleCountEl(long articleCount, ArsLexis::String& dbTime);
 
-    void doLookupSelectedTerm(EventType& event);
+    void doLookupSelectedTerm(int sel);
 
     void doHistory();
 
@@ -103,7 +106,7 @@ class MainForm: public iPediaForm
 
     void changeDatabase();
 
-    void doDbSelected(EventType &event);
+    void doDbSelected(int sel);
 
 protected:
 

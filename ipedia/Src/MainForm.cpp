@@ -66,7 +66,8 @@ MainForm::MainForm(iPediaApplication& app):
     articleCountElement_(0),
     articleCountSet_(-1),
     penUpsToEat_(0),
-    log_(_T("MainForm"))
+    log_(_T("MainForm")),
+    ignoreEvents_(false)
 {
     articleCountSet_ = app.preferences().articleCount;
     article_.setRenderingProgressReporter(&renderingProgressReporter_);
@@ -479,6 +480,8 @@ inline void MainForm::handlePenDown(const EventType& event)
 bool MainForm::handleEvent(EventType& event)
 {
     bool handled=false;
+    if (ignoreEvents_)
+        return false;
     switch (event.eType)
     {
         case keyDownEvent:
@@ -531,26 +534,6 @@ bool MainForm::handleEvent(EventType& event)
             prepareAbout();
             forceAboutRecalculation_=true;
             update();
-            handled = true;
-            break;
-
-        case iPediaApplication::appDbnameStringSelected:
-            doDbSelected(event);
-            handled = true;
-            break;
-
-        case iPediaApplication::appHistoryStringSelected:
-            doLookupSelectedTerm(event);
-            handled = true;
-            break;
-
-        case iPediaApplication::appLinkedArticlesStringSelected:
-            doLookupSelectedTerm(event);
-            handled = true;
-            break;
-
-        case iPediaApplication::appLinkingArticlesStringSelected:
-            doLookupSelectedTerm(event);
             handled = true;
             break;
 
@@ -838,17 +821,13 @@ void MainForm::doHistory()
     if (lookupHistory.empty())
         return;
     const StringList_t& history = lookupHistory.getHistory();
-    StringListForm* form = new StringListForm(app(), stringListForm, stringList, selectButton, cancelButton, iPediaApplication::appHistoryStringSelected);
     app().strList = StringListFromStringList(history, app().strListSize); 
-    form->SetStringList(app().strListSize, app().strList);
-    form->popup();
+    int sel = showStringListForm(app().strList, app().strListSize);
+    doLookupSelectedTerm(sel);    
 }
 
-void MainForm::doLookupSelectedTerm(EventType& event)
+void MainForm::doLookupSelectedTerm(int selectedStr)
 {
-    StringListEventData& data = reinterpret_cast<StringListEventData&>(event.data);
-
-    int selectedStr = data.value;
     if (NOT_SELECTED==selectedStr)
         goto Exit;
 
@@ -867,10 +846,9 @@ Exit:
 void MainForm::doLinkedArticles()
 {
     Definition& def = currentDefinition();
-    StringListForm* form = new StringListForm(app(), stringListForm, stringList, selectButton, cancelButton, iPediaApplication::appLinkedArticlesStringSelected);
     app().strList = ExtractLinksFromDefinition(def, app().strListSize);
-    form->SetStringList(app().strListSize, app().strList);
-    form->popup();
+    int sel = showStringListForm(app().strList, app().strListSize);
+    doLookupSelectedTerm(sel);    
 }
 
 void MainForm::doLinkingArticles()
@@ -879,15 +857,14 @@ void MainForm::doLinkingArticles()
     if (NULL==lookupManager)
         return;
 
-    StringListForm* form = new StringListForm(app(), stringListForm, stringList, selectButton, cancelButton, iPediaApplication::appLinkingArticlesStringSelected);
     const String& reverseLinks = lookupManager->lastReverseLinks();
     app().strList = StringListFromString(reverseLinks, "\n", app().strListSize);
     for (int i=0; i<app().strListSize; i++)
     {
         replaceCharInString(app().strList[i], _T('_'), _T(' '));
     }
-    form->SetStringList(app().strListSize, app().strList);
-    form->popup();
+    int sel = showStringListForm(app().strList, app().strListSize);
+    doLookupSelectedTerm(sel);    
 }
 
 void MainForm::changeDatabase()
@@ -923,17 +900,25 @@ void MainForm::changeDatabase()
     }
 
     app().strList = strList;
-    StringListForm* form = new StringListForm(app(), stringListForm, stringList, selectButton, cancelButton, iPediaApplication::appDbnameStringSelected);
-    form->SetStringList(app().strListSize, app().strList);
-    form->popup();
+    int sel = showStringListForm(app().strList, app().strListSize);
+    doDbSelected(sel);
 }
 
-void MainForm::doDbSelected(EventType& event)
+int MainForm::showStringListForm(char_t* strList[], int strListSize)
 {
-    StringListEventData& data = reinterpret_cast<StringListEventData&>(event.data);
+    StringListForm* form = new StringListForm(app(), stringListForm, stringList, selectButton, cancelButton);
+    form->initialize();
+    form->SetStringList(app().strListSize, app().strList);
+    ignoreEvents_ = true; // Strange things happen here and if we don't prevent MainForm from processing events we'll overflow the stack :-(
+    int sel = form->showModalAndGetSelection();
+    ignoreEvents_ = false;
+    update();
+    delete form;
+    return sel;    
+}
 
-    int selectedStr = data.value;
-    log().error() << _T("doDbSelected selectedStr=") << selectedStr;
+void MainForm::doDbSelected(int selectedStr)
+{
     if (NOT_SELECTED == selectedStr)
         goto Exit;
 
@@ -946,11 +931,8 @@ void MainForm::doDbSelected(EventType& event)
     langName[2] = '\0';
 
     LookupManager* lookupManager=app().getLookupManager(true);
-    if (NULL==lookupManager)
-    {
-        log().error() << _T("doDbSelected no LookupManager");
-    }
-    else if (lookupManager->lookupInProgress())
+    assert(NULL != lookupManager);
+    if (lookupManager->lookupInProgress())
     {
         log().error() << _T("doDbSelected lookupInProgress");
     }
