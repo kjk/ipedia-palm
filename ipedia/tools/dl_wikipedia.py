@@ -19,7 +19,11 @@ g_workingDir = "g:\\wikipedia\\"
 if sys.platform == "linux2":
     # this is our rackshack server
     g_workingDir = "/ipedia/wikipedia"
-
+else:
+    # this must be windows
+    if "KJKLAP1"==os.getenv("USERDOMAIN"):
+        # this must be my laptop
+        g_workingDir = "c:\\wikipedia\\"
 #print "Working dir: %s" % g_workingDir
 
 g_logFileName = os.path.join(g_workingDir,"log.txt")
@@ -146,7 +150,7 @@ def downloadUrl(url):
     os.chdir(g_workingDir)
     (fileNameGzipped, fileNameUngzipped) = fileNamesFromUrl(url)
 
-    p = process.ProcessOpen(['wget', '-c', url, '--output-document', fileNameGzipped])
+    p = process.ProcessOpen(['wget', '-q', '-c', url, '--output-document', fileNameGzipped])
 
     res_stdout = p.stdout.read()                                     
     res_stderr = p.stderr.read()
@@ -171,7 +175,7 @@ def downloadDb(url):
 
 if __name__=="__main__":
     getCurrentFileUrls()
-    downloadDb(g_enUrlToDownload)
     downloadDb(g_frUrlToDownload)
     downloadDb(g_deUrlToDownload)
+    downloadDb(g_enUrlToDownload)
 
