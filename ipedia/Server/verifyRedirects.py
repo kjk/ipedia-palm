@@ -58,15 +58,13 @@ def validateRedirects():
 
     cur.execute("SELECT title,redirect FROM redirects")
     redirects = {}
-    count = 0
-    for row in cur.fetchall():
+    allRows = cur.fetchall()
+    count = len(allRows)
+    for row in allRows:
         title = row[0]
         redirect = row[1]
         redirects[title] = redirect
-        count += 1
-        if 0 == (count % 1000):
-            print "Loaded %d redirects, last title='%s'" % (count,title)
-    print "Validating redirects"
+    print "Loaded %d redirects, starting to validate redirects" % count
     count = 0
     invalidCount = 0
     for (title,redirect) in redirects.items():
