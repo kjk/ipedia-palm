@@ -703,6 +703,11 @@ def usageAndExit():
 def main():
     global g_fVerbose, g_fPsycoAvailable
     g_fVerbose=iPediaDatabase.g_fVerbose = True
+
+    fDemon = arsutils.fDetectRemoveCmdFlag("-demon")
+    if not fDemon:
+        fDemon = arsutils.fDetectRemoveCmdFlag("-daemon")
+
     if arsutils.fDetectRemoveCmdFlag( "-silent" ):
         g_fVerbose, iPediaDatabase.g_fVerbose = False, False
 
@@ -740,16 +745,14 @@ def main():
     if len(sys.argv) != 1:
         usageAndExit()
 
+    if fDemon:
+        daemonize('/dev/null','/tmp/ipedia.log','/tmp/ipedia.log')
+
     factory=iPediaFactory(dbName)
     reactor.listenTCP(9000, factory)
     reactor.listenTCP(9001, iPediaTelnetFactory(factory))
     reactor.run()
 
 if __name__ == "__main__":
-    fDemon = arsutils.fDetectRemoveCmdFlag("-demon")
-    if not fDemon:
-        fDemon = arsutils.fDetectRemoveCmdFlag("-daemon")
-    if fDemon:
-        daemonize('/dev/null','/tmp/ipedia.log','/tmp/ipedia.log')
     main()
 
