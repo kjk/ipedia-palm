@@ -495,6 +495,11 @@ bool MainForm::handleEvent(EventType& event)
             handled=true;
             break;
 
+        case iPediaApplication::appRandomWord:
+            randomArticle();
+            handled=true;
+            break;
+
         case penDownEvent:
             handlePenDown(event);
             break;
@@ -889,6 +894,21 @@ static void unregisteredActionCallback(void *data)
     mf->update();
 }
 
+static void aboutActionCallback(void *data)
+{
+    assert(NULL!=data);
+    MainForm * mf = static_cast<MainForm*>(data);
+    assert(MainForm::showTutorial!=mf->displayMode());
+    mf->setDisplayMode(MainForm::showAbout);
+    mf->update();
+}
+
+static void randomArticleActionCallback(void *data)
+{
+    assert(NULL!=data);
+    MainForm * mf = static_cast<MainForm*>(data);
+    sendEvent(iPediaApplication::appRandomWord);
+}
 
 Definition& MainForm::currentDefinition()
 {
@@ -1001,12 +1021,19 @@ void MainForm::prepareTutorial()
     FontEffects fxBold;
     fxBold.setWeight(FontEffects::weightBold);
 
-    elems.push_back(text=new FormattedTextElement("iPedia is an on-line (requires wireless internet access) encyclopedia. You can use iPedia to find information on a number of topics."));
+    elems.push_back(text=new FormattedTextElement("Go back to main screen."));
+    text->setJustification(DefinitionElement::justifyLeft);
+    // url doesn't really matter, it's only to establish a hotspot
+    text->setHyperlink("", hyperlinkExternal);
+    text->setActionCallback( aboutActionCallback, static_cast<void*>(this) );
     elems.push_back(new LineBreakElement(4,3));
 
-    elems.push_back(text=new FormattedTextElement("Finding encyclopedia article."));
+    elems.push_back(text=new FormattedTextElement("iPedia is an on-line encyclopedia. Use it to get information and facts on a number of topics."));
+    elems.push_back(new LineBreakElement(4,3));
+
+    elems.push_back(text=new FormattedTextElement("Finding an encyclopedia article."));
     text->setEffects(fxBold);
-    elems.push_back(text=new FormattedTextElement(" Let's assume you want to read an encyclopedia article on Seattle. Enter 'Seattle' in the text field at the bottom of the screen and press 'Search' (or center button on 5-way navigator)."));
+    elems.push_back(text=new FormattedTextElement(" Let's assume you want to read an encyclopedia article on Seattle. Enter 'Seattle' in the text field at the bottom of the screen and press 'Search' (or center button on Treo's 5-way navigator)."));
     text->setJustification(DefinitionElement::justifyLeft);
     elems.push_back(new LineBreakElement(4,3));
 
@@ -1014,14 +1041,43 @@ void MainForm::prepareTutorial()
     text->setEffects(fxBold);
     elems.push_back(text=new FormattedTextElement(" Let's assume you want to find all article that mention Seattle. Enter 'Seattle' in the text field and use 'Main/Full-text search' menu item. In response you'll receive a list of articles with word 'Seattle'."));
     text->setJustification(DefinitionElement::justifyLeft);
-    //elems.push_back(new LineBreakElement(4,3));
+    elems.push_back(new LineBreakElement(4,3));
 
-    // TODO: some more, i.e. about:
-    // * displaying last search results
-    // * refining the search,
-    // * random article
-    // * ideas on how to use iPedia (find info about a city, country, actor, band, album
-    // * treo 5-way nav support
+    elems.push_back(text=new FormattedTextElement("Refining the search."));
+    text->setEffects(fxBold);
+    elems.push_back(text=new FormattedTextElement(" If there are too many results, you can refine (narrow) the search results by adding additional terms e.g. type 'museum' and press 'Refine' button. You'll get a smaller list of articles that contain both 'Seattle' and 'museum'."));
+    text->setJustification(DefinitionElement::justifyLeft);
+    elems.push_back(new LineBreakElement(4,3));
+
+    elems.push_back(text=new FormattedTextElement("Random article."));
+    text->setEffects(fxBold);
+    elems.push_back(text=new FormattedTextElement(" You can use menu 'Main/Random article' (or "));
+    text->setJustification(DefinitionElement::justifyLeft);
+    elems.push_back(text=new FormattedTextElement("click here"));
+    text->setJustification(DefinitionElement::justifyLeft);
+    // url doesn't really matter, it's only to establish a hotspot
+    text->setHyperlink("", hyperlinkExternal);
+    text->setActionCallback( randomArticleActionCallback, static_cast<void*>(this) );
+    elems.push_back(text=new FormattedTextElement(") to get a random article."));
+    text->setJustification(DefinitionElement::justifyLeft);
+    elems.push_back(new LineBreakElement(4,3));
+
+    elems.push_back(text=new FormattedTextElement("More information."));
+    text->setEffects(fxBold);
+    elems.push_back(text=new FormattedTextElement(" Please visit our website "));
+    text->setJustification(DefinitionElement::justifyLeft);
+    elems.push_back(text=new FormattedTextElement("arslexis.com"));
+    text->setJustification(DefinitionElement::justifyLeft);
+    text->setHyperlink("http://www.arslexis.com/pda/palm.html", hyperlinkExternal);
+    elems.push_back(text=new FormattedTextElement(" for more information about iPedia."));
+    text->setJustification(DefinitionElement::justifyLeft);
+    elems.push_back(new LineBreakElement(4,3));
+
+    elems.push_back(text=new FormattedTextElement("Go back to main screen."));
+    text->setJustification(DefinitionElement::justifyLeft);
+    // url doesn't really matter, it's only to establish a hotspot
+    text->setHyperlink("", hyperlinkExternal);
+    text->setActionCallback( aboutActionCallback, static_cast<void*>(this) );
 
     tutorial_.replaceElements(elems);
 }
@@ -1059,7 +1115,13 @@ void MainForm::prepareHowToRegister()
     // url doesn't really matter, it's only to establish a hotspot
     text->setHyperlink("", hyperlinkExternal);
     text->setActionCallback( registerActionCallback, static_cast<void*>(this) );
-    elems.push_back(text=new FormattedTextElement(") to enter registration number."));
+    elems.push_back(text=new FormattedTextElement(") to enter registration number. "));
+
+    elems.push_back(text=new FormattedTextElement("Go back to main screen."));
+    text->setJustification(DefinitionElement::justifyLeft);
+    // url doesn't really matter, it's only to establish a hotspot
+    text->setHyperlink("", hyperlinkExternal);
+    text->setActionCallback( aboutActionCallback, static_cast<void*>(this) );
 
     register_.replaceElements(elems);
 }
