@@ -451,8 +451,8 @@ void DefinitionParser::parseText(uint_t end, ElementStyle style)
 GenericTextElement* DefinitionParser::createTextElement(const String& text, String::size_type start, String::size_type length)
 {
     String copy(text, start, length);
-    String::size_type colonPos;
-    if (insideHyperlink_ && hyperlinkTerm == hyperlinkType_ && String::npos != (colonPos = hyperlinkTarget_.find(_T(':'))))
+    String::size_type colonPos = hyperlinkTarget_.find(_T(':'));
+    if (insideHyperlink_ && (hyperlinkTerm == hyperlinkType_) && (String::npos != colonPos))
     {
         if (copy == hyperlinkTarget_)
             copy.erase(0, colonPos+1);

@@ -901,28 +901,22 @@ void MainForm::changeDatabase()
 
     char_t **strList = StringListFromString(availableLangs, " ", app().strListSize);
     const char_t* fullName;
+    String nameToDisplay;
 
     for (int i=0; i<app().strListSize; i++)
     {
-        if (0==tstrcmp(strList[i], _T("en")) )
-        {
-            fullName = "English (en)";
-        }
-        else if (0==tstrcmp(strList[i], _T("fr")) )
-        {
-            fullName = "French (fr)";
-        }
-        else if (0==tstrcmp(strList[i], _T("de")) )
-        {
-            fullName = "German (de)";
-        }
+        fullName = GetLangNameByLangCode(strList[i]);
+        if (NULL != fullName)
+            nameToDisplay.assign(fullName);
         else
-        {
-            assert(false);
-            fullName = "Unknown (en)";
-        }
+            nameToDisplay.assign(_T("Unknown"));
+
+        nameToDisplay.append(_T(" ("));
+        nameToDisplay.append(strList[i]);
+        nameToDisplay.append(_T(")"));
+
         delete [] strList[i];
-        strList[i] = StringCopy(fullName);
+        strList[i] = StringCopy(nameToDisplay.c_str());
     }
 
     app().strList = strList;

@@ -625,13 +625,22 @@ def iterWikipediaArticles(sqlFileName, limit=None, fUseCache=False, fRecreateCac
                     print "title after stripping is empty string, so skipping '%s'" % line.strip()
                     continue
                 lineParts = line.split(",")
-                ns = int(lineParts[0])
-                assert ns==NS_MAIN
-                txtOffset = int(lineParts[1])
-                txtLen = int(lineParts[2])
-                md5Hash = lineParts[3]
-                viewCount = int(lineParts[4])
-                article = WikipediaArticleFromCache(sqlFileName,title,ns,txtOffset,txtLen,md5Hash,viewCount)
+                try:
+                    ns = int(lineParts[0])
+                    assert ns==NS_MAIN
+                    txtOffset = int(lineParts[1])
+                    txtLen = int(lineParts[2])
+                    md5Hash = lineParts[3]
+                    viewCount = int(lineParts[4])
+                    article = WikipediaArticleFromCache(sqlFileName,title,ns,txtOffset,txtLen,md5Hash,viewCount)
+                except ValueError,ex:
+                    # in en 2004-09-17 db we have an error in ns = int(lineParts[0]), so just ignore it
+                    print "exception in iterWikipediaArticles"
+                    print arsutils.exceptionAsStr(ex)
+                    print "line:"
+                    print line
+                    print "lineParts[0]=%s" % lineParts[0]
+                    continue
 
             yield article
             count += 1
