@@ -188,8 +188,8 @@ void MainForm::draw(UInt16 updateCode)
         drawDefinition(graphics, rect);
     }
 
-    const iPediaApplication& app=static_cast<const iPediaApplication&>(application());
-    const LookupManager* lookupManager=app.getLookupManager();
+    iPediaApplication& app=static_cast<iPediaApplication&>(application());
+    LookupManager* lookupManager=app.getLookupManager();
     if (lookupManager && lookupManager->lookupInProgress())
         lookupManager->showProgress(graphics, progressArea);
     if (enableInputFieldAfterUpdate_)
