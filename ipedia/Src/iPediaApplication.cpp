@@ -23,9 +23,10 @@ IMPLEMENT_APPLICATION_CREATOR(appFileCreator)
 
 using namespace ArsLexis;
 
-//#pragma inline_depth(0)
+#ifndef NDEBUG
+#pragma inline_depth 0
+#endif
 
-#pragma inline_bottom_up on
 iPediaApplication::iPediaApplication():
     history_(0),
     lookupManager_(0),
@@ -46,6 +47,10 @@ iPediaApplication::iPediaApplication():
 # endif
 #endif
 }
+
+#ifndef NDEBUG
+#pragma inline_depth 2
+#endif
 
 inline void iPediaApplication::detectViewer()
 {

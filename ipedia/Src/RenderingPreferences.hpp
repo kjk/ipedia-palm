@@ -10,6 +10,7 @@ enum HyperlinkType
     hyperlinkBookmark,
     hyperlinkTerm,
     hyperlinkExternal,
+    hyperlinkUrl,
     hyperlinkDefault = hyperlinkBookmark
 };
 
