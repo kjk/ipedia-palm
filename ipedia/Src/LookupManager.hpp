@@ -44,7 +44,7 @@ struct LookupFinishedEventData
     
 };
 
-class LookupManager: public ArsLexis::LookupManagerBase<iPediaApplication::appLookupEventFirst, LookupFinishedEventData>,  private ArsLexis::NonCopyable
+class LookupManager: public ArsLexis::LookupManagerBase<iPediaApplication::appLookupEventFirst, LookupFinishedEventData>
 {
     LookupHistory& history_;
 

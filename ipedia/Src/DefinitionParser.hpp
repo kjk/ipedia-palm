@@ -25,17 +25,6 @@ class ListNumberElement;
  */
 class DefinitionParser: public ArsLexis::FieldPayloadProtocolConnection::PayloadHandler
 {
-    bool openEmphasize_;
-    bool openStrong_;
-    bool openVeryStrong_;
-    uint_t openTypewriter_;
-    uint_t openSmall_;
-    uint_t openStrikeout_;
-    uint_t openUnderline_;
-    uint_t openNowiki_;
-    uint_t openSuperscript_;
-    uint_t openSubscript_;
-    
     void clear();
     
     bool isPlainText() const;
@@ -108,26 +97,14 @@ class DefinitionParser: public ArsLexis::FieldPayloadProtocolConnection::Payload
     
     Definition::Elements_t elements_;
     const ArsLexis::String* text_;
-    uint_t parsePosition_;
-    uint_t lineEnd_;
-    uint_t lastElementStart_;
-    uint_t lastElementEnd_;
-    uint_t unnamedLinksCount_;
-    ArsLexis::String textLine_;
-    uint_t textPosition_;
-    
-    ArsLexis::String hyperlinkTarget_;
-    bool insideHyperlink_;
-    HyperlinkType hyperlinkType_;
-    
-    void parseText(uint_t end, ElementStyle style);
-    
-    void parse();
-    
-    void decodeHTMLCharacterEntityRefs(ArsLexis::String& text) const;
-    
-    void appendElement(DefinitionElement* element);
-    
+ 
+    bool openEmphasize_:1;
+    bool openStrong_:1;
+    bool openVeryStrong_:1;
+    bool insideHyperlink_:1;
+
+    HyperlinkType hyperlinkType_:4;
+
     enum LineType
     {
         emptyLine,
@@ -138,10 +115,38 @@ class DefinitionParser: public ArsLexis::FieldPayloadProtocolConnection::Payload
         definitionListLine
     };
     
-    LineType lineType_;
-    LineType previousLineType_;
+    LineType lineType_:4;
+    LineType previousLineType_:4;
 
-    ElementStyle currentStyle_;
+    ElementStyle currentStyle_:4;
+    
+
+    uint_t openTypewriter_;
+    uint_t openSmall_;
+    uint_t openStrikeout_;
+    uint_t openUnderline_;
+    uint_t openNowiki_;
+    uint_t openSuperscript_;
+    uint_t openSubscript_;
+   
+    uint_t parsePosition_;
+    uint_t lineEnd_;
+    uint_t lastElementStart_;
+    uint_t lastElementEnd_;
+    uint_t unnamedLinksCount_;
+    
+    ArsLexis::String textLine_;
+    uint_t textPosition_;
+    
+    ArsLexis::String hyperlinkTarget_;
+    
+    void parseText(uint_t end, ElementStyle style);
+    
+    void parse();
+    
+    void decodeHTMLCharacterEntityRefs(ArsLexis::String& text) const;
+    
+    void appendElement(DefinitionElement* element);
     
     static bool lineAllowsContinuation(LineType lineType)
     {
