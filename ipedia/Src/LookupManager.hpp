@@ -102,7 +102,7 @@ public:
 
     void lookupRandomTerm();
 
-    bool LookupManager::lastSearchTermDifferent(const ArsLexis::String& term);
+    bool lastSearchTermDifferent(const ArsLexis::String& term);
 
     bool lookupIfDifferent(const String& term);
 
