@@ -1104,9 +1104,21 @@ void MainForm::prepareHowToRegister()
 
     elems.push_back(text=new FormattedTextElement("In order to register iPedia you need to purchase registration code at "));
     // TODO: different stuff for PalmGear/Handango
+
+// those 3 should be mutually exclusive
+#ifdef PALMGEAR
+    elems.push_back(text=new FormattedTextElement("palmgear.com?"));
+#endif
+
+#ifdef HANDANGO
+    elems.push_back(text=new FormattedTextElement("handango.com/"));
+#endif
+
+#ifdef ARSLEXIS_VERSION
     elems.push_back(text=new FormattedTextElement("our website "));
     elems.push_back(text=new FormattedTextElement("http://www.arslexis.com"));
     text->setHyperlink("http://www.arslexis.com/pda/palm.html", hyperlinkExternal);
+#endif
     elems.push_back(new LineBreakElement());
 
     elems.push_back(text=new FormattedTextElement("After obtaining registration code use menu item 'Options/Register' (or "));

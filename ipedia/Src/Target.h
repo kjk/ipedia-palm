@@ -2,18 +2,32 @@
 #define _IPEDIA_TARGET_H_
 
 #if __ide_target("Release")
-#include <PalmOS_Headers>
-
-#ifndef NDEBUG
-#define NDEBUG
-#endif
-
-#else
-#include <PalmOS_Headers_Debug>
+    #include <PalmOS_Headers>
+    #ifndef NDEBUG
+    #define NDEBUG
+    #endif
+    #define ARSLEXIS_VERSION 1
 #endif
 
 #if __ide_target("Debug")
-#define INTERNAL_BUILD 1
+    #include <PalmOS_Headers_Debug>
+    #define INTERNAL_BUILD 1
+#endif
+
+#if __ide_target("Palmgear")
+    #include <PalmOS_Headers>
+    #ifndef NDEBUG
+    #define NDEBUG
+    #endif
+    #define PALMGEAR 1
+#endif
+
+#if __ide_target("Handango")
+    #include <PalmOS_Headers>
+    #ifndef NDEBUG
+    #define NDEBUG
+    #endif
+    #define HANDANGO 1
 #endif
 
 // define DETAILED_CONNECTION_STATUS to get more detailed info about the stages
