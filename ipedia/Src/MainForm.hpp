@@ -13,8 +13,10 @@ class MainForm: public iPediaForm
 {
     Definition article_;
     Definition about_;
+    Definition register_;
+    Definition tutorial_;
     GenericTextElement* articleCountElement_;
-    bool forceSplashRecalculation_;    
+    bool forceAboutRecalculation_;    
     long articleCountSet_;
     
     const LookupHistory& getHistory() const;
@@ -74,17 +76,16 @@ class MainForm: public iPediaForm
         RenderingProgressReporter(MainForm& form);
         
         virtual void reportProgress(uint_t percent);
-                
+
     };
     
     friend class RenderingProgressReporter;
     
     RenderingProgressReporter renderingProgressReporter_;
     
-    Definition& currentDefinition()
-    {return showArticle==displayMode()?article_:about_;}
-    
-    void prepareSplashScreen();
+    Definition& currentDefinition();
+
+    void prepareAbout();
 
     void updateArticleCountEl(long articleCount, ArsLexis::String& dbTime);
 
@@ -120,12 +121,17 @@ public:
     
     enum DisplayMode
     {
-        showSplashScreen,
+        showAbout,
+        showTutorial,
+        showRegister,
         showArticle
     };
     
     DisplayMode displayMode() const
     {return displayMode_;}
+
+    bool fCanScrollDef() const
+    {return displayMode_==showAbout ? false : true; }
 
     void setDisplayMode(DisplayMode displayMode)
     {displayMode_=displayMode;}
@@ -135,13 +141,17 @@ public:
 
     void scrollDefinition(int units, ScrollUnit unit)
     {scrollDefinition(units, unit, true);}
-    
+
+    void prepareTutorial();    
+
+    void prepareHowToRegister();
+
 private:
     
-    UInt32 lastPenDownTimestamp_;
+    UInt32      lastPenDownTimestamp_;
     DisplayMode displayMode_:4;
-    bool updateDefinitionOnEntry_:1;
-    bool enableInputFieldAfterUpdate_:1;
+    bool        updateDefinitionOnEntry_:1;
+    bool        enableInputFieldAfterUpdate_:1;
     
 };
 

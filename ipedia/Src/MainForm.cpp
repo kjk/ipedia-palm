@@ -15,11 +15,11 @@ using namespace ArsLexis;
 MainForm::MainForm(iPediaApplication& app):
     iPediaForm(app, mainForm),
     renderingProgressReporter_(*this),
-    displayMode_(showSplashScreen),
+    displayMode_(showAbout),
     lastPenDownTimestamp_(0),
     updateDefinitionOnEntry_(false),
     enableInputFieldAfterUpdate_(false),
-    forceSplashRecalculation_(false),
+    forceAboutRecalculation_(false),
     articleCountElement_(0),
     articleCountSet_(-1)
 {
@@ -27,7 +27,10 @@ MainForm::MainForm(iPediaApplication& app):
     article_.setRenderingProgressReporter(&renderingProgressReporter_);
     article_.setHyperlinkHandler(&app.hyperlinkHandler());
     about_.setHyperlinkHandler(&app.hyperlinkHandler());
-    prepareSplashScreen();
+    prepareAbout();    
+    // TODO: make those on-demand
+    prepareHowToRegister();
+    prepareTutorial();
 }
 
 bool MainForm::handleOpen()
@@ -84,23 +87,26 @@ void MainForm::resize(const ArsLexis::Rectangle& screenBounds)
 void MainForm::updateScrollBar()
 {
     ScrollBar scrollBar(*this, definitionScrollBar);
-    if (showArticle==displayMode())
+    if (showAbout==displayMode())
     {
-        scrollBar.setPosition(article_.firstShownLine(), 0, article_.totalLinesCount()-article_.shownLinesCount(), article_.shownLinesCount());
-        scrollBar.show();
+        scrollBar.hide();
     }
     else
-        scrollBar.hide();
+    {
+        Definition& def = currentDefinition();
+        scrollBar.setPosition(def.firstShownLine(), 0, def.totalLinesCount()-def.shownLinesCount(), def.shownLinesCount());
+        scrollBar.show();
+    }
 }
 
 Err MainForm::renderDefinition(Definition& def, ArsLexis::Graphics& graphics, const ArsLexis::Rectangle& rect)
 {
     volatile Err error=errNone;
-    bool  fForceRecalculate = false;
-    if ( showSplashScreen==displayMode() )
+    bool         fForceRecalculate = false;
+    if ( showAbout==displayMode() )
     {
-        fForceRecalculate = forceSplashRecalculation_;
-        forceSplashRecalculation_ = false;
+        fForceRecalculate = forceAboutRecalculation_;
+        forceAboutRecalculation_ = false;
     }
     ErrTry {
         def.render(graphics, rect, renderingPreferences(), fForceRecalculate);
@@ -116,16 +122,17 @@ void MainForm::drawDefinition(Graphics& graphics, const ArsLexis::Rectangle& bou
 {
     Definition& def=currentDefinition();
     assert(!def.empty());
-    if (showSplashScreen==displayMode())
-        updateScrollBar();
     Graphics::ColorSetter setBackground(graphics, Graphics::colorBackground, renderingPreferences().backgroundColor());
     Rectangle rect(bounds);
     rect.explode(0, 15, 0, -33);
     graphics.erase(rect);
-    if (showArticle==displayMode())
-        rect.explode(2, 2, -12, -4);
-    else
+    if (showAbout==displayMode())
+    {
+        updateScrollBar(); //hide the scrollbar
         rect.explode(2, 2, -4, -4);
+    }
+    else
+        rect.explode(2, 2, -12, -4);
     Err error=errNone;
     bool doubleBuffer=true;
     const iPediaApplication& app=static_cast<const iPediaApplication&>(application());
@@ -153,14 +160,18 @@ void MainForm::drawDefinition(Graphics& graphics, const ArsLexis::Rectangle& bou
         error=renderDefinition(def, graphics, rect);
     if (errNone!=error) 
     {
-        def.clear();
-        setTitle(appName);
-        setDisplayMode(showSplashScreen);
-        update();
+        if (showAbout!=displayMode())
+        {
+            def.clear();
+            setTitle(appName);
+            setDisplayMode(showAbout);
+            update();
+        }
         iPediaApplication::sendDisplayAlertEvent(notEnoughMemoryAlert);
+    } else
+    {
+        updateScrollBar();
     }
-    else if (showArticle==displayMode())            
-        updateScrollBar();    
 }
 
 void MainForm::draw(UInt16 updateCode)
@@ -327,7 +338,7 @@ void MainForm::handleLookupFinished(const EventType& event)
     {
         articleCountSet_=app.preferences().articleCount;
         updateArticleCountEl(articleCountSet_,app.preferences().databaseTime);
-        forceSplashRecalculation_=true;
+        forceAboutRecalculation_=true;
     }
     
     LookupManager* lookupManager=app.getLookupManager();
@@ -355,6 +366,11 @@ void MainForm::handleLookupFinished(const EventType& event)
     }        
 }
 
+
+// format number num so that they easier to read e.g. turn '10343' into '10.343'
+// i.e. insert '.' in apripriate places
+// put the result in buffer buf of length bufSize. Buffer must be big enough
+// for the result.
 static int formatNumber(long num, char *buf, int bufSize)
 {
     char buffer[32];
@@ -469,6 +485,11 @@ bool MainForm::handleEvent(EventType& event)
             handled=true;
             break;
 
+        case iPediaApplication::appRegisterEvent:
+            Application::popupForm(registrationForm);
+            handled=true;
+            break;
+
         case penDownEvent:
             handlePenDown(event);
             break;
@@ -493,7 +514,6 @@ void MainForm::updateNavigationButtons()
     control.setEnabled(enabled);
     control.setGraphics(enabled?forwardBitmap:forwardDisabledBitmap);
 }
-
 
 void MainForm::updateAfterLookup()
 {
@@ -524,7 +544,7 @@ bool MainForm::handleKeyPress(const EventType& event)
     switch (event.data.keyDown.chr)
     {
         case chrPageDown:
-            if (showArticle==displayMode())
+            if (fCanScrollDef())
             {
                 scrollDefinition(1, scrollPage);
                 handled=true;
@@ -532,7 +552,7 @@ bool MainForm::handleKeyPress(const EventType& event)
             break;
             
         case chrPageUp:
-            if (showArticle==displayMode())
+            if (fCanScrollDef())
             {
                 scrollDefinition(-1, scrollPage);
                 handled=true;
@@ -540,7 +560,7 @@ bool MainForm::handleKeyPress(const EventType& event)
             break;
         
         case chrDownArrow:
-            if (showArticle==displayMode())
+            if (fCanScrollDef())
             {
                 scrollDefinition(1, scrollLine);
                 handled=true;
@@ -548,7 +568,7 @@ bool MainForm::handleKeyPress(const EventType& event)
             break;
 
         case chrUpArrow:
-            if (showArticle==displayMode())
+            if (fCanScrollDef())
             {
                 scrollDefinition(-1, scrollLine);
                 handled=true;
@@ -627,6 +647,15 @@ bool MainForm::handleMenuCommand(UInt16 itemId)
 
         case aboutMenuItem:
             handleAbout();
+            handled=true;
+            break;
+
+        case tutorialMenuItem:
+            if (showTutorial!=displayMode())
+            {
+                setDisplayMode(showTutorial);
+                update();
+            }
             handled=true;
             break;
 
@@ -717,9 +746,9 @@ void MainForm::handleToggleStressMode()
 
 void MainForm::handleAbout()
 {
-    if (showSplashScreen!=displayMode())
+    if (showAbout!=displayMode())
     {
-        setDisplayMode(showSplashScreen);
+        setDisplayMode(showAbout);
         update();
     }
     else 
@@ -830,25 +859,62 @@ void MainForm::RenderingProgressReporter::reportProgress(uint_t percent)
 #endif    
 }
 
-void MainForm::prepareSplashScreen()
+static void tutorialActionCallback(void *data)
+{
+    assert(NULL!=data);
+    MainForm * mf = static_cast<MainForm*>(data);
+    assert(MainForm::showTutorial!=mf->displayMode());
+    mf->setDisplayMode(MainForm::showTutorial);
+    mf->update();
+}
+
+static void unregisteredActionCallback(void *data)
+{
+    assert(NULL!=data);
+    MainForm * mf = static_cast<MainForm*>(data);
+    assert(MainForm::showRegister!=mf->displayMode());
+    mf->setDisplayMode(MainForm::showRegister);
+    mf->update();
+}
+
+
+Definition& MainForm::currentDefinition()
+{
+    switch( displayMode() )
+    {
+        case showArticle:
+            return article_;
+        case showAbout:
+            return about_;
+        case showRegister:
+            return register_;
+        case showTutorial:
+            return tutorial_;
+        default:
+            // shouldn't happen
+            assert(0);
+            break;
+    }
+    return about_;
+}
+
+void MainForm::prepareAbout()
 {
     Definition::Elements_t elems;
+    FormattedTextElement* text;
 
+    assert( about_.empty() );
     FontEffects fxBold;
     fxBold.setWeight(FontEffects::weightBold);
 
-    FontEffects fxSmall;
-    fxSmall.setSmall(true);
-
-    FormattedTextElement* text;
-    elems.push_back(new LineBreakElement(1,3));
+    elems.push_back(new LineBreakElement(1,10));
 
     elems.push_back(text=new FormattedTextElement("ArsLexis iPedia"));
     text->setJustification(DefinitionElement::justifyCenter);
     text->setStyle(styleHeader);
     text->setEffects(fxBold);
 
-    elems.push_back(new LineBreakElement(1,2));
+    elems.push_back(new LineBreakElement(1,3));
 
     const char* version="Ver " appVersion
 #ifdef INTERNAL_BUILD
@@ -861,9 +927,20 @@ void MainForm::prepareSplashScreen()
     ;
     elems.push_back(text=new FormattedTextElement(version));
     text->setJustification(DefinitionElement::justifyCenter);
-    text->setEffects(fxSmall);
-    
-    elems.push_back(new LineBreakElement(3,4));
+    elems.push_back(new LineBreakElement(1,4));
+
+    // TODO: remove that if we have a reg code
+    elems.push_back(text=new FormattedTextElement("Unregistered ("));
+    text->setJustification(DefinitionElement::justifyCenter);
+    elems.push_back(text=new FormattedTextElement("how to register"));
+    text->setJustification(DefinitionElement::justifyCenter);
+    // url doesn't really matter, it's only to establish a hotspot
+    text->setHyperlink("", hyperlinkExternal);
+    text->setActionCallback( unregisteredActionCallback, static_cast<void*>(this) );
+    elems.push_back(text=new FormattedTextElement(")"));
+    text->setJustification(DefinitionElement::justifyCenter);
+    elems.push_back(new LineBreakElement(1,2));
+
     elems.push_back(text=new FormattedTextElement("Software \251 "));
     text->setJustification(DefinitionElement::justifyCenter);
 
@@ -888,17 +965,90 @@ void MainForm::prepareSplashScreen()
     }
     articleCountElement_->setJustification(DefinitionElement::justifyCenter);
 
-    elems.push_back(new LineBreakElement());
-    elems.push_back(new LineBreakElement(3,4));
+    elems.push_back(new LineBreakElement(3,2));
     elems.push_back(text=new FormattedTextElement("Using iPedia: "));
     text->setJustification(DefinitionElement::justifyLeft);
 
     elems.push_back(text=new FormattedTextElement("tutorial"));
     text->setJustification(DefinitionElement::justifyLeft);
-    /*text->setHyperlink("http://www.arslexis.com/pda/ipedia.html", hyperlinkExternal);*/
-    elems.push_back(new LineBreakElement());
-    
+    // url doesn't really matter, it's only to establish a hotspot
+    text->setHyperlink("", hyperlinkExternal);
+    text->setActionCallback( tutorialActionCallback, static_cast<void*>(this) );
+
     about_.replaceElements(elems);    
 }
-    
+
+// TODO: make those on-demand only to save memory
+void MainForm::prepareTutorial()
+{
+    Definition::Elements_t elems;
+    FormattedTextElement* text;
+
+    assert( tutorial_.empty() );
+
+    FontEffects fxBold;
+    fxBold.setWeight(FontEffects::weightBold);
+
+    elems.push_back(text=new FormattedTextElement("iPedia is an on-line (requires wireless internet access) encyclopedia. You can use iPedia to find information on a number of topics."));
+    elems.push_back(new LineBreakElement(4,3));
+
+    elems.push_back(text=new FormattedTextElement("Finding encyclopedia article."));
+    text->setEffects(fxBold);
+    elems.push_back(text=new FormattedTextElement(" Let's assume you want to read an encyclopedia article on Seattle. Enter 'Seattle' in the text field at the bottom of the screen and press 'Search' (or center button on 5-way navigator)."));
+    text->setJustification(DefinitionElement::justifyLeft);
+    elems.push_back(new LineBreakElement(4,3));
+
+    elems.push_back(text=new FormattedTextElement("Finding all articles with a given word."));
+    text->setEffects(fxBold);
+    elems.push_back(text=new FormattedTextElement(" Let's assume you want to find all article that mention Seattle. Enter 'Seattle' in the text field and use 'Main/Full-text search' menu item. In response you'll receive a list of articles with word 'Seattle'."));
+    text->setJustification(DefinitionElement::justifyLeft);
+    //elems.push_back(new LineBreakElement(4,3));
+
+    // TODO: some more, i.e. about:
+    // * displaying last search results
+    // * refining the search,
+    // * random article
+    // * ideas on how to use iPedia (find info about a city, country, actor, band, album
+    // * treo 5-way nav support
+
+    tutorial_.replaceElements(elems);
+}
+
+static void registerActionCallback(void *data)
+{
+    assert(NULL!=data);
+    MainForm * mf = static_cast<MainForm*>(data);   
+    sendEvent(iPediaApplication::appRegisterEvent);
+}
+
+// TODO: make those on-demand only to save memory
+void MainForm::prepareHowToRegister()
+{
+    Definition::Elements_t elems;
+    FormattedTextElement* text;
+
+    assert( register_.empty() );
+
+    FontEffects fxBold;
+    fxBold.setWeight(FontEffects::weightBold);
+
+    elems.push_back(text=new FormattedTextElement("Unregistered version of iPedia has limits on how many articles can be viewed in one day (although you can view unlimited number of random articles)."));
+    elems.push_back(new LineBreakElement());
+
+    elems.push_back(text=new FormattedTextElement("In order to register iPedia you need to first purchase registration code at "));
+    // TODO: different stuff for PalmGear/Handango
+    elems.push_back(text=new FormattedTextElement("our website "));
+    elems.push_back(text=new FormattedTextElement("http://www.arslexis.com"));
+    text->setHyperlink("http://www.arslexis.com", hyperlinkExternal);
+    elems.push_back(new LineBreakElement());
+
+    elems.push_back(text=new FormattedTextElement("After obtaining registration code use menu item Option/Register (or "));
+    elems.push_back(text=new FormattedTextElement("click here"));
+    // url doesn't really matter, it's only to establish a hotspot
+    text->setHyperlink("", hyperlinkExternal);
+    text->setActionCallback( registerActionCallback, static_cast<void*>(this) );
+    elems.push_back(text=new FormattedTextElement(") to enter registration number."));
+
+    register_.replaceElements(elems);
+}
 

@@ -94,6 +94,7 @@ public:
     {
         appLookupEventFirst=appFirstAvailableEvent,
         appLookupEventLast=appLookupEventFirst+reservedLookupEventsCount,
+        appRegisterEvent,
         appFirstAvailableEvent
     };
     
