@@ -3,7 +3,7 @@
 #include "iPediaConnection.hpp"
 #include "DefinitionElement.hpp"
 #include <Text.hpp>
-#include "./Rsc/ipedia_Rsc.h"
+#include "ipedia_Rsc.h"
 
 LookupManager::~LookupManager()
 {

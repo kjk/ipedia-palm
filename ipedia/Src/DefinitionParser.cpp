@@ -142,7 +142,7 @@ void DefinitionParser::decodeHTMLCharacterEntityRefs(String& text) const
                 if (!entity.empty() && entity[0]=='#')
                 {
                     long numVal;
-                    const char* begin=entity.c_str();
+                    const char_t* begin=entity.c_str();
                     status_t err=ArsLexis::numericValue(begin+1, begin+entity.length()-1, numVal);
                     if (errNone!=err || numVal<0 || numVal>255)
                         chr=1;
