@@ -57,28 +57,20 @@ g_fForceUpgrade = False
 
 # contains info about all available databases. databse name is the key, value
 # is a number of articles in the database
-g_allDbsInfo = {}
+g_allDbsInfo = None
+
 # list of all database names
-g_allDbNames = []
-# list of all english databases, sorted by time
-g_enDbs = []
-# list of all french databases, sorted by time
-g_frDbs = []
-# list of all german databases, sorted by time
-g_deDbs = []
+g_allDbNames = None
 
 class DbInfo:
-    def __init__(self,dbName,articlesCount,dbTime,redirectsCount, minDefId, maxDefId):
+    def __init__(self,dbName, lang, articlesCount, dbDate, redirectsCount, minDefId, maxDefId):
         self.dbName = dbName
+        self.lang = lang
         self.articlesCount = articlesCount
-        self.dbTime = dbTime
+        self.dbDate = dbDate
         self.redirectsCount = redirectsCount
         self.minDefId = minDefId
         self.maxDefId = maxDefId
-
-g_curEnDbInfo = None
-g_curFrDbInfo = None
-g_curDeDbInfo = None
 
 # severity of the log message
 # SEV_NONE is used to indicate that we don't do any logging at all
@@ -97,12 +89,32 @@ def log(sev,txt):
     if sev <= g_acceptedLogSeverity:
         sys.stdout.write(txt)
 
+g_dbInfoPerLang = {}
+
+def setDbPerLang(lang,dbInfo):
+    global g_dbInfoPerLang
+    g_dbInfoPerLang[lang] = dbInfo
+
+def getDbInfoPerLang(lang):
+    global g_dbInfoPerLang
+    if g_dbInfoPerLang.has_key(lang):
+        return g_dbInfoPerLang[lang]
+    else:
+        return None
+
+def getAllLangs():
+    global g_dbInfoPerLang
+    langs = g_dbInfoPerLang.keys()
+    return string.join(langs," ")
+
 def createManagementConnection():
     #log(SEV_LOW,"creating management connection\n")
+    # TODO: should we reuse the connection?
     return MySQLdb.Connect(host=DB_HOST, user=DB_USER, passwd=DB_PWD, db=MANAGEMENT_DB)
 
-def createArticlesDatabase(dbName):
+def createArticlesConnection(dbName):
     #log(SEV_LOW,"creating connection for db %s\n" % dbName)
+    # TODO: should we reuse the connection?
     return MySQLdb.Connect(host=DB_HOST, user=DB_USER, passwd=DB_PWD, db=dbName)
 
 lineSeparator =     "\n"
@@ -306,9 +318,9 @@ class iPediaProtocol(basic.LineReceiver):
     def __init__(self):
         self.delimiter = '\n'
 
-        # name of the database to use for this client
+        # info about the database we use for this client
         # must be set before we create articles connection (self.dbArticles)
-        self.dbName = None
+        self.dbInfo = None
 
         self.dbManagement = None
         self.dbArticles = None
@@ -351,8 +363,8 @@ class iPediaProtocol(basic.LineReceiver):
 
     def getArticlesDatabase(self):
         if not self.dbArticles:
-            assert self.dbName != None
-            self.dbArticles = createArticlesConnection(self.dbName)
+            assert self.dbInfo != None
+            self.dbArticles = createArticlesConnection(self.dbInfo.dbName)
         return self.dbArticles
 
     def outputField(self, name, value=None):
@@ -553,14 +565,6 @@ class iPediaProtocol(basic.LineReceiver):
         body=body.replace("{{CURRENTTIME}}",        time.strftime("%X"))
         return body
 
-    def handleGetArticleRequestMl(self):
-        assert self.fHasField(Fields.getArticleMl)
-        if self.fHasField(Fields.searchMl) or self.fHasField(Fields.getRandomMl):
-            # those shouldn't be in the same request
-            return ServerErrors.malformedRequest
-
-        # TODO:
-
     def handleGetArticleRequest(self):
         assert self.fHasField(Fields.getArticle)
 
@@ -597,26 +601,10 @@ class iPediaProtocol(basic.LineReceiver):
             raise
         return None
 
-    def handleGetArticleCountMl(self):
-        assert self.fHasField(Fields.getArticleCountMl)
-        # TODO:
-
-    def handleGetDatabaseTimeMl(self):
-        assert self.fHasField(Fields.getDatabaseTimeMl)
-        # TODO:
-
     def handleGetAvailableLangs(self):
         assert self.fHasField(Fields.getAvailableLangs)
-        # TODO:
-
-    def handleSearchRequestMl(self):
-        assert self.fHasField(Fields.searchMl)
-
-        if self.fHasField(Fields.getArticleMl) or self.fHasField(Fields.getRandomMl):
-            # those shouldn't be in the same request
-            return ServerErrors.malformedRequest
-
-        # TODO:
+        langs = getAllLangs()
+        self.outputField(Fields.availableLangs, langs)
 
     def handleSearchRequest(self):
         assert self.fHasField(Fields.search)
@@ -641,15 +629,6 @@ class iPediaProtocol(basic.LineReceiver):
             if cursor:
                 cursor.close()
         return None
-
-    def handleGetRandomRequestMl(self):
-        assert self.fHasField(Fields.getRandomMl)
-
-        if self.fHasField(Fields.getArticleMl) or self.fHasField(Fields.searchMl):
-            # those shouldn't be in the same request
-            return ServerErrors.malformedRequest
-
-        # TODO:
 
     def handleGetRandomRequest(self):
         assert self.fHasField(Fields.getRandom)
@@ -904,7 +883,7 @@ class iPediaProtocol(basic.LineReceiver):
     # apropriate response to the client.
     # If error is != None, this is the server errro code to return to the client
     def answer(self,error):
-        global g_fForceUpgrade
+        global g_fForceUpgrade, g_supportedLangs
 
         try:
             log(SEV_MED, "--------------------------------------------------------------------------------\n")
@@ -939,6 +918,21 @@ class iPediaProtocol(basic.LineReceiver):
 
             assert self.userId
 
+            # determine which database to use. Must be set before any other
+            # request is performed
+            if not self.fHasField(Fields.useLang):
+                lang = "en"
+            else:
+                lang = self.getField(Fields.useLang)
+            # TODO: calculate valid languages list dynamically from the database
+            # so that it's easier to add new languages
+            if lang not in g_supportedLangs:
+                return self.finish(ServerErrors.langNotAvailable)
+
+            self.dbInfo = getDbInfoPerLang(lang)
+            if self.dbInfo == None:
+                return self.finish(ServerErrors.langNotAvailable)
+
             # dispatch a function handling a given request field
             for fieldName in self.fields.keys():
                 fieldHandleProc = getFieldHandler(fieldName)
@@ -949,10 +943,10 @@ class iPediaProtocol(basic.LineReceiver):
 
             # too simple to warrant functions
             if self.fHasField(Fields.getArticleCount):
-                self.outputField(Fields.articleCount, str(self.factory.articleCount))
+                self.outputField(Fields.articleCount, str(self.dbInfo.articleCount))
 
             if self.fHasField(Fields.getDatabaseTime):
-                self.outputField(Fields.databaseTime, self.factory.dbTime)
+                self.outputField(Fields.databaseTime, self.dbInfo.dbDate)
 
         except Exception, ex:
             log(SEV_HI, arsutils.exceptionAsStr(ex))
@@ -1011,12 +1005,8 @@ clientFieldsHandlers = {
     Fields.getArticleCount   : None,
     Fields.getDatabaseTime   : None,
 
-    Fields.getArticleMl      : iPediaProtocol.handleGetArticleRequestMl,
-    Fields.getRandomMl       : iPediaProtocol.handleGetRandomRequestMl,
-    Fields.searchMl          : iPediaProtocol.handleSearchRequestMl,
-    Fields.getArticleCountMl : iPediaProtocol.handleGetArticleCountMl,
-    Fields.getDatabaseTimeMl : iPediaProtocol.handleGetDatabaseTimeMl,
     Fields.getAvailableLangs : iPediaProtocol.handleGetAvailableLangs,
+    Fields.useLang           : None,
 }
 
 def getFieldHandler(fieldName):
@@ -1024,14 +1014,16 @@ def getFieldHandler(fieldName):
     return clientFieldsHandlers[fieldName]
 
 def getDbInfo(dbName):
-    parts = dbName.split("_")
-    dbTime = parts[-1]
+    assert fIpediaDb(dbName)
+
+    lang = getLangFromDbName(dbName)
+    dbDate = getDateFromDbName
 
     db = createArticlesConnection(dbName)
     cursor = db.cursor()
     cursor.execute("""SELECT COUNT(*), min(id), max(id) FROM articles""")
     row = cursor.fetchone()
-    articleCount = row[0]-ARTICLE_COUNT_DELTA
+    articlesCount = row[0]-ARTICLE_COUNT_DELTA
     minDefinitionId = row[1]
     maxDefinitionId = row[2]
     cursor.execute("""SELECT COUNT(*) FROM redirects""")
@@ -1040,49 +1032,57 @@ def getDbInfo(dbName):
     cursor.close()
     db.close()
 
-    dbInfo = DbInfo(dbName,articlesCount,dbTime,redirectCount, minDefinitionId,maxDefinitionId)
+    dbInfo = DbInfo(dbName,lang, articlesCount, dbDate, redirectsCount, minDefinitionId, maxDefinitionId)
     return dbInfo
+
+def changeDatabase(dbName):
+    global g_allDbsInfo
+    dbInfo = g_allDbsInfo[dbName]
+    print "Switching to database %s, lang=%s" % (dbInfo.dbName, dbInfo.lang)
+    print "Number of Wikipedia articles: %d" % dbInfo.articleCount
+    print "Number of redirects: %d" % dbInfo.redirectsCount
+    print "Databse date: %s" % dbInfo.dbDate
 
 class iPediaFactory(protocol.ServerFactory):
 
-    def __init__(self, dbName):
-        self.changeDatabase(dbName)
-
-    def changeDatabase(self, dbName):
-        print "Switching to database %s" % dbName
-        self.dbName = dbName
-        parts = dbName.split("_")
-        self.dbTime = parts[-1]
-        db = createArticlesConnection(dbName)
-        cursor = db.cursor()
-        cursor.execute("""SELECT COUNT(*), min(id), max(id) FROM articles""")
-        row = cursor.fetchone()
-        self.articleCount = row[0]-ARTICLE_COUNT_DELTA
-        self.minDefinitionId = row[1]
-        self.maxDefinitionId = row[2]
-        cursor.execute("""SELECT COUNT(*) FROM redirects""")
-        row = cursor.fetchone()
-        self.redirectsCount = row[0]
-        print "Number of Wikipedia articles: %d" % self.articleCount
-        print "Number of redirects: %d" % self.redirectsCount
-        print "Databse time: %s" % self.dbTime
-        cursor.close()
-        db.close()
+    def __init__(self):
+        pass
 
     protocol = iPediaProtocol
 
-# This is the format of the db name before we handled wikipedias in many languages
-ipediaOldRe = re.compile("ipedia_[0-9]{8}", re.I)
-# This is a format of the db name that support wikipedias in multiple languages
-ipediaMultiLangRe = re.compile("ipedia_.._[0-9]{8}", re.I)
+g_supportedLangs = ["en", "fr", "de"]
+
+dbDateRe = re.compile("[0-9]{8}", re.I)
+def fDbDate(dbDate):
+    if not dbDateRe.match(dbDate):
+        return False
+    return True
+        
 def fIpediaDb(dbName):
     """Return True if a given database name is a name of the database with Wikipedia
     articles"""
-    if ipediaOldRe.match(dbName):
-        return True
-    if ipediaMultiLangRe.match(dbName):
-        return True
-    return False
+    global g_supportedLangs
+
+    if 0 != dbName.find("ipedia_"):
+        return False
+    parts = dbName.split("_")
+
+    if 2 == len(parts):
+        lang = "en"
+        dbDate = parts[1]
+    elif 3 == len(parts):
+        lang = parts[1]
+        dbDate = parts[2]
+    else:
+        return False
+
+    if lang not in g_supportedLangs:
+        return False
+
+    if not fDbDate(dbDate):
+        return False
+
+    return True
 
 # returns a dictionary describing all iPedia databases
 # dictionary key is database name, the value is number of articles in that database
@@ -1094,10 +1094,7 @@ def getIpediaDbs():
     for row in cur.fetchall():
         dbName = row[0]
         if fIpediaDb(dbName):
-            cur.execute("""SELECT COUNT(*) FROM %s.articles""" % dbName)
-            row = cur.fetchone()
-            articleCount = row[0]
-            dbsInfo[dbName] = articleCount
+            dbsInfo[dbName] = getDbInfo(dbName)
     cur.close()
     conn.close()
     return dbsInfo
@@ -1152,7 +1149,7 @@ class iPediaTelnetProtocol(basic.LineReceiver):
         if articleCount < 100000:
             self.transport.write("Database '%s' doesn't have enough articles ('%d', at least 100.000 required)\r\n" % (dbName, articleCount))
             return
-        self.factory.iPediaFactory.changeDatabase(dbName)
+        changeDatabase(dbName)
         self.transport.write("Switched to database '%s'\r\n" % dbName)
 
     def lineReceived(self, request):
@@ -1189,33 +1186,60 @@ def getLangFromDbName(dbName):
         # old style
         lang = "en"
     else:
+        assert 3 == len(parts)
         lang = parts[1]
 
     return lang
-        
-# read a list of databases in MySQL and set g_allDbsInfo, g_frDbs, g_enDbs, g_dbs
-def detectAvailableDbs():
-    global g_allDbsInfo, g_allDbNames, g_frDbs, g_enDbs, g_deDbs
-    g_enDbs = []
-    g_deDbs = []
-    g_frDbs = []
+
+def getDateFromDbName(dbName):
+    parts = dbName.split("_")
+    if 2==len(parts):
+        dbDate = parts[1]
+    else:
+        assert 3 == len(parts)
+        dbData = parts[2]
+    return dbData
+
+# read a list of databases in MySQL and set g_allDbsInfo, g_allDbNames
+def getAllDbInfos(fRecreate=False):
+    global g_allDbsInfo, g_allDbNames
+
+    if None != g_allDbsInfo and not fRecreate:
+        return g_allDbsInfo
+
     g_allDbsInfo = getIpediaDbs()
     g_allDbNames = g_allDbsInfo.keys()
     if 0 == len(g_allDbNames):
-        return
+        return g_allDbsInfo
     g_allDbNames.sort()
+    return g_allDbsInfo
 
-    for dbName in g_allDbNames:
-        lang = getLangFromDbName(dbName)
-        if "en" == lang:
-            g_enDbs.append(dbName)
-        if "fr" == lang:
-            g_frDbs.append(dbName)
-        if "de" == lang:
-            g_deDbs.append(dbName)
+def getAllDbNames(fRecreate=False):
+    global g_allDbsInfo
+    if fRecreate:
+       getAllDbInfos(True)
+       return g_allDbNames
+    else:
+        if None == g_allDbNames:
+            getAllDbInfos(True)
+        return g_allDbNames
 
+def getLatestDbForLang(lang):
+    dbInfosDict = getAllDbInfos()
+    dbInfos = dbInfosDict.values()
+    latestDb = None
+    for dbInfo in dbInfos:
+        if dbInfo.lang == lang:
+            if None == latestDb:
+                latestDb = dbInfo
+            else:
+                if dbInfo.dbDate > latestDb.dbDate:
+                    # those are string but they also sort correctly by date
+                    latestDb = dbInfo
+    return latestDb
+        
 def main():
-    global g_fPsycoAvailable, g_acceptedLogSeverity, g_allDbNames
+    global g_fPsycoAvailable, g_acceptedLogSeverity, g_supportedLangs
 
     fDemon = arsutils.fDetectRemoveCmdFlag("-demon")
     if not fDemon:
@@ -1230,14 +1254,14 @@ def main():
         print "using psyco"
         psyco.full()
 
-    detectAvailableDbs()
-    if 0==len(g_allDbsInfo):
+    dbInfos = getAllDbInfos()
+    if 0==len(dbInfos):
         print "No databases available"
         sys.exit(0)
 
     fListDbs = arsutils.fDetectRemoveCmdFlag("-listdbs")
     if fListDbs:
-        for name in g_allDbNames:
+        for name in getAllDbNames():
             print name
         sys.exit(0)
 
@@ -1248,25 +1272,29 @@ def main():
     if len(sys.argv) != 1:
         usageAndExit()
 
-    # TODO: temporary hack
-    dbName = "ipedia_fr_20040908"
-    if dbName:
-        if dbName in g_allDbNames:
-            print "Using database '%s'" % dbName
+    # set 
+    for lang in g_supportedLangs:
+        dbInfo = getLatestDbForLang(lang)
+        if None != dbInfo:
+            setDbPerLang(lang,dbInfo)
+
+    allDbNames = getAllDbNames()
+
+    for lang in g_supportedLangs:
+        dbInfo = getDbInfoPerLang(lang)
+        if None == dbInfo:
+            print "No database for lang '%s'" % lang
         else:
-            print "Database '%s' doesn't exist" % dbName
-            print "Available databases:"
-            for name in g_allDbNames:
-                print "  %s" % name
-            sys.exit(0)
-    else: 
-        dbName = g_allDbNames[-1] # use the latest database
-        print "Using database '%s'" % dbName
+            print "Using db '%s' for lang '%s'" % (dbInfo.dbName, lang)
+
+    if None != enDb:
+        # TODO: add selecting the db
+        pass
 
     if fDemon:
         arsutils.daemonize('/dev/null','/tmp/ipedia.log','/tmp/ipedia.log')
 
-    factory = iPediaFactory(dbName)
+    factory = iPediaFactory()
     reactor.listenTCP(9000, factory)
     reactor.listenTCP(9001, iPediaTelnetFactory(factory))
     reactor.run()

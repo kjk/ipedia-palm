@@ -28,6 +28,7 @@ enum iPediaServerError
     serverErrorInvalidCookie    = 10,
     serverErrorUserDisabled     = 11,
     serverErrorForceUpgrade     = 12,
+    serverErrorLangNotAvailable = 13,
     serverErrorLast=serverErrorForceUpgrade // WATCH THIS WHEN ADDING NEW ERRORS!
 };
 

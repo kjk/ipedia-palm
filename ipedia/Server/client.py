@@ -335,6 +335,14 @@ def doGetArticleCount():
     assert rsp.hasField(Fields.articleCount)
     print "Article count: %s" % rsp.getField(Fields.articleCount)
 
+def doAvailableLangs():
+    req = getRequestHandleCookie(Fields.getAvailableLangs, None)
+    rsp = Response(req.getString())
+    handleCookie(rsp)
+    assert rsp.hasField(Fields.transactionId)
+    assert rsp.hasField(Fields.availableLangs)
+    print "Available langs: %s" % rsp.getField(Fields.availableLangs)
+
 def doGetDatabaseTime():
     req = getRequestHandleCookie(Fields.getDatabaseTime, None)
     rsp = Response(req.getString())
@@ -385,49 +393,78 @@ def doInvalidCookie():
 def usageAndExit():
     print "client.py [-showtiming] [-perfrandom N] [-getrandom] [-get term] [-articlecount] [-dbtime] [-ping] [-verifyregcode $regCode] [-malformed]"
 
+
+argsInfo = {
+    "ping" : (0, doPing),
+    "perfrandom" : (0, doRandomPerf),
+    "getrandom" : (0, doGetRandom),
+    "get" : (0, doGetDef),
+    "search" : (1, doSearch),
+    "articlecount" : (0, doGetArticleCount),
+    "dbtime" : (0, doGetDatabaseTime),
+    "verifyregcode" : (1, doVerifyRegCode),
+    "invalidcookie" : (0, doInvalidCookie),
+    "malformed" : (0, doMalformed),
+    "tcnc" : (0, test_NoCookieAndGetCookie),
+    "availablelangs" : (0, doAvailableLangs),
+}
+
+def buildUsage():
+    global argsInfo
+    allArgs = argsInfo.keys()
+    allArgs.sort()
+    txt = ""
+    for arg in allArgs:
+        numArgs = argsInfo[arg][0]
+        if numArgs > 0:
+            txt = "%s [%s $%d]" % (txt, arg, numArgs)
+        else:
+            txt = "%s [%s]" % (txt, arg)
+    return txt
+
+def getIndexSafe(arr, obj):
+    pos = None
+    try:
+        pos = arr.index(obj)
+    except:
+        pass
+    return pos
+
+def usageAndExit():
+    print "client.py%s" % buildUsage()
+
+def main():
+    pos = None
+    for argName in argsInfo.keys():
+        pos = getIndexSafe(sys.argv, argName)
+        if None != pos:
+            break
+
+    if None == pos:
+        usageAndExit()
+        sys.exit(0)
+
+    numArgs = argsInfo[argName][0]
+    func = argsInfo[argName][1]
+    if 0 == numArgs:
+        func()
+    elif 1 == numArgs:
+        argOne = sys.argv[pos+1]
+        func(argOne)
+    elif 2 == numArgs:
+        argOne = sys.argv[pos+1]
+        argTwo = sys.argv[pos+2]
+        func(argOne, argTwo)
+    else:
+        # not handled yet
+        assert(False)
+
 if __name__=="__main__":
     g_fShowTiming = arsutils.fDetectRemoveCmdFlag("-showtiming")
     printUsedServer()
     try:
         unpickleState()
-        if arsutils.fDetectRemoveCmdFlag("-ping"):
-            doPing()
-            sys.exit(0)
-        randomCount = arsutils.getRemoveCmdArgInt("-perfrandom")
-        if randomCount != None:
-            doRandomPerf(randomCount)
-            sys.exit(0)
-        if arsutils.fDetectRemoveCmdFlag("-getrandom"):
-            doGetRandom(True,True)
-            sys.exit(0)
-        term = arsutils.getRemoveCmdArg("-get")
-        if term:
-            doGetDef(term,True)
-            sys.exit(0)
-        term = arsutils.getRemoveCmdArg("-search")
-        if term:
-            doSearch(term)
-            sys.exit(0)
-        if arsutils.fDetectRemoveCmdFlag("-articlecount"):
-            doGetArticleCount()
-            sys.exit(0)
-        if arsutils.fDetectRemoveCmdFlag("-dbtime"):
-            doGetDatabaseTime()
-            sys.exit(0)
-        regCode = arsutils.getRemoveCmdArg("-verifyregcode")
-        if regCode:
-            doVerifyRegCode(regCode)
-            sys.exit(0)
-        if arsutils.fDetectRemoveCmdFlag("-invalidcookie"):
-            doInvalidCookie()
-            sys.exit(0)
-        if arsutils.fDetectRemoveCmdFlag("-malformed"):
-            doMalformed()
-            sys.exit(0)
-        if arsutils.fDetectRemoveCmdFlag("-tcnc"):
-            test_NoCookieAndGetCookie()
-            sys.exit(0)
-        usageAndExit()
+        main()
     finally:
         # make sure that we pickle the state even if we crash
         pickleState()

@@ -115,18 +115,11 @@ verifyRegCode =    "Verify-Registration-Code"
 # Value: 1 - reg code was valid, 0 - reg code was not valid
 regCodeValid =     "Registration-Code-Valid"
 
-# Below are multi-lingual (ml) versions of requests. They support wikipedias
-# in multiple languages (and not only english, with which we started).
-# They all provide the language (e.g. "en", "fr", "de") as the first parameter,
-# then space and the rest is the same.
+# Selects which language (which database) should be used for all other queries.
 #
-# We don't just re-define requests to have additional argument because of 
-# backward-compatibility (new server will work just fine with old clients)
-getArticleMl       = "Get-Article-Ml"
-getRandomMl        = "Get-Random-Article-Ml"
-searchMl           = "Search-Ml"
-getArticleCountMl  = "Get-Article-Count-Ml"
-getDatabaseTimeMl  = "Get-Database-Time-Ml"
+# Value: language (e.g. "en", "fr", "de"). Should be one of the values returned
+# by Available-Langs
+useLang       = "Use-Lang"
 
 # Client sends Get-Available-Langs to find out what are the languages we have
 # wikipedia databases for on our server.
@@ -167,14 +160,9 @@ fieldsInfo = {
     getDatabaseTime : (fieldTypeClient, valueNone),
     getArticleCount : (fieldTypeClient, valueNone),
 
-    getArticleMl      : (fieldTypeClient, valueInline),
-    getRandomMl       : (fieldTypeClient, valueInline),
-    searchMl          : (fieldTypeClient, valueInline),
-    getDatabaseTimeMl : (fieldTypeClient, valueInline),
-    getArticleCountMl : (fieldTypeClient, valueInline),
-
     getAvailableLangs : (fieldTypeClient, valueNone),
     availableLangs    : (fieldTypeServer, valueInline),
+    useLang           : (fieldTypeClient, valueInline),
 }
 
 # return True if this is a valid field

@@ -207,6 +207,15 @@ BEGIN
     BUTTONS "OK"
 END
 
+ALERT ID langNotAvailableAlert
+    DEFAULTBUTTON 0
+    ERROR
+BEGIN
+    TITLE "Language not available"
+    MESSAGE "Chosen language is not available. Please contact support@arslexis.com if the problem persists."
+    BUTTONS "OK"
+END
+
 ALERT ID malformedRequestAlert
     DEFAULTBUTTON 0
     ERROR

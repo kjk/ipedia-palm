@@ -28,7 +28,8 @@ static const uint_t serverErrorToAlertMap[][2]=
     { serverErrorUnexpectedRequestArgument, unexpectedRequestArgumentAlert},
     { serverErrorRequestArgumentMissing, requestArgumentMissingAlert},
     { serverErrorInvalidProtocolVersion, invalidProtocolVersionAlert},
-    { serverErrorUserDisabled, userDisabledAlert}
+    { serverErrorUserDisabled, userDisabledAlert},
+    { serverErrorLangNotAvailable, langNotAvailableAlert},
 };
 
 } // namespace

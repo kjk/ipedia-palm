@@ -52,3 +52,6 @@ userDisabled = 11
 # of the protocol/data formats we can use this
 forceUpgrade = 12
 
+# return langNotAvailable if Use-Lang gave us language code for which
+# we don't have a database
+langNotAvailable = 13
