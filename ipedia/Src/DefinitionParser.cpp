@@ -54,7 +54,9 @@ void DefinitionParser::clear()
 }
     
 DefinitionParser::~DefinitionParser()
-{}
+{
+    std::for_each(elements_.begin(), elements_.end(), ArsLexis::ObjectDeleter<DefinitionElement>());
+}
 
 DefinitionElement* DefinitionParser::currentParent()
 {
