@@ -355,12 +355,12 @@ bool DefinitionParser::detectHyperlink(uint_t end)
 #ifdef INFOMAN
         if (hyperlinkIsTerm)
         {
-            if (String::npos == hyperlinkTarget_.find(_T(':')))
+            if (String::npos == hyperlinkTarget_.find(urlSeparatorSchema))
             {
-                hyperlinkTarget_.insert(0, _T(":"));
+                hyperlinkTarget_.insert(0, 1, urlSeparatorSchema);
                 hyperlinkTarget_.insert(0, defaultLanguage);
             }
-            hyperlinkTarget_.insert(0, urlSchemaEncyclopediaTerm _T(":"));
+            hyperlinkTarget_.insert(0, urlSchemaEncyclopediaTerm urlSeparatorSchemaStr);
         }
 #endif                
 
@@ -436,34 +436,36 @@ void DefinitionParser::parseText(uint_t end, ElementStyle style)
     hyperlinkTarget_.clear();
     insideHyperlink_=false;
 
-    if (end<parsePosition_)
+    if (end < parsePosition_)
         return;
 
-    uint_t length=end-parsePosition_;
+    uint_t length = end - parsePosition_;
     while (length && isSpace((*text_)[parsePosition_+length-1]))
         --length;
     textLine_.assign(*text_, parsePosition_, length);
-    parsePosition_=end;
+    parsePosition_ = end;
 
-    lastElementStart_=textPosition_=0;
-    while (textPosition_<length)
+    lastElementStart_ = textPosition_ = 0;
+    while (textPosition_ < length)
     {
         //TODO
-        char_t chr=textLine_[textPosition_];
+        
+        assert(textPosition_ < textLine_.length());
+        char_t chr = textLine_[textPosition_];
         if (isNewline(chr))
         {
             chr = _T(' ');
             textLine_[textPosition_] = _T(' ');
         }
             
-        bool specialChar=false;
-        lastElementEnd_=textPosition_;
+        bool specialChar = false;
+        lastElementEnd_ = textPosition_;
         if ((htmlTagStart==chr && detectHTMLTag(length)) ||
             (0==openNowiki_ && 
                 ((strongChar==chr && detectStrongTag(length)) ||
                 ((linkOpenChar==chr || linkCloseChar==chr) && detectHyperlink(length)))))
         {
-            lastElementStart_=textPosition_;
+            lastElementStart_ = textPosition_;
             specialChar=true;
         }
                 
@@ -480,7 +482,7 @@ GenericTextElement* DefinitionParser::createTextElement(const String& text, Stri
     bool hyperlinkIsTerm = false;
 #ifdef INFOMAN
     ulong_t schemaLen = tstrlen(urlSchemaEncyclopediaTerm) + 1;
-    if (insideHyperlink_ && 0 == hyperlinkTarget_.find(urlSchemaEncyclopediaTerm _T(":")))
+    if (insideHyperlink_ && 0 == hyperlinkTarget_.find(urlSchemaEncyclopediaTerm urlSeparatorSchemaStr))
         hyperlinkIsTerm = true;
 #else
     if (hyperlinkTerm == hyperlinkType_)
@@ -489,7 +491,7 @@ GenericTextElement* DefinitionParser::createTextElement(const String& text, Stri
     if (insideHyperlink_ && hyperlinkIsTerm)
     {
         String::size_type colonPos;
-        String langCode = defaultLanguage;
+        const char_t* langCode = defaultLanguage;
 #ifdef INFOMAN        
         if (schemaLen == hyperlinkTarget_.find(copy, schemaLen))
         {
@@ -504,16 +506,16 @@ GenericTextElement* DefinitionParser::createTextElement(const String& text, Stri
         
 #ifdef INFOMAN        
         colonPos = hyperlinkTarget_.find(_T(':'), schemaLen);
-        if (String::npos != colonPos)
-            langCode.assign(hyperlinkTarget_, schemaLen, colonPos - schemaLen);
+        if (schemaLen + 2 == colonPos)
+            langCode = hyperlinkTarget_.c_str() + schemaLen;
 #else              
         colonPos = hyperlinkTarget_.find(_T(':'));
-        if (String::npos != colonPos)
-            langCode.assign(hyperlinkTarget_, 0, colonPos);
+        if (2 == colonPos)
+            langCode = hyperlinkTarget_.c_str();
 #endif                
                     
         const char_t* langName = NULL;
-        if (langCode.length() == 2 && langCode != defaultLanguage)
+        if (0 != tstrncmp(langCode, defaultLanguage, 2))
             langName = GetLangNameByLangCode(langCode);
         if (NULL != langName)
             copy.append(_T(" (")).append(langName).append(1, _T(')'));
@@ -883,3 +885,4 @@ void DefinitionParser::parseDefinitionListLine()
     if (!lineAllowsContinuation(definitionListLine))
         popParent();
 }
+
