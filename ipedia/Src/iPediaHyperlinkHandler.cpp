@@ -6,24 +6,24 @@
 
 bool iPediaHyperlinkHandler::handleExternalHyperlink(const ArsLexis::String& url)
 {
-    bool result=false;
+    bool result = false;
     if (viewerDatabaseId_)
     {
-        UInt16 urlLength=url.length();
-        char* urlCopy=static_cast<char*>(MemPtrNew(urlLength+1));
+        UInt16 urlLength = url.length();
+        char* urlCopy = static_cast<char*>(MemPtrNew(urlLength+1));
         if (urlCopy)
         {
             MemMove(urlCopy, url.data(), urlLength);
-            urlCopy[urlLength]=chrNull;
-            Err error=MemPtrSetOwner(urlCopy, 0);
+            urlCopy[urlLength] = chrNull;
+            Err error = MemPtrSetOwner(urlCopy, 0);
             assert(!error);
-            error=SysUIAppSwitch(viewerCardNo_, viewerDatabaseId_, sysAppLaunchCmdGoToURL, urlCopy);
+            error = SysUIAppSwitch(viewerCardNo_, viewerDatabaseId_, sysAppLaunchCmdGoToURL, urlCopy);
             if (error)
             {
                 //! @todo Handle error running www viewer.
             }
             else 
-                result=true;
+                result = true;
         }
         else
             ArsLexis::handleBadAlloc();
