@@ -20,7 +20,7 @@
 # -nopsyco : if used, won't use psyco
 # fileName : convert directly from sql file, no need for enwiki.cur database
 
-import sys, os, datetime, MySQLdb
+import sys, os, MySQLdb
 import  arsutils, wikipediasql,articleconvert
 try:
     import psyco

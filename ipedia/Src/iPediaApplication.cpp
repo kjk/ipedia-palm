@@ -17,7 +17,7 @@ using namespace ArsLexis;
 iPediaApplication::iPediaApplication():
     history_(0),
     lookupManager_(0),
-    server_(serverLocalhost),
+    server_(defaultServer),
     stressMode_(false)
 {
 #ifdef INTERNAL_BUILD

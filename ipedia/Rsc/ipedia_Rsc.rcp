@@ -180,6 +180,15 @@ BEGIN
     BUTTONS "OK"
 END
 
+ALERT ID connectionServerNotRunning
+    DEFAULTBUTTON 0
+    ERROR
+BEGIN
+    TITLE "Error"
+    MESSAGE "The iPedia server is not available. Please contact support@arslexis.com."
+    BUTTONS "OK"
+END
+
 FORM ID mainForm AT (0 0 160 160)
 	NOSAVEBEHIND NOFRAME
 	MENUID mainMenuBar DEFAULTBTNID searchButton  

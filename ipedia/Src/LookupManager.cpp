@@ -58,6 +58,12 @@ void LookupManager::handleConnectionError(status_t error)
             alertId=connectionTimedOutAlert;
             break;
 
+        case netErrSocketClosedByRemote:
+            // this most likely means we couldn't even connect to the server
+            // i.e. server is not even running
+            alertId=connectionServerNotRunning;
+            break;
+
         case memErrNotEnoughSpace:
             alertId=notEnoughMemoryAlert;
             break;            

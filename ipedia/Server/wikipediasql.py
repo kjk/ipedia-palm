@@ -5,6 +5,7 @@
 #   Process wikipedia SQL dumps (*.sql or *.sql.bz2) and returns a
 #   WikipediaArticle object representing articles
 
+from __future__ import generators   # for 2.2 compatibility
 import sys,os,string,re,bz2,md5
 import arsutils,articleconvert
 
