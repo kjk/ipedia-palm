@@ -248,7 +248,49 @@ def parseRequestLine(line):
     value = value[1:]
     return (field,value)
 
+# given a device info as a string in our encoded form, return a dictionary
+# whose keys are tags (e.g. "PL", "SN", "PN") and value is a tuple: 
+# (value as decoded hex string, value as original hex-encoded string)
+# Return None if device info is not in a (syntactically) correct format.
+# Here we don't check if tags are valid (known), just the syntax
+def decodeDeviceInfo(deviceInfo):
+    result = {}
+    parts = deviceInfo.split(":")
+    for part in parts:
+        # each part has to be in the format: 2-letter tag followed by
+        # hex-encoded value of that tag
+        if len(part)<4:
+            # 4 characters are: 2 for the tag, 2 for at least one byte of value
+            return None
+        tag = part[0:2]
+        tagValueHex = part[2:]
+        if len(tagValueHex) % 2 != 0:
+            return None
+        rest = tagValueHex
+        tagValueDecoded = ""
+        while len(rest)>0:
+            curByteHex = rest[0:2]
+            rest = rest[2:]
+            try:
+                curByte = int(curByteHex,16)
+                tagValueDecoded += chr(curByte)
+            except:
+                return False
+        result[tag] = (tagValueDecoded,tagValueHex)
+    return result
+        
+validTags = ["PL", "PN", "SN", "HN", "OC", "OD"]
 def fValidDeviceInfo(deviceInfo):
+    deviceInfoDecoded = decodeDeviceInfo(deviceInfo)
+    if None == deviceInfoDecoded:
+        return False
+    tagsPresent = deviceInfoDecoded.keys()
+    for tag in tagsPresent:
+        if tag not in validTags:
+            return False
+    # "PL" (Platform) is a required tag - must be sent by all clients
+    if "PL" not in tagsPresent:
+        return False
     return True
 
 # TODO: If we know for
@@ -256,6 +298,7 @@ def fValidDeviceInfo(deviceInfo):
 # prevents using program indefinitely by just reinstalling it after a limit
 # for unregistered version has been reached.
 def fDeviceInfoUnique(deviceInfo):
+    deviceInfoDecoded = decodeDeviceInfo(deviceInfo)
     return False
 
 def getUniqueCookie(cursor):

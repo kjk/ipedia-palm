@@ -10,7 +10,9 @@
 class LookupManager;
 class LookupHistory;
 
-#define serverLocalhost        "127.0.0.1:9000"
+//#define serverLocalhost        "127.0.0.1:9000"
+#define serverLocalhost        "dict-pc.arslexis.com:9000"
+
 //#define serverLocalhost    "192.168.0.1:9000"
 #define serverOfficial   "ipedia.arslexis.com:9000"
 
