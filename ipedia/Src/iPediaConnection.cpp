@@ -83,7 +83,9 @@ void iPediaConnection::prepareRequest()
         appendField(request, getArticleCountField);
 
     request+='\n';
-    setRequest(request); 
+    NarrowString req;
+    TextToByteStream(request, req);
+    setRequest(req); 
 }
 
 ArsLexis::status_t iPediaConnection::enqueue()
