@@ -197,6 +197,14 @@ def getSizeStatsFileName(inFileName):
 def getLogFileName(inFileName):
     return genBaseAndSuffix(inFileName, "_log.txt")
 
+# return a name of the file to log small original articles
+def getSmallOrigFileName(inFileName):
+    return genBaseAndSuffix(inFileName, "_small_orig.txt")
+
+# return a name of the file to log small converted articles
+def getSmallConverterFileName(inFileName):
+    return genBaseAndSuffix(inFileName, "_small_conv.txt")
+
 def fConvertedCacheExists(sqlDumpFileName):
     txtName=  getConvBodyFileName(sqlDumpFileName)
     idxFileName = getConvIdxFileName(sqlDumpFileName)
