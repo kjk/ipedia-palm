@@ -592,7 +592,6 @@ bool MainForm::handleMenuCommand(UInt16 itemId)
     bool handled=false;
     switch (itemId)
     {
-    
 #ifdef  INTERNAL_BUILD    
         case useDictPcMenuItem:
             switchServer(serverOfficial);
