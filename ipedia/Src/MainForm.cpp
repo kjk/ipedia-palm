@@ -58,7 +58,6 @@ MainForm::MainForm(iPediaApplication& app):
     lastPenDownTimestamp_(0),
     updateDefinitionOnEntry_(false),
     enableInputFieldAfterUpdate_(false),
-    articleCountSet_(-1),
     penUpsToEat_(0),
     log_(_T("MainForm")),
     ignoreEvents_(false),
@@ -71,7 +70,6 @@ MainForm::MainForm(iPediaApplication& app):
     articleRenderer_(*this, app.preferences().renderingPreferences, &scrollBar_),
     infoRenderer_(*this, app.preferences().renderingPreferences, &scrollBar_)
 {
-    articleCountSet_ = app.preferences().articleCount;
     articleRenderer_.setRenderingProgressReporter(&renderingProgressReporter_);
     articleRenderer_.setHyperlinkHandler(&app.hyperlinkHandler());
 
@@ -252,11 +250,6 @@ void MainForm::handleLookupFinished(const EventType& event)
 
         default:
             update();
-    }
-    
-    if (app().preferences().articleCount != articleCountSet_) 
-    {
-        articleCountSet_ = app().preferences().articleCount;
     }
 
     LookupManager* lookupManager=app().getLookupManager();
@@ -991,9 +984,10 @@ void MainForm::prepareAbout()
     elems.push_back(new LineBreakElement(1,2));
 
     articleCountElement = new FormattedTextElement(" ");
-    if (-1 != articleCountSet_)    
+
+    if (-1 != app().preferences().articleCount)    
     {
-        prepareArticleCountEl(articleCountElement, articleCountSet_,app().preferences().databaseTime);
+        prepareArticleCountEl(articleCountElement, app().preferences().articleCount, app().preferences().databaseTime);
     }
 
     elems.push_back(articleCountElement);

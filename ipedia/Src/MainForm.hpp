@@ -24,7 +24,6 @@ class MainForm: public iPediaForm
     ArsLexis::TextRenderer articleRenderer_;
     ArsLexis::TextRenderer infoRenderer_;
 
-    long articleCountSet_;
     int  penUpsToEat_;
     bool ignoreEvents_;
 
