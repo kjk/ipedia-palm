@@ -29,6 +29,7 @@ MainForm::MainForm(iPediaApplication& app):
     article_.setHyperlinkHandler(&app.hyperlinkHandler());
     about_.setHyperlinkHandler(&app.hyperlinkHandler());
     tutorial_.setHyperlinkHandler(&app.hyperlinkHandler());
+    register_.setHyperlinkHandler(&app.hyperlinkHandler());
     prepareAbout();    
     // TODO: make those on-demand
     prepareHowToRegister();
@@ -1110,7 +1111,7 @@ void MainForm::prepareHowToRegister()
     // TODO: different stuff for PalmGear/Handango
     elems.push_back(text=new FormattedTextElement("our website "));
     elems.push_back(text=new FormattedTextElement("http://www.arslexis.com"));
-    text->setHyperlink("http://www.arslexis.com", hyperlinkExternal);
+    text->setHyperlink("http://www.arslexis.com/pda/palm.html", hyperlinkExternal);
     elems.push_back(new LineBreakElement());
 
     elems.push_back(text=new FormattedTextElement("After obtaining registration code use menu item Option/Register (or "));
