@@ -63,8 +63,8 @@ public:
         enum {cookieLength=32};
         ArsLexis::String cookie;
         
-        enum {serialNumberLength=32};
-        ArsLexis::String serialNumber;
+        enum {regCodeLength=32};
+        ArsLexis::String regCode;
         
         long articleCount;
         

@@ -264,9 +264,9 @@ MODAL DEFAULTBTNID okButton SAVEBEHIND
 BEGIN
     TITLE "Registration"
     LABEL "Enter registration code:" AUTOID   AT (5 20)
-    FIELD ID serialNumberField   AT (5 PREVBOTTOM+5 146 AUTO) MAXCHARS 32 EDITABLE UNDERLINED 
-    BUTTON "Register" ID okButton   AT (5 PREVBOTTOM+5 40 AUTO)
-    BUTTON "Later" ID cancelButton AT (PREVRIGHT+5 PREVTOP 40 AUTO)
+    FIELD ID regCodeFormField   AT (5 PREVBOTTOM+5 146 AUTO) MAXCHARS 32 EDITABLE UNDERLINED 
+    BUTTON "Register" ID registerButton   AT (5 PREVBOTTOM+5 40 AUTO)
+    BUTTON "Later"    ID laterButton AT (PREVRIGHT+5 PREVTOP 40 AUTO)
 END
 
 FORM ID searchResultsForm   AT ( 0 0 160 160 )

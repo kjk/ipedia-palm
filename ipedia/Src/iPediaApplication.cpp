@@ -147,7 +147,7 @@ namespace {
     enum PreferenceId 
     {
         cookiePrefId,
-        serialNumberPrefId,
+        regCodePrefId,
         serialNumberRegFlagPrefId, // unused
         lastArticleCountPrefId,
         databaseTimePrefId,
@@ -175,9 +175,9 @@ void iPediaApplication::loadPreferences()
     if (errNone!=(error=reader->ErrGetStr(cookiePrefId, &text))) 
         goto OnError;
     prefs.cookie=text;
-    if (errNone!=(error=reader->ErrGetStr(serialNumberPrefId, &text))) 
+    if (errNone!=(error=reader->ErrGetStr(regCodePrefId, &text))) 
         goto OnError;
-    prefs.serialNumber=text;
+    prefs.regCode=text;
     if (errNone!=(error=reader->ErrGetLong(lastArticleCountPrefId, &prefs.articleCount))) 
         goto OnError;
     if (errNone!=(error=reader->ErrGetStr(databaseTimePrefId, &text))) 
@@ -202,7 +202,7 @@ void iPediaApplication::savePreferences()
 
     if (errNone!=(error=writer->ErrSetStr(cookiePrefId, preferences_.cookie.c_str())))
         goto OnError;
-    if (errNone!=(error=writer->ErrSetStr(serialNumberPrefId, preferences_.serialNumber.c_str())))
+    if (errNone!=(error=writer->ErrSetStr(regCodePrefId, preferences_.regCode.c_str())))
         goto OnError;
     if (errNone!=(error=writer->ErrSetLong(lastArticleCountPrefId, preferences_.articleCount))) 
         goto OnError;

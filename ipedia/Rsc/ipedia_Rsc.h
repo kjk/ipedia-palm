@@ -1,14 +1,16 @@
 /* pilrc generated file.  Do not edit!*/
-#define cancelSearchMenuItem 1063
-#define refineSearchMenuItem 1062
-#define backBitmap 1061
-#define forwardBitmap 1060
-#define refineSearchInputField 1059
-#define refineSearchButton 1058
-#define searchResultsList 1057
-#define searchResultsMenu 1056
-#define searchResultsForm 1055
-#define serialNumberField 1054
+#define cancelSearchMenuItem 1065
+#define refineSearchMenuItem 1064
+#define backBitmap 1063
+#define forwardBitmap 1062
+#define refineSearchInputField 1061
+#define refineSearchButton 1060
+#define searchResultsList 1059
+#define searchResultsMenu 1058
+#define searchResultsForm 1057
+#define laterButton 1056
+#define registerButton 1055
+#define regCodeFormField 1054
 #define registrationForm 1052
 #define cancelButton 1051
 #define okButton 1050

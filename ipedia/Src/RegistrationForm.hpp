@@ -10,6 +10,8 @@ class RegistrationForm: public iPediaForm
 
     void handleLookupFinished(const EventType& event);
 
+    ArsLexis::String newRegCode_;
+
 protected:
 
     void resize(const ArsLexis::Rectangle& screenBounds);

@@ -56,7 +56,7 @@ void iPediaConnection::prepareRequest()
     // but possible case when user re-enters registration code even though he
     // already provided valid reg code before)
     bool fSendRegCode = true;
-    if (app.preferences().serialNumber.empty() || !regCodeToVerify.empty())
+    if (app.preferences().regCode.empty() || !regCodeToVerify.empty())
         fSendRegCode = false;
 
     bool fSendCookie = !fSendRegCode;
@@ -93,7 +93,7 @@ void iPediaConnection::prepareRequest()
     }
 
     if (fSendRegCode)
-        appendField(request, regCodeField, app.preferences().serialNumber);
+        appendField(request, regCodeField, app.preferences().regCode);
 
     if (getRandom_)
     {

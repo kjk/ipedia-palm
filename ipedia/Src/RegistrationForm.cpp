@@ -2,19 +2,21 @@
 #include <FormObject.hpp>
 #include "iPediaApplication.hpp"
 #include "LookupManager.hpp"
+#include "Text.hpp"
 
 using ArsLexis::Rectangle;
 using ArsLexis::FormObject;
 using ArsLexis::Field;
 using ArsLexis::Control;
 using ArsLexis::String;
+using ArsLexis::removeNonDigits;
 
 void RegistrationForm::resize(const ArsLexis::Rectangle& screenBounds)
 {
     Rectangle rect(2, screenBounds.height()-70, screenBounds.width()-4, 68);
     setBounds(rect);
     
-    FormObject object(*this, serialNumberField);
+    FormObject object(*this, regCodeFormField);
     object.bounds(rect);
     rect.width()=screenBounds.width()-14;
     object.setBounds(rect);
@@ -25,19 +27,19 @@ void RegistrationForm::resize(const ArsLexis::Rectangle& screenBounds)
 bool RegistrationForm::handleOpen()
 {
     bool handled=iPediaForm::handleOpen();
-    Field field(*this, serialNumberField);
+    Field field(*this, regCodeFormField);
 
     iPediaApplication::Preferences& prefs=static_cast<iPediaApplication&>(application()).preferences();
-    MemHandle handle=MemHandleNew(prefs.serialNumberLength+1);
+    MemHandle handle=MemHandleNew(prefs.regCodeLength+1);
     if (!handle)
         return handled;
 
     char* text=static_cast<char*>(MemHandleLock(handle));
     if (text)
     {
-        assert(prefs.serialNumber.length()<=prefs.serialNumberLength);
-        StrNCopy(text, prefs.serialNumber.data(), prefs.serialNumber.length());
-        text[prefs.serialNumber.length()]=chrNull;
+        assert(prefs.regCode.length()<=prefs.regCodeLength);
+        StrNCopy(text, prefs.regCode.data(), prefs.regCode.length());
+        text[prefs.regCode.length()]=chrNull;
         MemHandleUnlock(handle);
     }
     field.setText(handle);        
@@ -48,55 +50,34 @@ bool RegistrationForm::handleOpen()
 
 void RegistrationForm::handleControlSelect(const EventType& event)
 {
-    if (okButton!=event.data.ctlSelect.controlID)
+    if (registerButton!=event.data.ctlSelect.controlID)
     {
+        assert(laterButton==event.data.ctlSelect.controlID);
         closePopup();
         return;
     }
 
     iPediaApplication& app=static_cast<iPediaApplication&>(application());
 
-    // verify that reg code is correct with Verify-Registration-Code request
-    Field field(*this, serialNumberField);
+    // verify that reg code is correct using Verify-Registration-Code request
+    Field field(*this, regCodeFormField);
     const char* text=field.text();
     if ( (NULL==text) || ('\0'==*text))
     {
-        // TODO: don't even bother asking the server, it must be wrong
-        text="";
+        // don't even bother asking the server, it must be wrong
+        return;
     }
 
     LookupManager* lookupManager=app.getLookupManager();
     if (NULL==lookupManager)
     {
-        // TODO: is this really good? Should it ever happen?
+        // TODO: Can it ever happen?
         return;
     }
 
-    // TODO: remove non-digits from reg code
-    String regCode(text);
-    lookupManager->verifyRegistrationCode(regCode);
+    removeNonDigits(text,newRegCode_);
+    lookupManager->verifyRegistrationCode(newRegCode_);
 }
-
-static bool isDigit(char c)
-{
-    if (c>='0' && c<='9')
-        return true;
-    return false;
-}
-
-// remove in-place all non-digits from buf. buf must be null-terminated.
-static void RemoveNonDigits(char *buf)
-{
-    char *tmp = buf;
-    while (*buf)
-    {
-        if (isDigit(*buf))
-            *tmp++ = *buf;
-        buf++;
-    }
-    *tmp = '\0';
-}
-
 
 void RegistrationForm::handleLookupFinished(const EventType& event)
 {
@@ -107,21 +88,16 @@ void RegistrationForm::handleLookupFinished(const EventType& event)
     const LookupFinishedEventData& data=reinterpret_cast<const LookupFinishedEventData&>(event.data);
     if (data.outcomeRegCodeValid==data.outcome)
     {
-        // TODO: probably need to store the reg number somewhere instead of
-        // re-getting it from the text field
-        Field field(*this, serialNumberField);
-        const char* text=field.text();
-        assert( (NULL!=text) && ('\0'!=*text));
-        // TODO: assert that consists of digits only
-        String newSn(text);
-        if (newSn!=prefs.serialNumber)
+        assert(!newRegCode_.empty());
+        // TODO: assert that it consists of numbers only
+        if (newRegCode_!=prefs.regCode)
         {
-            assert(newSn.length()<=prefs.serialNumberLength);
-            prefs.serialNumber=newSn;
+            assert(newRegCode_.length()<=prefs.regCodeLength);
+            prefs.regCode=newRegCode_;
             app.savePreferences();
         }
-        UInt16 buttonId;
-        buttonId = FrmAlert(alertRegistrationOk);
+
+        FrmAlert(alertRegistrationOk);
         closePopup();
     }
     else if (data.outcomeRegCodeInvalid==data.outcome)
@@ -133,7 +109,7 @@ void RegistrationForm::handleLookupFinished(const EventType& event)
         if (0==buttonId)
         {
             // this is "Ok" button. Clear-out registration code (since it was invalid)
-            prefs.serialNumber = "";
+            prefs.regCode = "";
             app.savePreferences();
             closePopup();
             return;
@@ -166,7 +142,7 @@ bool RegistrationForm::handleEvent(EventType& event)
         case keyDownEvent:
             if (chrCarriageReturn==event.data.keyDown.chr || chrLineFeed==event.data.keyDown.chr)
             {
-                Control control(*this, okButton);
+                Control control(*this, registerButton);
                 control.hit();
             }
             break;
@@ -177,6 +153,7 @@ bool RegistrationForm::handleEvent(EventType& event)
             break;
             
         case LookupManager::lookupStartedEvent:
+            //TODO: disable controls during lookup
             //setControlsState(false);            // No break is intentional.
             
         case LookupManager::lookupProgressEvent:

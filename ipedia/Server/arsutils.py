@@ -253,11 +253,13 @@ def decodeDiTagValue(tagValue):
 #  PN - hex-bin-encoded phone number (if exists)
 #  OC - hex-bin-encoded OEM company ID
 #  OD - hex-bin-encoded OEM device ID
+#  PL - hex-bin-encoded platform e.g. "Palm", "Smartphone", "Pocket PC", "SideKick"
+#  DN - hex-bin-encoded SideKick's device number
 def isValidDiTag(tag):
     if len(tag)<2:
         return False
     tagName=tag[:2]
-    validTagNames={'HS':"HotSync Name", 'SN':"Serial Number", 'HN':"Handspring Serial Number", 'PN':"Phone Number", 'OC':"OEM Company ID", 'OD':"OEM Device ID", 'DN':"Hell knows"}
+    validTagNames={'HS':"HotSync Name", 'SN':"Serial Number", 'HN':"Handspring Serial Number", 'PN':"Phone Number", 'OC':"OEM Company ID", 'OD':"OEM Device ID", 'DN':"SideKick device number", 'PL':"Platform"}
     if not validTagNames.has_key(tagName):
         return False
     tagValue=decodeDiTagValue(tag[2:])
