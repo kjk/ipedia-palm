@@ -23,7 +23,8 @@ iPediaConnection::iPediaConnection(LookupManager& lookupManager):
     performFullTextSearch_(false),
     getRandom_(false),
     getArticleCount_(false),
-    getDatabaseTime_(false)
+    getDatabaseTime_(false),
+    regCodeValid_(regCodeTypeUnset)
 {
 }
 
@@ -46,6 +47,8 @@ iPediaConnection::~iPediaConnection()
 #define articleCountField       _T("Article-Count")
 #define getDatabaseTimeField    _T("Get-Database-Time")
 #define databaseTimeField       _T("Database-Time")
+#define verifyRegCodeField      _T("Verify-Registration-Code")
+#define regCodeValidField       _T("Registratin-Code-Valid")
 
 void iPediaConnection::prepareRequest()
 {
@@ -62,7 +65,7 @@ void iPediaConnection::prepareRequest()
     String request;
     appendField(request, protocolVersionField, protocolVersion);
     appendField(request, clientVersionField, appVersion);
-    char_t buffer[9];
+    char_t buffer[16];
     tprintf(buffer, _T("%08lx"), transactionId_);
     appendField(request, transactionIdField, buffer);
     if (chrNull==app.preferences().cookie[0])
@@ -78,8 +81,15 @@ void iPediaConnection::prepareRequest()
             appendField(request, getDefinitionField, term_);
     }
 
+    if (!regCodeToVerify.empty())
+        appendField(request, verifyRegCodeField, regCodeToVerify);
+
+    // decide if we want to send registration code. We don't send it if
+    // we don't have it or if we're asking to verify registration code (a strange
+    // but possible case when user re-enters registration code even though he
+    // already provided valid reg code before)
     registering_ = true;
-    if (app.preferences().serialNumberRegistered || chrNull==app.preferences().serialNumber[0])
+    if (!regCodeToVerify.empty() || app.preferences().serialNumberRegistered || chrNull==app.preferences().serialNumber[0])
         registering_ = false;
 
     if (registering_)
@@ -189,22 +199,27 @@ ArsLexis::status_t iPediaConnection::notifyProgress()
     return error;
 }
 
-
+// Called incrementally for each field/value we obtain from server's response.
+// Based on those values accumulates internal state that can be inspected
+// later after we get the whole response from the server.
+// TODO: we should add some more checking of the type "regCodeValidField should
+// be the only field send by the server (with the exception of standard fields
+// like transactionIdField)
 ArsLexis::status_t iPediaConnection::handleField(const String& name, const String& value)
 {
     long                numValue;
     ArsLexis::status_t  error=errNone;
     iPediaApplication&  app=iPediaApplication::instance();
 
-    if (name==transactionIdField)
+    if (transactionIdField==name)
     {
         error=numericValue(value, numValue, 16);
         if (error || (numValue!=transactionId_))
             error=errResponseMalformed;
     }
-    else if (name==notFoundField)
+    else if (notFoundField==name)
         notFound_=true;
-    else if (name==formatVersionField)
+    else if (formatVersionField==name)
     {
         error=numericValue(value, numValue);
         if (!error)
@@ -212,7 +227,7 @@ ArsLexis::status_t iPediaConnection::handleField(const String& name, const Strin
         else
             error=errResponseMalformed;
     }
-    else if (name==resultsForField)
+    else if (resultsForField==name)
         resultsFor_=value;
     else if (name==definitionField)
     {
@@ -226,7 +241,7 @@ ArsLexis::status_t iPediaConnection::handleField(const String& name, const Strin
         else
             error=errResponseMalformed;
     }
-    else if (name==searchResultsField)
+    else if (searchResultsField==name)
     {
         error=numericValue(value, numValue);
         if (!error)
@@ -238,14 +253,14 @@ ArsLexis::status_t iPediaConnection::handleField(const String& name, const Strin
         else
             error=errResponseMalformed;
     }
-    else if (name==cookieField)
+    else if (cookieField==name)
     {
         if (value.length()>iPediaApplication::Preferences::cookieLength)
             error=errResponseMalformed;
         else
             app.preferences().cookie=value;
     }
-    else if (name==errorField)
+    else if (errorField==name)
     {
         error=numericValue(value, numValue);
         if (!error)
@@ -258,25 +273,46 @@ ArsLexis::status_t iPediaConnection::handleField(const String& name, const Strin
         else
             error=errResponseMalformed;
     }
-    else if (name==articleCountField)
+    else if (articleCountField==name)
     {
         error=numericValue(value, numValue);
-        if (!error)
-        {
-            app.preferences().articleCount=numValue;
-        }
-        else
+        if (error)
             error=errResponseMalformed;
+        else
+            app.preferences().articleCount=numValue;
     }
-    else if (name==databaseTimeField)
+    else if (databaseTimeField==name)
     {
         app.preferences().databaseTime=value;
+    }
+    else if (regCodeValidField==name)
+    {
+
+        error=numericValue(value, numValue);
+        if (error)
+            error=errResponseMalformed;
+        else
+        {
+            if (0==numValue)
+            {
+                regCodeValid_ = regCodeTypeValid;
+            }
+            else if (1==numValue)
+            {
+                regCodeValid_ = regCodeTypeInvalid;
+            }
+            else
+                error=errResponseMalformed;
+        }
     }
     else 
         error=FieldPayloadProtocolConnection::handleField(name, value);
     return error;
 }
 
+// called when the whole response from the server have been read
+// inspects the state set during response parsing and sets appropriate
+// outcome to be inspected by those who initiated requests
 ArsLexis::status_t iPediaConnection::notifyFinished()
 {
     ArsLexis::status_t error=FieldPayloadProtocolConnection::notifyFinished();
@@ -289,32 +325,46 @@ ArsLexis::status_t iPediaConnection::notifyFinished()
         data.outcome=data.outcomeServerError;
         data.serverError=serverError_;
         ArsLexis::sendEvent(LookupManager::lookupFinishedEvent, data);
+        assert(errNone==error);
+        return errNone;
     }
-    else
-    {
-        iPediaApplication& app=iPediaApplication::instance();
-        if (definitionParser_!=0)
-        {
-            std::swap(definitionParser_->elements(), lookupManager_.lastDefinitionElements());
-            lookupManager_.setLastFoundTerm(resultsFor_);
-            if (getRandom_)
-                lookupManager_.setLastInputTerm(resultsFor_);
-            data.outcome=data.outcomeDefinition;
-        }
-        if (searchResultsHandler_!=0)
-        {
-            lookupManager_.setLastSearchResults(searchResultsHandler_->searchResults());
-            lookupManager_.setLastSearchExpression(resultsFor_);
-            data.outcome=data.outcomeList;
-        }
 
-        if (registering_ && !serverError_)
-            app.preferences().serialNumberRegistered=true;
-        
-        if (notFound_)
-            data.outcome=data.outcomeNotFound;
-        ArsLexis::sendEvent(LookupManager::lookupFinishedEvent, data);
+    iPediaApplication& app=iPediaApplication::instance();
+    if (NULL!=definitionParser_)
+    {
+        std::swap(definitionParser_->elements(), lookupManager_.lastDefinitionElements());
+        lookupManager_.setLastFoundTerm(resultsFor_);
+        if (getRandom_)
+            lookupManager_.setLastInputTerm(resultsFor_);
+        data.outcome=data.outcomeDefinition;
     }
+
+    if (searchResultsHandler_!=0)
+    {
+        lookupManager_.setLastSearchResults(searchResultsHandler_->searchResults());
+        lookupManager_.setLastSearchExpression(resultsFor_);
+        data.outcome=data.outcomeList;
+    }
+
+    if (registering_ && !serverError_)
+        app.preferences().serialNumberRegistered=true;
+    
+    if (notFound_)
+        data.outcome=data.outcomeNotFound;
+
+    if (regCodeTypeValid==regCodeValid_)
+    {
+        assert(data.outcomeNothing==data.outcome);
+        data.outcome=data.outcomeRegCodeValid;
+    }
+    else if (regCodeTypeInvalid==regCodeValid_)
+    {
+        assert(data.outcomeNothing==data.outcome);
+        data.outcome=data.outcomeRegCodeInvalid;
+    }        
+
+    ArsLexis::sendEvent(LookupManager::lookupFinishedEvent, data);
+
     assert( errNone == error );
     return error;        
 }

@@ -28,7 +28,9 @@ struct LookupFinishedEventData
         outcomeList,
         outcomeError,
         outcomeServerError,
-        outcomeNotFound
+        outcomeNotFound,
+        outcomeRegCodeValid, // set if server sends Registration-Code-Valid with value "1"
+        outcomeRegCodeInvalid, // set if server sends Registratoin-Code-Valid with value "0"
     } outcome;
     
     union
@@ -99,6 +101,8 @@ public:
     {return lastInputTerm_;}
     
     void handleLookupFinishedInForm(const LookupFinishedEventData& data);
+
+    void verifyRegistrationCode(const ArsLexis::String& regCode);
     
 private:
     

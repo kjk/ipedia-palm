@@ -8,20 +8,22 @@ class RegistrationForm: public iPediaForm
 {
     void handleControlSelect(const EventType& data);
 
+    void handleLookupFinished(const EventType& event);
+
 protected:
 
     void resize(const ArsLexis::Rectangle& screenBounds);
-    
+
     bool handleEvent(EventType& event);
-    
+
     bool handleOpen();
-    
+
 public:
 
     RegistrationForm(iPediaApplication& app):
         iPediaForm(app, registrationForm)
     {}    
-    
+
 };
 
 #endif

@@ -25,7 +25,7 @@ class SearchResultsForm: public iPediaForm
     bool handleKeyPress(const EventType& event);
     
     void handleLookupFinished(const EventType& event);
-    
+
 protected:
     
     bool handleEvent(EventType& event);

@@ -115,6 +115,14 @@ BEGIN
     BUTTONS "OK"
 END
 
+ALERT ID alertRegistrationFailed
+INFORMATION
+BEGIN
+    TITLE "Wrong registration code"
+    MESSAGE "Incorrect registration code. Contact support@arslexis.com in case of problems."
+    BUTTONS "OK" "Re-enter registration code"
+END
+
 ALERT ID trialExpiredAlert
     DEFAULTBUTTON 0
     ERROR

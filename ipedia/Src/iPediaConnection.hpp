@@ -10,12 +10,12 @@ class DefinitionParser;
 
 class iPediaConnection: public ArsLexis::FieldPayloadProtocolConnection
 {
-    LookupManager& lookupManager_;
-    ulong_t transactionId_;
-    ArsLexis::String term_;
-    uint_t formatVersion_;
-    ArsLexis::String resultsFor_;
-    DefinitionParser* definitionParser_;
+    LookupManager&      lookupManager_;
+    ulong_t             transactionId_;
+    ArsLexis::String    term_;
+    uint_t              formatVersion_;
+    ArsLexis::String    resultsFor_;
+    DefinitionParser*   definitionParser_;
 
     class SearchResultsHandler: public ArsLexis::FieldPayloadProtocolConnection::PayloadHandler
     {
@@ -50,7 +50,14 @@ class iPediaConnection: public ArsLexis::FieldPayloadProtocolConnection
         payloadDefinition,
         payloadSearchResults
     };
-    
+
+    enum RegCodeValidationType
+    {
+        regCodeTypeUnset=-1,
+        regCodeTypeValid=1,
+        regCodeTypeInvalid=0
+    };
+
     PayloadType payloadType_;
 
 protected:
@@ -89,10 +96,15 @@ public:
 
     void setGetDatabaseTime(bool value=true)
     {getDatabaseTime_=true;}
-    
+
+    // if set, send Verify-Registration-Code
+    ArsLexis::String  regCodeToVerify;
+
 private:
-    
+
     iPediaServerError serverError_;
+
+    RegCodeValidationType regCodeValid_;
 
     bool notFound_:1;
     bool registering_:1;

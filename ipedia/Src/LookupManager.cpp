@@ -174,3 +174,13 @@ void LookupManager::moveHistory(bool forward)
     }
 }
 
+// send a Verify-Registration-Code query to the server with value being
+// registration code. Server responds with Registration-Code-Valid whose value
+// is 1 (reg code valid) or 0 (reg code invalid)
+void LookupManager::verifyRegistrationCode(const ArsLexis::String& regCode)
+{
+    iPediaConnection* conn=new iPediaConnection(*this);
+    conn->regCodeToVerify = regCode;
+    conn->setAddress(iPediaApplication::instance().server());
+    conn->enqueue();
+}
