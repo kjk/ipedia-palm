@@ -86,30 +86,33 @@ void SearchResultsForm::resize(const ArsLexis::Rectangle& screenBounds)
     {
         setBounds(screenBounds);
         
-        FormObject object(*this, searchResultsList);
-        object.bounds(rect);
-        rect.height()=screenBounds.height()-34;
-        rect.width()=screenBounds.width()-4;
-        object.setBounds(rect);
+        {
+            List list(*this, searchResultsList);
+            list.bounds(rect);
+            rect.height()=screenBounds.height()-34;
+            rect.width()=screenBounds.width()-4;
+            list.setBounds(rect);
+            list.adjustVisibleItems();
+        }
+        {
+            FormObject object(*this, refineSearchInputField);
+            object.bounds(rect);
+            rect.y()=screenBounds.height()-14;
+            rect.width()=screenBounds.width()-74;
+            object.setBounds(rect);
 
-        object.attach(refineSearchInputField);
-        object.bounds(rect);
-        rect.y()=screenBounds.height()-14;
-        rect.width()=screenBounds.width()-74;
-        object.setBounds(rect);
+            object.attach(cancelButton);
+            object.bounds(rect);
+            rect.y()=screenBounds.height()-14;
+            rect.x()=screenBounds.width()-34;
+            object.setBounds(rect);
 
-        object.attach(cancelButton);
-        object.bounds(rect);
-        rect.y()=screenBounds.height()-14;
-        rect.x()=screenBounds.width()-34;
-        object.setBounds(rect);
-
-        object.attach(refineSearchButton);
-        object.bounds(rect);
-        rect.y()=screenBounds.height()-14;
-        rect.x()=screenBounds.width()-69;
-        object.setBounds(rect);
-        
+            object.attach(refineSearchButton);
+            object.bounds(rect);
+            rect.y()=screenBounds.height()-14;
+            rect.x()=screenBounds.width()-69;
+            object.setBounds(rect);
+        }        
         update();
     }
 }
@@ -201,11 +204,11 @@ bool SearchResultsForm::handleKeyPress(const EventType& event)
 
     if (fiveWayLeftPressed(&event))
     {
-        list.setSelectionDelta(-list.visibleItems());
+        list.setSelectionDelta(-list.visibleItemsCount());
         handled = true;
     } else if (fiveWayRightPressed(&event))
     {
-        list.setSelectionDelta(list.visibleItems());
+        list.setSelectionDelta(list.visibleItemsCount());
         handled = true;
     } else if (fiveWayUpPressed(&event))
     {
@@ -221,12 +224,12 @@ bool SearchResultsForm::handleKeyPress(const EventType& event)
         switch (event.data.keyDown.chr)
         {
             case chrPageDown:
-                list.setSelectionDelta(list.visibleItems());
+                list.setSelectionDelta(list.visibleItemsCount());
                 handled=true;
                 break;
                 
             case chrPageUp:
-                list.setSelectionDelta(-list.visibleItems());
+                list.setSelectionDelta(-list.visibleItemsCount());
                 handled=true;
                 break;
             
@@ -251,7 +254,7 @@ bool SearchResultsForm::handleKeyPress(const EventType& event)
                     LookupManager* lookupManager=app.getLookupManager();
                     if (lookupManager)
                     {
-                        const String& title=listPositions_[list.getSelection()];
+                        const String& title=listPositions_[list.selection()];
                         const LookupHistory& history=app.history();
                         if (history.hasCurrentTerm() && history.currentTerm()==title)
                             closePopup();
