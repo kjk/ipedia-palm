@@ -1,6 +1,11 @@
 
 from mod_python import apache
-import os, MySQLdb, _mysql_exceptions, iPediaDatabase, arsutils
+import os, MySQLdb, _mysql_exceptions, arsutils
+
+DB_HOST        = 'localhost'
+DB_USER        = 'ipedia'
+DB_PWD         = 'ipedia'
+MANAGEMENT_DB  = 'ipedia_manage'
 
 def _singleResult(db, query):
     cursor=db.cursor()
@@ -30,7 +35,7 @@ def _readTemplate(req):
     return txt
     
 def _connect():
-    return MySQLdb.Connect(host=iPediaDatabase.DB_HOST, user=iPediaDatabase.DB_USER, passwd=iPediaDatabase.DB_PWD, db=iPediaDatabase.MANAGEMENT_DB)
+    return MySQLdb.Connect(host=DB_HOST, user=DB_USER, passwd=DB_PWD, db=MANAGEMENT_DB)
     
 def _dayOrDays(num):
     if 1==num:

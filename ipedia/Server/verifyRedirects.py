@@ -12,14 +12,16 @@
 #   -listdbs  : list all available ipedia databases
 
 import sys, re, random, MySQLdb, _mysql_exceptions
-import arsutils,iPediaDatabase,iPediaServer
+import arsutils,iPediaServer
 try:
     import psyco
     psyco.full()
 except:
     print "psyco not available. You should consider using it (http://psyco.sourceforge.net/)"
 
-ipediaRe = re.compile("ipedia_[0-9]{8}", re.I)
+DB_HOST = 'localhost'
+DB_USER = 'ipedia'
+DB_PWD  = 'ipedia'
 
 g_conn = None
 g_dbName = None
@@ -27,7 +29,7 @@ g_dbName = None
 def getConn():
     global g_conn, g_dbName
     if None == g_conn:
-        g_conn = MySQLdb.Connect(host=iPediaDatabase.DB_HOST, user=iPediaDatabase.DB_USER, passwd=iPediaDatabase.DB_PWD, db=g_dbName)
+        g_conn = MySQLdb.Connect(host=DB_HOST, user=DB_USER, passwd=DB_PWD, db=g_dbName)
     return g_conn
 
 def closeConn():

@@ -16,7 +16,7 @@
 #   -demon    : start in deamon mode
 
 import sys, os, string, re, random, time, MySQLdb, _mysql_exceptions
-import arsutils, iPediaDatabase
+import arsutils
 
 from twisted.internet import protocol, reactor
 from twisted.protocols import basic
@@ -29,6 +29,11 @@ try:
 except:
     print "psyco not available. You should consider using it (http://psyco.sourceforge.net/)"
     g_fPsycoAvailable = False
+
+DB_HOST        = 'localhost'
+DB_USER        = 'ipedia'
+DB_PWD         = 'ipedia'
+MANAGEMENT_DB  = 'ipedia_manage'
 
 g_fDisableRegistrationCheck = True
 g_unregisteredLookupsLimit=30
@@ -978,11 +983,11 @@ class iPediaFactory(protocol.ServerFactory):
 
     def createArticlesConnection(self):
         #print "creating articles connection"
-        return MySQLdb.Connect(host=iPediaDatabase.DB_HOST, user=iPediaDatabase.DB_USER, passwd=iPediaDatabase.DB_PWD, db=self.dbName)
+        return MySQLdb.Connect(host=DB_HOST, user=DB_USER, passwd=DB_PWD, db=self.dbName)
 
     def createManagementConnection(self):
         #print "creating management connection"
-        return MySQLdb.Connect(host=iPediaDatabase.DB_HOST, user=iPediaDatabase.DB_USER, passwd=iPediaDatabase.DB_PWD, db=iPediaDatabase.MANAGEMENT_DB)
+        return MySQLdb.Connect(host=DB_HOST, user=DB_USER, passwd=DB_PWD, db=MANAGEMENT_DB)
 
     def __init__(self, dbName):
         self.changeDatabase(dbName)
@@ -1019,7 +1024,7 @@ def fIpediaDb(dbName):
 # returns a dictionary describing all iPedia databases
 # dictionary key is database name, the value is number of articles in that database
 def getIpediaDbs():
-    conn = MySQLdb.Connect(host=iPediaDatabase.DB_HOST, user=iPediaDatabase.DB_USER, passwd=iPediaDatabase.DB_PWD, db='')
+    conn = MySQLdb.Connect(host=DB_HOST, user=DB_USER, passwd=DB_PWD, db='')
     cur = conn.cursor()
     cur.execute("SHOW DATABASES;")
     dbsInfo = {}
@@ -1115,14 +1120,14 @@ def usageAndExit():
 
 def main():
     global g_fVerbose, g_fPsycoAvailable
-    g_fVerbose=iPediaDatabase.g_fVerbose = True
+    g_fVerbose = True
 
     fDemon = arsutils.fDetectRemoveCmdFlag("-demon")
     if not fDemon:
         fDemon = arsutils.fDetectRemoveCmdFlag("-daemon")
 
     if arsutils.fDetectRemoveCmdFlag( "-silent" ):
-        g_fVerbose, iPediaDatabase.g_fVerbose = False, False
+        g_fVerbose = False
 
     fUsePsyco = arsutils.fDetectRemoveCmdFlag("-usepsyco")
     if g_fPsycoAvailable and fUsePsyco:

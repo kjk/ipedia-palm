@@ -43,7 +43,10 @@ g_connIpediaDbName = None
 
 g_dbName = None
 
-MANAGEMENT_DB = 'ipedia_manage'
+DB_HOST        = 'localhost'
+DB_USER        = 'ipedia'
+DB_PWD         = 'ipedia'
+MANAGEMENT_DB  = 'ipedia_manage'
 
 def usageAndExit():
     print "wikiToDbConvert.py [-verbose] [-revlinksonly] [-limit n] [-showdups] [-nopsyco] [-recreatedb] [-recreatedatadb] sqlDumpName"
@@ -71,7 +74,7 @@ def getIpediaConnection(dbName):
         return g_connIpedia
     if g_connIpedia:
         assert dbName == g_connIpediaDbName
-    g_connIpedia = MySQLdb.Connect(host='localhost', user='ipedia', passwd='ipedia', db=dbName)
+    g_connIpedia = MySQLdb.Connect(host=DB_HOST, user=DB_USER, passwd=DB_PWD, db=dbName)
     g_connIpediaDbName = dbName
     return g_connIpedia
 
@@ -463,9 +466,9 @@ def createDb(conn,dbName):
     cur.execute(articlesSql)
     cur.execute(redirectsSql)
     cur.execute(reverseLinksSql)
-    cur.execute("GRANT ALL ON %s.* TO 'ipedia'@'localhost' IDENTIFIED BY 'ipedia';" % dbName)
+    cur.execute("GRANT ALL ON %s.* TO '%s'@'%s' IDENTIFIED BY '%s';" % (dbName, DB_USER, DB_HOST, DB_PWD)
     cur.close()
-    print "Created '%s' database and granted perms to ipedia user" % dbName
+    print "Created '%s' database and granted perms to user '%s'" % (dbName,DB_USER)
 
 usersSql = """CREATE TABLE users (
   user_id           INT(10) NOT NULL auto_increment,
@@ -548,11 +551,11 @@ def createDataDb(conn):
     cur.execute(getCookieLogSql)
     cur.execute(verifyRegCodeLogSql)
     cur.execute(regCodesSql)
-    cur.execute("GRANT ALL ON %s.* TO 'ipedia'@'localhost' IDENTIFIED BY 'ipedia';" % MANAGEMENT_DB)
+    cur.execute("GRANT ALL ON %s.* TO '%s'@'%s' IDENTIFIED BY '%s';" % (MANAGEMENT_DB,DB_USER,DB_HOST,DB_PWD))
     insertRegCode(cur, iPediaServer.testValidRegCode, True)
     insertRegCode(cur, iPediaServer.testDisabledRegCode, False)
     cur.close()
-    print "Created '%s' database and granted perms to ipedia user" % MANAGEMENT_DB
+    print "Created '%s' database and granted perms to user '%s'" % (MANAGEMENT_DB,DB_USER)
 
 def recreateDataDb(fRecreate=False):
     connRoot = getRootConnection()
