@@ -59,7 +59,6 @@ getArticleCountField =  "Get-Article-Count"
 articleCountField =     "Article-Count"
 getDatabaseTimeField =  "Get-Database-Time"
 databaseTimeField =     "Database-Time"
-pingField =             "Ping"
 
 definitionFormatVersion = 1
 protocolVersion = 1
@@ -96,7 +95,6 @@ class iPediaProtocol(basic.LineReceiver):
         self.getArticleCount=False
         self.getDatabaseTime=False
         self.searchExpression=None
-        self.ping=False
 
     def getManagementDatabase(self):
         if not self.dbManagement:
@@ -444,10 +442,6 @@ class iPediaProtocol(basic.LineReceiver):
             if g_fVerbose:
                 print "--------------------------------------------------------------------------------"
 
-            if self.ping:
-                self.outputField("PONG")
-                return self.finish()
-
             if self.transactionId:
                 self.outputField(transactionIdField, self.transactionId)
             else:
@@ -496,7 +490,7 @@ class iPediaProtocol(basic.LineReceiver):
             return line[index+2:]
         else:
             return None
-            
+
     def lineReceived(self, request):
         try:
             ++self.linesCount
@@ -542,13 +536,6 @@ class iPediaProtocol(basic.LineReceiver):
 
                 elif request.startswith(getDatabaseTimeField):
                     self.getDatabaseTime=True
-
-                elif request.startswith(pingField):
-                    self.ping = True
-                    #print "lines: %d" % self.linesCount
-                    if self.linesCount != 0:
-                        self.error = iPediaServerError.malformedRequest
-                    self.answer()
 
                 else:
                     self.error=iPediaServerError.malformedRequest
@@ -602,7 +589,7 @@ def fIpediaDb(dbName):
 
 # returns a dictionary describing all iPedia databases
 # dictionary key is database name, the value is number of articles in that database
-def getIpediaDbList():
+def getIpediaDbs():
     conn = MySQLdb.Connect(host=iPediaDatabase.DB_HOST, user=iPediaDatabase.DB_USER, passwd=iPediaDatabase.DB_PWD, db='')
     cur = conn.cursor()
     cur.execute("SHOW DATABASES;")
@@ -629,7 +616,7 @@ class iPediaTelnetProtocol(basic.LineReceiver):
     def listDatabases(self):
         dbsInfo = None
         try:
-            dbsInfo = getIpediaDbList()
+            dbsInfo = getIpediaDbs()
             dbNames = dbsInfo.keys()
             dbNames.sort()
             for name in dbNames:
@@ -648,7 +635,7 @@ class iPediaTelnetProtocol(basic.LineReceiver):
         self.transport.write("currently using: %s\r\n" % self.factory.iPediaFactory.dbName)
         dbsInfo = None
         try:
-            dbsInfo = getIpediaDbList()
+            dbsInfo = getIpediaDbs()
         except _mysql_exceptions.Error, ex:
             dumpException(ex)
             txt = arsutils.exceptionAsStr(ex)
@@ -713,7 +700,7 @@ def main():
         print "using psyco"
         psyco.full()
 
-    dbsInfo = getIpediaDbList()
+    dbsInfo = getIpediaDbs()
     dbNames = dbsInfo.keys()
     if 0==len(dbNames):
         print "No databases available"

@@ -10,7 +10,7 @@
 #   -getrandom
 #   -articlecount
 #   -ping : does a ping request (to test if the server is alive)
-import sys, re, socket, random, pickle, time, arsutils
+import sys, string, re, socket, random, pickle, time, arsutils
 
 # server string must be of form "name:port"
 g_serverList = ["localhost:9000", "ipedia.arslexis.com:9000"]
@@ -34,7 +34,9 @@ GET_ARTICLE_COUNT = "Get-Article-Count:"
 ARTICLE_COUNT     = "Article-Count:"
 GET_DATABASE_TIME = "Get-Database-Time:"
 DATABASE_TIME     = "Database-Time:"
-PING              = "Ping:"
+
+# current version of the definition format returned by the client
+CUR_FORMAT_VER = "1"
 
 g_fShowTiming = None
 
@@ -78,58 +80,49 @@ def socket_readAll(sock):
         result += data
     return result
 
-def buildLine( field, value):
-    return "%s %s\n" % (field,value)
+class Request:
+    def __init__(self):
+        self.fields = []
 
-def buildCommonRequestPart():
-    protocolVer = "1"
-    clientVer = "0.5"
-    transactionId = "%x" % random.randint( 0, 2**16-1)
+        self.protocolVer   = "1"
+        self.clientVer     = "0.5"
+        self.transactionId = "%x" % random.randint(0, 2**16-1)
 
-    req  = buildLine(PROTOCOL_VER, protocolVer)
-    req += buildLine(CLIENT_VER, clientVer)
-    req += buildLine(TRANSACTION_ID, transactionId)
-    return req
+        self.addField(PROTOCOL_VER,   self.protocolVer)
+        self.addField(CLIENT_VER,     self.clientVer)
+        self.addField(TRANSACTION_ID, self.transactionId)
 
-def buildGetRandomDefinitionRequest():
-    req = buildCommonRequestPart()
+    def addField(self,fieldName,value):
+        self.fields.append( (fieldName, value) )
+
+    def getString(self):
+        lines = ["%s %s\n" % (field,value) for (field,value) in self.fields]
+        txt = string.join(lines , "" )
+        txt += "\n"
+        return txt
+
+def getRequestHandleCookie(field=None,value=None):
+    r = Request()
     if getGlobalCookie():
-        req += buildLine(COOKIE, getGlobalCookie())
+        r.addField(COOKIE, getGlobalCookie())
     else:
-        req += buildLine(GET_COOKIE, g_exampleDeviceInfo)
-    req += GET_RANDOM + "\n"
-    req += "\n"
-    return req
+        r.addField(GET_COOKIE, g_exampleDeviceInfo)
+    if field!=None:
+        r.addField(field,value)
+    return r
 
-def buildGetDefinitionRequest(term):
-    req = buildCommonRequestPart()
-    if getGlobalCookie():
-        req += buildLine(COOKIE, getGlobalCookie())
-    else:
-        req += buildLine(GET_COOKIE, g_exampleDeviceInfo)
-    req += buildLine(GET_DEF, term)
-    req += "\n"
-    return req
-    
-def buildGetArticleCountRequest():
-    req = buildCommonRequestPart()
-    if getGlobalCookie():
-        req += buildLine(COOKIE, getGlobalCookie())
-    else:
-        req += buildLine(GET_COOKIE, g_exampleDeviceInfo)
-    req += GET_ARTICLE_COUNT
-    req += "\n\n"
-    return req
-
-def buildGetDatabaseTimeRequest():
-    req = buildCommonRequestPart()
-    if getGlobalCookie():
-        req += buildLine(COOKIE, getGlobalCookie())
-    else:
-        req += buildLine(GET_COOKIE, g_exampleDeviceInfo)
-    req += GET_DATABASE_TIME
-    req += "\n\n"
-    return req
+def getResponseFromServer(req):
+    sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    (serverName, serverPort) = getServerNamePort()
+    sock.connect((serverName,serverPort))
+    #print "Connected to server"
+    #print "Sending:", req
+    sock.sendall(req)
+    #print "Sent all"
+    response = socket_readAll(sock)    
+    #print "Received:", response
+    sock.close()
+    return response
 
 # parser server response. Returns a dictionary where keys are the
 # names of fields e.g. like FORMAT_VER, COOKIE and values their values
@@ -172,109 +165,90 @@ def parseServerResponse(response):
             result[key] = value
     return result
 
-def getReqResponse(req):
-    sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-    (serverName, serverPort) = getServerNamePort()
-    sock.connect((serverName,serverPort))
-    #print "Connected to server"
-    #print "Sending:", req
-    sock.sendall(req)
-    #print "Sent all"
-    response = socket_readAll(sock)    
-    #print "Received:", response
-    sock.close()
-    return response
+class Response:
+    def __init__(self,request):
+        # request can be either a string or class Request
+        assert request
+        if isinstance(request, Request):
+            self.txt = request.getString()
+        else:
+            self.txt = request
+        self.responseTxt = getResponseFromServer(self.txt)
+        self.responseDict = parseServerResponse(self.responseTxt)
+        if None == self.responseDict:
+            # TODO: throw an exception
+            print "FAILURE in parseServerResponse"
+            sys.exit(0)
 
-def getDef(term):
-    req = buildGetDefinitionRequest(term)
-    return getReqResponse(req)
+    def hasField(self,field):
+        return self.responseDict.has_key(field)
 
-def getRandomDef():
-    req = buildGetRandomDefinitionRequest()
-    return getReqResponse(req)
-    
-def getArticleCount():
-    req = buildGetArticleCountRequest()
-    return getReqResponse(req)
+    def getField(self,field):
+        return self.responseDict[field]
 
-def getDatabaseTime():
-    req = buildGetDatabaseTimeRequest()
-    return getReqResponse(req)
+    def getText(self):
+        return self.responseTxt
 
-def doGetDef(term):
+def handleCookie(rsp):
     global g_cookie
-    defResponse = getDef(term)
-    print "term: %s" % term
-    print "##### response:"
-    print defResponse
-    parsedResponse = parseServerResponse(defResponse)
-    if not parsedResponse:
-        print "FAILURE in parseServerResponse"
-        sys.exit(0)
-    if not getGlobalCookie() and parsedResponse.has_key(COOKIE):
-        print "Found cookie: %s" % parsedResponse[COOKIE]
-        g_cookie = parsedResponse[COOKIE]
+    if not getGlobalCookie() and rsp.hasField(COOKIE):
+        print "Found cookie: %s" % rsp.getField(COOKIE)
+        g_cookie = rsp.getField(COOKIE)
 
 def doGetRandomDef(fSilent=False,fDoTiming=False):
-    global g_cookie, g_fShowTiming
+    req = getRequestHandleCookie(GET_RANDOM, "")
     timer = arsutils.Timer(fStart=True)
-    defResponse = getRandomDef()
+    rsp = Response(req.getString())
     timer.stop()
+    handleCookie(rsp)
+    assert rsp.hasField(TRANSACTION_ID)
+    assert rsp.hasField(RESULTS_FOR)
+    assert rsp.hasField(FORMAT_VER)
+    assert rsp.getField(FORMAT_VER) == CUR_FORMAT_VER
+    assert rsp.hasField(DEFINITION)
     if not fSilent:
         print "# response:"
-        print defResponse
-    parsedResponse = parseServerResponse(defResponse)
-    if not parsedResponse:
-        print "FAILURE in parseServerResponse"
-        sys.exit(0)
-    if not getGlobalCookie() and parsedResponse.has_key(COOKIE):
-        print "Found cookie: %s" % parsedResponse[COOKIE]
-        g_cookie = parsedResponse[COOKIE]
+        print rsp.getText()
     if g_fShowTiming:
         timer.dumpInfo()
 
 def doGetRandomDefNoTiming():
-    global g_cookie
-    defResponse = getRandomDef()
-    parsedResponse = parseServerResponse(defResponse)
-    if not parsedResponse:
-        print "FAILURE in parseServerResponse"
-        sys.exit(0)
-    if not getGlobalCookie() and parsedResponse.has_key(COOKIE):
-        print "Found cookie: %s" % parsedResponse[COOKIE]
-        g_cookie = parsedResponse[COOKIE]
+    req = getRequestHandleCookie(GET_RANDOM, "")
+    rsp = Response(req.getString())
+    handleCookie(rsp)
+    assert rsp.hasField(TRANSACTION_ID)
+    assert rsp.hasField(RESULTS_FOR)
+    assert rsp.hasField(FORMAT_VER)
+    assert rsp.getField(FORMAT_VER) == CUR_FORMAT_VER
+    assert rsp.hasField(DEFINITION)
+
+def doGetDef(term):
+    print "term: %s" % term
+    req = getRequestHandleCookie(GET_DEF, term)
+    rsp = Response(req.getString())
+    handleCookie(rsp)
+    assert rsp.hasField(TRANSACTION_ID)
+    assert rsp.hasField(RESULTS_FOR)
+    assert rsp.hasField(FORMAT_VER)
+    assert rsp.getField(FORMAT_VER) == CUR_FORMAT_VER
+    assert rsp.hasField(DEFINITION)
+    #print "Definition: %s" % rsp.getField(DEFINITION)
 
 def doGetArticleCount():
-    global g_cookie
-    defResponse = getArticleCount()
-    parsedResponse = parseServerResponse(defResponse)
-    if not parsedResponse:
-        print "FAILURE in parseServerResponse"
-        sys.exit(0)
-    if not getGlobalCookie() and parsedResponse.has_key(COOKIE):
-        print "Found cookie: %s" % parsedResponse[COOKIE]
-        g_cookie = parsedResponse[COOKIE]
-    if not parsedResponse.has_key(ARTICLE_COUNT):
-        print "FAILURE: no Article-Count field"
-        sys.exit(0)
-    else:
-        print "Article count: ", parsedResponse[ARTICLE_COUNT]
+    req = getRequestHandleCookie(GET_ARTICLE_COUNT, "")
+    rsp = Response(req.getString())
+    handleCookie(rsp)
+    assert rsp.hasField(TRANSACTION_ID)
+    assert rsp.hasField(ARTICLE_COUNT)
+    print "Article count: %s" % rsp.getField(ARTICLE_COUNT)
 
 def doGetDatabaseTime():
-    global g_cookie
-    defResponse = getDatabaseTime()
-    parsedResponse = parseServerResponse(defResponse)
-    if not parsedResponse:
-        print "FAILURE in parseServerResponse"
-        sys.exit(0)
-    if not getGlobalCookie() and parsedResponse.has_key(COOKIE):
-        print "Found cookie: %s" % parsedResponse[COOKIE]
-        g_cookie = parsedResponse[COOKIE]
-    if not parsedResponse.has_key(DATABASE_TIME):
-        print "FAILURE: no %s field" % DATABASE_TIME
-        sys.exit(0)
-    else:
-        print "Database time: ", parsedResponse[DATABASE_TIME]
+    req = getRequestHandleCookie(GET_DATABASE_TIME, "")
+    rsp = Response(req.getString())
+    handleCookie(rsp)
+    assert rsp.hasField(TRANSACTION_ID)
+    assert rsp.hasField(DATABASE_TIME)
+    print "Database time: %s" % rsp.getField(DATABASE_TIME)
 
 def doRandomPerf(count):
     timer = arsutils.Timer(fStart=True)
@@ -285,13 +259,11 @@ def doRandomPerf(count):
     print "Number of runs: %d" % count
 
 def doPing():
-    print "sending PING to the server"
-    req = buildCommonRequestPart()
-    req += "\n"
-    #pingResponse = getReqResponse("%s\n" % PING)
-    pingResponse = getReqResponse(req)
-    print "got '%s' from the server" % pingResponse.strip()
-    #assert pingResponse.strip() == "PONG"
+    req = getRequestHandleCookie()
+    rsp = Response(req)
+    assert rsp.hasField(TRANSACTION_ID)
+    assert rsp.hasField(COOKIE)
+    assert rsp.getField(TRANSACTION_ID) == req.transactionId
 
 def usageAndExit():
     print "client.py [-showtiming] [-perfrandom N] [-getrandom] [-get term] [-articlecount] [-dbtime] [-ping]"
@@ -324,4 +296,3 @@ if __name__=="__main__":
     finally:
         # make sure that we pickle the state even if we crash
         pickleState()
- 
