@@ -35,8 +35,10 @@ try:
 except:
     print "psyco not available. You should consider using it (http://psyco.sourceforge.net/)"
 
+g_fSave = None
+
 def usageAndExit():
-    print "Usage: diffConvert.py [-limit N] [-random] [-title foo] fileName"
+    print "Usage: diffConvert.py [-limit N] [-save] [-random] [-title foo] fileName"
     sys.exit(0)
 
 # algorithm based on http://aspn.activestate.com/ASPN/Cookbook/Python/Recipe/59865
@@ -84,7 +86,7 @@ def findOrigArticleNoRedirect(fileName,titleToFind):
     for article in wikipediasql.iterWikipediaArticles(fileName,None,fUseCache=True,fRecreateCache=False):
         #if article.getTitle().lower() == titleLower:
         title = article.getTitle().lower()
-        if 0 == title.find(titleToFind):
+        if title == titleToFind:
             return article
         #if count % 50000 == 0:
         #    print "processed %d articles, last title %s" % (count,title)
@@ -108,7 +110,7 @@ def findConvertedArticle(fileName,titleToFind):
     count = 0
     for article in wikipediasql.iterConvertedArticles(fileName):
         title = article.getTitle().lower()
-        if 0 == title.find(titleToFind):
+        if title == titleToFind:
             print "found converted article with title '%s'" % title
             return article
         #if count % 50000 == 0:
@@ -132,11 +134,13 @@ def iterArticlesExactTitle(fileName,title):
         count += 1
 
 def showDiffTitle(fileName,title):
+    global g_fSave
     article = findOrigArticle(fileName,title)
     if not article:
         print "couldn't find article with the title %s" % title
         return
 
+    title = article.getTitle() # re-get the title in case this was a redirect
     convertedArticle = None
     if wikipediasql.fConvertedCacheExists(fileName):
         convertedArticle = findConvertedArticle(fileName,title)
@@ -148,13 +152,22 @@ def showDiffTitle(fileName,title):
         sys.exit(0)
     origTxt = article.getText()
     origTxt = arsutils.normalizeNewlines(origTxt)
-    if convertedArticle:
-        converted = arsutils.normalizeNewlines(convertedArticle.getText())
-        arsutils.showTxtDiff(origTxt, converted)
-    else:
-        converted = articleconvert.convertArticle(article.getTitle(), article.getText())
-        converted = arsutils.normalizeNewlines(converted)
-        arsutils.showTxtDiff(origTxt,converted)
+
+    if None == convertedArticle:
+        print "didn't find converted article, generating it myself"
+        convertedArticle = articleconvert.convertArticle(article.getTitle(), article.getText())
+    converted = arsutils.normalizeNewlines(convertedArticle.getText())
+
+    if g_fSave:
+        title = article.getTitle()
+        title = title.replace(" ", "_")
+        fo = open("%s_orig.txt" % title, "wb")
+        fo.write(origTxt)
+        fo.close()
+        fo = open("%s_conv.txt" % title, "wb")
+        fo.write(converted)
+        fo.close()
+    arsutils.showTxtDiff(origTxt, converted)
 
 def dumpArticle(fileName,title):
     for article in iterArticlesExactTitle(fileName,title):
@@ -170,6 +183,8 @@ def dumpArticle(fileName,title):
         return
 
 if __name__=="__main__":
+    global g_fSave
+
     limit = arsutils.getRemoveCmdArgInt("-limit")
     if None == limit:
         limit = 9999999 # very big number
@@ -182,6 +197,8 @@ if __name__=="__main__":
         usageAndExit()
 
     title = arsutils.getRemoveCmdArg("-title")
+
+    g_fSave = arsutils.fDetectRemoveCmdFlag("-save")
 
     if title and fRandom:
         print "Can't use -title and -random at the same time"
@@ -205,4 +222,3 @@ if __name__=="__main__":
             dumpArticle(fileName,title)
         else:
             showDiffTitle(fileName,title)
-
