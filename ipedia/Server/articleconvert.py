@@ -50,16 +50,57 @@ def replaceTagList(text, tagList, repl):
 
 # this is a hack to change "&sup2" entities without trailing ";" into "&sup2;"
 # wikipedia renders "&sup2" (incorrectly ?) as "&sup2;" so we should too
+# fairly unconventional algorithm but easy to do in Python (split by "&sup2;"
+# to make sure we won't accidently turn "&sup2;" into "&sup2;;", replace
+# "&sup2" with "&sup2;" in remaining text, join back the parts with "&sup2;"
+# to restore the original text
 def fixSup2(text):
     parts = text.split("&sup2;")
     if 1==len(parts):
-        # optimization for a special case of lacking "&sup2;"
+        # optimization for a special case of no "&sup2;" in the text
         return text.replace("&sup2", "&sup2;")
     outArr = []
     for p in parts:
         outArr.append(p.replace("&sup2","&sup2;"))
     outTxt = string.join(outArr,"&sup2;")
     return outTxt
+
+# Remove image tags. We can't use regexp because image links can
+# contain other wiki links e.g.
+# [[Image:Seattlepikeplace2002.JPG|right|thumb|[[Pike Place Market]]]] 
+# So we need remove everything between "[[Image:" and "]]", ignoring
+# embedded links like "[[foo]]"
+
+# case-insesitivity is important so we'll use regexp instead of string.find()
+imageStartRe = re.compile("\[\[Image:", re.I)
+def removeImage(text):
+    while True:
+        match = imageStartRe.search(text)
+        if None == match:
+            return text
+        txtLen = len(text)
+        posImageStart = match.start()
+        # now find ending "]]" but counting nesting levels of "[[" and "]]"
+        nesting = 0
+        prevChar = None
+        pos = match.end()
+        fChanged = False
+        while pos < txtLen:
+            if prevChar==']' and text[pos]==']':
+                if nesting>0:
+                    nesting -= 1
+                else:
+                    # remove image stuff
+                    txtTmp = text[:posImageStart] + text[pos+2:]
+                    text = txtTmp
+                    fChanged = True
+                    break
+            if '['==prevChar and '['==text[pos]:
+                nesting += 1
+            prevChar = text[pos]
+            pos += 1
+        if not fChanged:
+            return text
 
 commentRe=re.compile("<!--.*?-->", re.S)
 divRe=re.compile("<div.*?</div>", re.I+re.S)
@@ -73,14 +114,6 @@ scriptRe=re.compile("<script.*?</script>", re.I+re.S)
 badLinkRe=re.compile(r"\[\[((\w\w\w?(-\w\w)?)|(simple)|(image)|(media)):.*?\]\]", re.I+re.S)
 #numEntityRe=re.compile(r'&#(\d+);')
 
-# this is a bit of a hack. the problem (see e.g. Seattle) is
-# that an image can have nested [[links]] e.g.:
-# [[Image:Seattlepikeplace2002.JPG|right|thumb|[[Pike Place Market]]]] 
-# We want to remove all of that so I rely on the fact, that it ends
-# with a newline. Probably not perfect but basically I don't know any
-# good alternative with regexp (greedy regexp would do if we were
-# line based, but we're doing it on the whole text)
-imageRe = re.compile("\[\[Image:.*\]\]\s*\n", re.I)
 
 multipleLinesRe=re.compile("\n{3,100}")
 # replace multiple (1+) empty lines with just one empty line.
@@ -126,7 +159,7 @@ def convertArticle(term, text):
     try:
         text=text.replace('__NOTOC__', '')
         text=fixSup2(text)
-        text=replaceRegExp(text, imageRe, '')
+        text=removeImage(text)
         # remove categories. TODO: provide a better support for categories
         # i.e. we remember categories on the server and client can display
         # all articles in a given category

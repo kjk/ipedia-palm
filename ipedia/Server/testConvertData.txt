@@ -80,7 +80,7 @@ start
 <br>
 end
 @s14 this is a larch: <img src="larch.png">*this is a larch: 
-@s15 start [[de:mordfabrik]] [[image:axis_of_evil-front.jpg]] [[media:suicide_commando-axis_of_evil-05-mordfabrik.mp3]] end*start    end
+@s15 start [[de:mordfabrik]] [[image:axis_of_evil-front.jpg]] [[media:suicide_commando-axis_of_evil-05-mordfabrik.mp3]] end*start   end
 @s16 [[Category:test]]*
 @17
 start
@@ -104,3 +104,16 @@ end
 @s22 &sup2;*²
 @s23 re&sup2bla*re²bla
 @s24 &sup2;&sup2&sup2;*²²²
+@25
+[[image:Montreal-cathedral.jpg|thumb|300px|right|View of downtown Montreal, 
+with
+
+the city's tallest building 1000 De La Gauchetière (far left);
+[[Marie-Reine-du-Monde Cathedral]]; and 1250
+René-Lévesque (far right).]]
+@
+@s26 [[IMAGE:[[]]]]*
+@s27 [[IMAGE:]]*
+@s28 [[ImAgE:[[]]*
+@s29 [[IMAGE:[[]]]]post*post
+@s30 pre[[IMAGE:[[]]]]post*prepost
