@@ -75,7 +75,7 @@ Err RenderingPreferences::serializeIn(ArsLexis::PrefsStoreReader& reader, int un
 
     if (errNone!=(error=reader.ErrGetUInt16(uniqueId++, &val)))
         goto OnError;
-    tmp.setBackgroundColor(val);        
+    tmp.setBackgroundColor(val);
     if (errNone!=(error=reader.ErrGetUInt16(uniqueId++, &val)))
         goto OnError;
     tmp.setBulletIndentation(val);
@@ -83,16 +83,16 @@ Err RenderingPreferences::serializeIn(ArsLexis::PrefsStoreReader& reader, int un
     {
         if (errNone!=(error=tmp.hyperlinkDecorations_[i].serializeIn(reader, uniqueId)))
             goto OnError;
-        uniqueId+=StyleFormatting::reservedPrefIdCount;
+        uniqueId += StyleFormatting::reservedPrefIdCount;
     }
     for (uint_t i=0; i<stylesCount_; ++i)
     {
         if (errNone!=(error=tmp.styles_[i].serializeIn(reader, uniqueId)))
             goto OnError;
-        uniqueId+=StyleFormatting::reservedPrefIdCount;
+        uniqueId += StyleFormatting::reservedPrefIdCount;
     }
-    (*this)=tmp;
 OnError:
+    (*this)=tmp;
     return error;    
 }
 
@@ -124,7 +124,7 @@ Err RenderingPreferences::StyleFormatting::serializeIn(ArsLexis::PrefsStoreReade
     if (errNone!=(error=reader.ErrGetUInt16(uniqueId++, &val)))
         goto OnError;
     tmp.textColor=val;
-    (*this)=tmp;
 OnError:    
+    (*this)=tmp;
     return error;
 }

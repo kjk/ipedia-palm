@@ -744,6 +744,7 @@ bool MainForm::handleMenuCommand(UInt16 itemId)
 
         case changeDatabaseMenuItem:
             changeDatabase();
+            update();
             handled = true;
             break;
 

@@ -196,7 +196,7 @@ namespace {
         lookupHistoryFirstPrefId,
         renderingPrefsFirstPrefId=lookupHistoryFirstPrefId+LookupHistory::reservedPrefIdCount,
         
-        availableLangsPrefId = renderingPrefsFirstPrefId+RenderingPreferences::reservedPrefIdCount,
+        availableLangsPrefId = renderingPrefsFirstPrefId+RenderingPreferences::reservedPrefIdCount+1,
         currentLangPrefId,
         next = currentLangPrefId+1
     };
@@ -216,31 +216,44 @@ void iPediaApplication::loadPreferences()
     Err         error;
     const char* text;
 
-    if (errNone!=(error=reader->ErrGetStr(cookiePrefId, &text))) 
-        goto OnError;
-    prefs.cookie = text;
-    if (errNone!=(error=reader->ErrGetStr(regCodePrefId, &text))) 
-        goto OnError;
-    prefs.regCode = text;
-    if (errNone!=(error=reader->ErrGetLong(lastArticleCountPrefId, &prefs.articleCount))) 
-        goto OnError;
-    if (errNone!=(error=reader->ErrGetStr(databaseTimePrefId, &text))) 
-        goto OnError;
-    prefs.databaseTime = text;
-    if (errNone!=(error=prefs.renderingPreferences.serializeIn(*reader, renderingPrefsFirstPrefId)))
-        goto OnError;
-    if (errNone!=(error=reader->ErrGetStr(currentLangPrefId, &text))) 
-        goto OnError;
-    prefs.currentLang = text;
-    if (errNone!=(error=reader->ErrGetStr(availableLangsPrefId, &text))) 
-        goto OnError;
-    prefs.availableLangs = text;
-    preferences_=prefs;    
-    assert(0!=history_);
-    if (errNone!=(error=history_->serializeIn(*reader, lookupHistoryFirstPrefId)))
-        goto OnError;
+    // we siliently ignore all the errors since they might happen during upgrade
+    // i.e. if version n+1 reads prefs of version n, in which case some of the
+    // prefs might be missing
+    if (errNone==(error=reader->ErrGetStr(cookiePrefId, &text)))
+    {
+        prefs.cookie = text;
+    }
 
-OnError:
+    if (errNone==(error=reader->ErrGetStr(regCodePrefId, &text)))
+    {
+        prefs.regCode = text;
+    }
+
+    prefs.articleCount = -1;
+    error = reader->ErrGetLong(lastArticleCountPrefId, &prefs.articleCount);
+
+    if (errNone==(error=reader->ErrGetStr(databaseTimePrefId, &text))) 
+    {
+        prefs.databaseTime = text;
+    }
+
+    error = prefs.renderingPreferences.serializeIn(*reader, renderingPrefsFirstPrefId);
+
+    if (errNone==(error=reader->ErrGetStr(availableLangsPrefId, &text)))
+    {
+        prefs.availableLangs = text;
+    }
+
+    if (errNone==(error=reader->ErrGetStr(currentLangPrefId, &text)))
+    {
+        prefs.currentLang = text;
+    }
+
+    preferences_ = prefs;
+
+    assert(0!=history_);
+    error = history_->serializeIn(*reader, lookupHistoryFirstPrefId);
+
     return;        
 }
 
@@ -263,9 +276,9 @@ void iPediaApplication::savePreferences()
     if (errNone!=(error=history_->serializeOut(*writer, lookupHistoryFirstPrefId)))
         goto OnError;
 
-    if (errNone!=(error=writer->ErrSetStr(currentLangPrefId, preferences_.currentLang.c_str())))
-        goto OnError;
     if (errNone!=(error=writer->ErrSetStr(availableLangsPrefId, preferences_.availableLangs.c_str())))
+        goto OnError;
+    if (errNone!=(error=writer->ErrSetStr(currentLangPrefId, preferences_.currentLang.c_str())))
         goto OnError;
 
     if (errNone!=(error=writer->ErrSavePreferences()))
