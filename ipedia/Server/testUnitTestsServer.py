@@ -7,7 +7,7 @@
 
 import string,unittest
 import client
-from client import getRequestHandleCookie, Response, Request, g_exampleDeviceInfo
+from client import getRequestHandleCookie, Response, Request, g_exampleDeviceInfo, g_uniqueDeviceInfo, g_nonUniqueDeviceInfo
 from iPediaServer import *
 
 invalidRegCodeNumber = "0000"
@@ -85,11 +85,11 @@ class ArsUtils(unittest.TestCase):
         self.getResponse([errorField,transactionIdField])
         self.assertError(iPediaServerError.unexpectedRequestArgument)
 
+    # check if server correctly detects missing arguments/extra arguments
+    # for all possible client requests
+    # Note: since server uses validClientFields as well to check for this,
+    # we might not always detect a bug here
     def test_ArgumentCorrectness(self):
-        # check if server correctly detects missing arguments/extra arguments
-        # for all possible client requests
-        # Note: since server uses validClientFields as well to check for this,
-        # we might not always detect a bug here
         for (field,fRequiresArguments) in validClientFields.items():
             self.req = getRequestHandleCookie()
             # do the exact opposite of what's expected
@@ -235,8 +235,8 @@ class ArsUtils(unittest.TestCase):
         self.getResponse([cookieField,transactionIdField,regCodeValidField])
         self.assertFieldEqual(self.rsp,regCodeValidField,1)
 
+    # verify that server rejects a query with both cookieField and getCookieField
     def test_GetCookieAndCookie(self):
-        # verify that server rejects a query with both cookieField and getCookieField
         self.req = Request()
         self.req.addField(getCookieField,g_exampleDeviceInfo)
         self.getResponse([cookieField,transactionIdField])
@@ -247,13 +247,57 @@ class ArsUtils(unittest.TestCase):
         self.getResponse([transactionIdField,errorField])
         self.assertError(iPediaServerError.malformedRequest)
 
+    # verify that server rejects a query with both cookieField and getCookieField
     def test_GetCookieAndRegCode(self):
-        # verify that server rejects a query with both getCookieField and a regCode
         self.req = Request()
         self.req.addField(getCookieField,g_exampleDeviceInfo)
         self.req.addField(regCodeField,testValidRegCode)
         self.getResponse([transactionIdField,errorField])
         self.assertError(iPediaServerError.malformedRequest)
+
+    # test that server re-assigns the same cookie if we have a unique device info
+    def test_DoubleRegistrationUniqueDeviceInfo(self):
+        self.req = Request()
+        self.req.addField(getCookieField,g_uniqueDeviceInfo)
+        self.getResponse([transactionIdField,cookieField])
+        cookie = self.rsp.getField(cookieField)
+        self.req = Request()
+        self.req.addField(getCookieField,g_uniqueDeviceInfo)
+        self.getResponse([transactionIdField,cookieField])
+        cookie2 = self.rsp.getField(cookieField)
+        self.assertEqual(cookie,cookie2)
+
+    # test that unregistered user reaches lookup limits
+    def test_LookupLimit(self):
+        searchTerms = ["brazil","seattle","poland","comedy"]
+        # make sure to get a unique cookie, to start over
+        self.req = Request()
+        self.req.addField(getCookieField,g_nonUniqueDeviceInfo)
+        self.getResponse([transactionIdField,cookieField])
+        cookie = self.rsp.getField(cookieField)
+        lookupsToDo = g_unregisteredLookupsLimit+10
+        for t in range(lookupsToDo):
+            searchTerm = searchTerms[t%len(searchTerms)]
+            self.req = Request()
+            self.req.addField(cookieField,cookie)
+            self.req.addField(getArticleField, searchTerm)
+            self.getResponse([transactionIdField])
+            if self.rsp.hasField(errorField):
+                self.assertError(iPediaServerError.lookupLimitReached)
+                self.assertEqual(t,g_unregisteredLookupsLimit)
+                return
+            else:
+                self.assertEqual(True,self.rsp.hasField(articleTitleField))
+                self.assertEqual(True,self.rsp.hasField(articleBodyField))
+                self.assertEqual(True,self.rsp.hasField(formatVersionField))
+                self.assertFieldEqual(self.rsp, formatVersionField, DEFINITION_FORMAT_VERSION)
+        # didn't find response with an error so far, so there's a bug in the server
+        self.assertEqual(True,False)
+
+    # verify that a registered user doesn't trigger lookup limits
+    def test_RegisteredNoLookupLimits(self):
+        # TODO:
+        pass
 
     def test_GetCookieInvalidDeviceInfo(self):
         # TODO:

@@ -352,6 +352,8 @@ def convertArticles(sqlDump,articleLimit):
 # hundred) of heavily linked articles and there is no point of sending tens of
 # kilobytes of links, they won't display on a PDA well anyway. So we just limit
 # the number of reverse links we accumulate.
+# TODO: I suspect we don't deal with redirects properly e.g. we have reverse links
+# for "seattle" instead of fully resolved "seattle, washington"
 REVERSE_LINK_LIMIT = 200
 LINK_SEPARATOR = '\n'
 def calcReverseLinks(fileName):
@@ -466,7 +468,7 @@ def createDb(conn,dbName):
     cur.execute(articlesSql)
     cur.execute(redirectsSql)
     cur.execute(reverseLinksSql)
-    cur.execute("GRANT ALL ON %s.* TO '%s'@'%s' IDENTIFIED BY '%s';" % (dbName, DB_USER, DB_HOST, DB_PWD)
+    cur.execute("GRANT ALL ON %s.* TO '%s'@'%s' IDENTIFIED BY '%s';" % (dbName, DB_USER, DB_HOST, DB_PWD))
     cur.close()
     print "Created '%s' database and granted perms to user '%s'" % (dbName,DB_USER)
 
@@ -489,16 +491,17 @@ requestLogSql = """CREATE TABLE request_log (
     client_ip        VARCHAR(24) NOT NULL,
     log_date         TIMESTAMP(14) NOT NULL,
 
-    search_term  VARCHAR(255) NULL,
-    -- if not NULL, this is EXTENDED SEARCH request. search_term and
-    -- extended_search_title can't be both NULL or not NULL
-    extended_search_term VARCHAR(255) NULL,
+    -- 'r' is random search
+    -- 's' is standard search
+    -- 'e' is extended search
+    request_type    CHAR(1),
+    -- for 's' and 'e' this is the search term, for 'r' it's NULL
+    search_data  VARCHAR(255) NULL,
+    -- for 'r' and 's' this the title of returned article
+    search_result VARCHAR(255) NULL,
     -- if not NULL, there was an error processing the request and this is the 
     -- error number
     error            INT(10) NULL,
-    -- if not NULL, this is the article that was returned for SEARCH request
-    -- (taking redirects into account)
-    article_title    VARCHAR(255) NULL
 ) TYPE=MyISAM;"""
 
 getCookieLogSql = """CREATE TABLE get_cookie_log (

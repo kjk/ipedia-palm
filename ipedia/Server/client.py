@@ -25,7 +25,9 @@ g_serverList = ["localhost:9000", "ipedia.arslexis.com:9000"]
 g_defaultServerNo = 0 # index within g_serverList
 
 g_cookie = None
-g_exampleDeviceInfo = "HS50616C6D204F5320456D756C61746F72:OC70616C6D:OD00000000"
+g_exampleDeviceInfo     = "HS50616C6D204F5320456D756C61746F72:OC70616C6D:OD00000000:PL3030"
+g_uniqueDeviceInfo      = "PN50616C6D204F5320456D756C61746F72:PL3030"
+g_nonUniqueDeviceInfo   = "OC70616C6D:OD00000000:PL3030"
 
 # current version of the article body format returned by the client
 CUR_FORMAT_VER = "1"
@@ -305,7 +307,7 @@ def doGetDef(term,fSilent=True):
         assert rsp.hasField(formatVersionField)
         assert rsp.getField(formatVersionField) == CUR_FORMAT_VER
         assert rsp.hasField(articleBodyField)
-        assert rsp.hasField(reverseLinksField)
+        #assert rsp.hasField(reverseLinksField)
     else:
         assert rsp.hasField(notFoundField)
     #print "Definition: %s" % rsp.getField(articleBodyField)

@@ -7,13 +7,12 @@
 # Purpose: server component for iPedia
 #
 # Usage:
-#   -silent : will supress most of the messages logged to stdout. TODO: in the
-#             future will be replaced with -verbose flag (i.e. we'll be silent
-#             by default)
+#   -verbose : print debugging info
 #   -usepsyco : will use psyco, if available
 #   -db name  : use database name
 #   -listdbs  : list all available ipedia databases
 #   -demon    : start in deamon mode
+
 
 import sys, os, string, re, random, time, MySQLdb, _mysql_exceptions
 import arsutils
@@ -35,9 +34,9 @@ DB_USER        = 'ipedia'
 DB_PWD         = 'ipedia'
 MANAGEMENT_DB  = 'ipedia_manage'
 
-g_fDisableRegistrationCheck = True
-g_unregisteredLookupsLimit=30
-g_unregisteredLookupsDailyLimit=2    
+g_fDisableRegistrationCheck     = False
+g_unregisteredLookupsLimit      = 30
+g_unregisteredLookupsDailyLimit = 2   
 
 # if True we'll print debugging info
 g_fVerbose = None
@@ -278,27 +277,36 @@ def decodeDeviceInfo(deviceInfo):
                 return False
         result[tag] = (tagValueDecoded,tagValueHex)
     return result
-        
-validTags = ["PL", "PN", "SN", "HN", "OC", "OD"]
+
+# TODO: add Smartphone/Pocket PC tags
+validTags = ["PL", "PN", "SN", "HN", "OC", "OD", "HS"]
 def fValidDeviceInfo(deviceInfo):
     deviceInfoDecoded = decodeDeviceInfo(deviceInfo)
     if None == deviceInfoDecoded:
+        print "couldn't decode device info"
         return False
     tagsPresent = deviceInfoDecoded.keys()
     for tag in tagsPresent:
         if tag not in validTags:
+            print "tag '%s' is not valid" % tag
             return False
     # "PL" (Platform) is a required tag - must be sent by all clients
     if "PL" not in tagsPresent:
         return False
     return True
 
-# TODO: If we know for
-# sure that device id was unique, we issue previously assigned cookie. This
-# prevents using program indefinitely by just reinstalling it after a limit
-# for unregistered version has been reached.
+# If we know for sure that device id was unique, we issue previously assigned
+# cookie. This prevents using program indefinitely by just reinstalling it
+# after a limit for unregistered version has been reached.
+# Unique tags are: 
+#   PN (phone number)
+#   SN (serial number)
+#   HN (handspring serial number)
 def fDeviceInfoUnique(deviceInfo):
     deviceInfoDecoded = decodeDeviceInfo(deviceInfo)
+    tags = deviceInfoDecoded.keys()
+    if ("PN" in tags) or ("SN" in tags) or ("HN" in tags):
+        return True
     return False
 
 def getUniqueCookie(cursor):
@@ -371,16 +379,18 @@ listLengthLimit = 200
 # given a search term, return a list of articles matching this term.
 # list can be empty (no matches)
 def findFullTextMatches(db, cursor, searchTerm):
-    print "Performing full text search..."
     words = searchTerm.split()
     queryStr = string.join(words, " +")
     queryStrEscaped = db.escape_string(queryStr)
     searchTermEscaped = db.escape_string(searchTerm)
+    if g_fVerbose:
+        print "Performing full text search for '%s'" % queryStr
     query = """SELECT id, title, match(title, body) AGAINST('%s') AS relevance FROM articles WHERE match(title, body) against('%s' in boolean mode) ORDER BY relevance DESC limit %d""" % (searchTermEscaped, queryStrEscaped, listLengthLimit)
     cursor.execute(query)
     row = cursor.fetchone()
     if not row:
-        print "Performing non-boolean mode search..."
+        if g_fVerbose:
+            print "Performing non-boolean mode search for '%s'" % queryStr
         query = """SELECT id, title, match(title, body) AGAINST('%s') AS relevance FROM articles WHERE match(title, body) against('%s') ORDER BY relevance DESC limit %d""" % (searchTermEscaped, queryStrEscaped, listLengthLimit)
         cursor.execute(query)
 
@@ -390,6 +400,10 @@ def findFullTextMatches(db, cursor, searchTerm):
         row=cursor.fetchone()
     return titleList
 
+# differen types of requests to log (request_type column in request_log table)
+SEARCH_TYPE_STANDARD = 's'
+SEARCH_TYPE_EXTENDED = 'e'
+SEARCH_TYPE_RANDOM   = 'r'
 
 class iPediaProtocol(basic.LineReceiver):
 
@@ -405,6 +419,9 @@ class iPediaProtocol(basic.LineReceiver):
 
         self.userId = None
         self.fRegisteredUser = False
+
+        # used in logging, must be set when we handle search requests
+        self.searchResult = None
 
     # return true if current request has a given field
     def fHasField(self,field):
@@ -461,47 +478,84 @@ class iPediaProtocol(basic.LineReceiver):
         peerInfo = self.transport.getPeer()
         clientIp = peerInfo.host
         return clientIp
-        
-    def logRequest(self):
-        # TODO:
-        return
+
+    def logRequestGeneric(self,userId,requestType,searchData,searchResult,error):
+        assert SEARCH_TYPE_STANDARD  == requestType or \
+               SEARCH_TYPE_EXTENDED  == requestType or \
+               SEARCH_TYPE_RANDOM    == requestType
+
+        if SEARCH_TYPE_STANDARD == requestType:
+            assert None != searchData
+
+        if SEARCH_TYPE_EXTENDED == requestType:
+            assert None != searchData
+
+        if SEARCH_TYPE_RANDOM == requestType:
+            assert None == searchData
+
         cursor = None
         try:
             db = self.getManagementDatabase()
-            hasGetCookie = 0
-            if self.fHasField(getCookieField):
-                hasGetCookie = 1
-            #cookieIdStr = 'NULL'
-            #if self.cookieId:
-            #    cookieIdStr = str(self.cookieId)
-            regCodeToLog = ''
-            if self.fHasField(regCodeField):
-                regCodeToLog = self.getFieldValue(regCodeField)
-            reqTerm = 'NULL'
-            if self.fHasField(getArticleField):
-                reqTerm = '\''+db.escape_string(self.getFieldValue(getArticleField))+'\''
-            defFor = 'NULL'
-            #if self.term:
-            #    defFor='\''+db.escape_string(self.term)+'\''
-            cursor = db.cursor()
             clientIp = self.getClientIp()
-            #query=("""INSERT INTO requests (client_ip, has_get_cookie_field, cookie_id, reg_code, requested_term, error, definition_for, request_date) """
-            #                            """VALUES (%d, %d, %s, %d, %s, %d, %s, now())""" % (clientIp, hasGetCookie, cookieIdStr, regCodeToLog, reqTerm, self.error, defFor))
-            #cursor.execute(query)
+            clientIpEscaped = db.escape_string(clientIp)
+
+            if None == searchData:
+                assert SEARCH_TYPE_RANDOM == requestType
+                searchDataTxt = "NULL"
+            else:
+                searchDataTxt = "'%s'" % db.escape_string(searchData)
+
+            if None == searchResult:
+                assert (SEARCH_TYPE_EXTENDED == requestType) or (None != error)
+                searchResultTxt = "NULL"
+            else:
+                searchResultTxt = "'%s'" % db.escape_string(searchResult)
+
+            if None == error:
+                errorTxt = "NULL"
+            else:
+                errorTxt = "'%d'" % error
+
+            sql = "INSERT INTO request_log (user_id,client_ip,log_date,request_type,search_data,search_result,error) VALUES (%d,'%s',now(),'%s', %s, %s, %s);" % (userId, clientIpEscaped, requestType, searchDataTxt,searchResultTxt,errorTxt)
+            cursor = db.cursor()
+            cursor.execute(sql)
             cursor.close()
         except _mysql_exceptions.Error, ex:
             dumpException(ex)
             if cursor:
                 cursor.close()
 
+        return
+
+    def logSearchRequest(self,userId,searchTerm,articleTitle,error):
+        self.logRequestGeneric(userId,SEARCH_TYPE_STANDARD,searchTerm,articleTitle,error)
+
+    def logExtendedSearchRequest(self,userId,searchTerm,error):
+        self.logRequestGeneric(userId,SEARCH_TYPE_EXTENDED,searchTerm,None,error)
+
+    def logRandomSearchRequest(self,userId,articleTitle,error):
+        self.logRequestGeneric(userId,SEARCH_TYPE_RANDOM,None,articleTitle,error)
+
+    def logRequest(self):
+        # sometimes we have errors before we can establish userId
+        if None == self.userId:
+            return
+
+        if self.fHasField(getArticleField):
+            self.logSearchRequest(self.userId,self.getFieldValue(getArticleField),self.searchResult,self.error)
+        elif self.fHasField(searchField):
+            self.logExtendedSearchRequest(self.userId,self.getFieldValue(searchField),self.error)
+        elif self.fHasField(getRandomField):
+            self.logRandomSearchRequest(self.userId,self.searchResult,self.error)
+
     def finish(self):
         global g_fVerbose
         if self.error:
             self.outputField(errorField, str(self.error))
         self.transport.loseConnection()
-        
+
+        self.logRequest()
         if self.dbManagement:
-            self.logRequest()
             self.dbManagement.close()
             self.dbManagement=None
 
@@ -569,6 +623,7 @@ class iPediaProtocol(basic.LineReceiver):
     def outputArticle(self, title, body, reverseLinks):
         self.outputField(formatVersionField, DEFINITION_FORMAT_VERSION)
         self.outputField(articleTitleField, title)
+        self.searchResult = title # for loggin
         self.outputPayloadField(articleBodyField, body)
         if None != reverseLinks:
             self.outputPayloadField(reverseLinksField, reverseLinks)
@@ -603,6 +658,7 @@ class iPediaProtocol(basic.LineReceiver):
             return False
 
         title = self.getFieldValue(getArticleField)
+        #print "handleGetArticleRequest for '%s'" % title
         cursor = None
         definition = None
         try:
@@ -680,28 +736,30 @@ class iPediaProtocol(basic.LineReceiver):
             self.error=iPediaServerError.serverFailure
             return False
         return True
-        
-    def fOverUnregisteredLookupsLimit(self):
+
+    # Return True if a user identified by userId is over unregistered lookup
+    # limits. False if not. Assumes that we don't call this if a user is registered
+    def fOverUnregisteredLookupsLimit(self,userId):
         global g_unregisteredLookupsDailyLimit, g_unregisteredLookupsLimit, g_fDisableRegistrationCheck
-        # TODO:
-        return False
-        cursor=None
-        fOverLimit=False
+        assert not self.fRegisteredUser
+        cursor = None
+        fOverLimit = False
         try:
             db=self.getManagementDatabase()
             cursor=db.cursor()
-            assert None==self.userId
-            query="SELECT COUNT(*) FROM requests WHERE NOT (requested_term is NULL) AND cookie_id=%d" % self.cookieId
+            query="SELECT COUNT(*) FROM request_log WHERE NOT (request_type='r') AND user_id=%d" % userId
             cursor.execute(query)
             row=cursor.fetchone()
             assert None!=row
-            if row[0]>=g_unregisteredLookupsLimit:
-                query="SELECT COUNT(*) FROM requests WHERE NOT (requested_term is NULL) AND cookie_id=%d AND request_date>DATE_SUB(CURDATE(), INTERVAL 1 DAY)" % self.cookieId
+            totalLookups = row[0]
+            # print "userId=%d, totalLookups=%d" % (userId,totalLookups)
+            if totalLookups >= g_unregisteredLookupsLimit:
+                query="SELECT COUNT(*) FROM request_log WHERE user_id=%d AND NOT (request_type='r') AND log_date>DATE_SUB(CURDATE(), INTERVAL 1 DAY)" % self.userId
                 cursor.execute(query)
                 row=cursor.fetchone()
-                assert None!=row
-                if row[0]>=g_unregisteredLookupsDailyLimit:
-                    self.error=iPediaServerError.lookupLimitReached
+                assert None != row
+                todayLookups = row[0]
+                if todayLookups >= g_unregisteredLookupsDailyLimit:
                     fOverLimit=True
             cursor.close()
         except _mysql_exceptions.Error, ex:
@@ -785,6 +843,7 @@ class iPediaProtocol(basic.LineReceiver):
                     self.error = iPediaServerError.userDisabled
                     return False
                 self.userId = int(row[0])
+                self.fRegisteredUser = True
                 return True
             else:
                 self.error = iPediaServerError.invalidRegCode
@@ -822,6 +881,7 @@ class iPediaProtocol(basic.LineReceiver):
                     self.error = iPediaServerError.userDisabled
                     return False
                 self.userId = int(row[0])
+                # print "userdId %d for cookie %s" % (self.userId,cookie)
                 return True
             else:
                 self.error = iPediaServerError.invalidCookie
@@ -956,7 +1016,8 @@ class iPediaProtocol(basic.LineReceiver):
 
             if self.fHasField(getArticleField):
                 if not self.fRegisteredUser:
-                    if self.fOverUnregisteredLookupsLimit():
+                    if self.fOverUnregisteredLookupsLimit(self.userId):
+                        self.error=iPediaServerError.lookupLimitReached
                         return self.finish()
 
                 if not self.handleGetArticleRequest():
@@ -1158,19 +1219,17 @@ class iPediaTelnetFactory(protocol.ServerFactory):
     protocol=iPediaTelnetProtocol
 
 def usageAndExit():
-    print "iPediaServer.py [-demon] [-silent] [-usepsyco] [-listdbs] [-db name]"
+    print "iPediaServer.py [-demon] [-verbose] [-usepsyco] [-listdbs] [-db name]"
     sys.exit(0)        
 
 def main():
     global g_fVerbose, g_fPsycoAvailable
-    g_fVerbose = True
 
     fDemon = arsutils.fDetectRemoveCmdFlag("-demon")
     if not fDemon:
         fDemon = arsutils.fDetectRemoveCmdFlag("-daemon")
 
-    if arsutils.fDetectRemoveCmdFlag( "-silent" ):
-        g_fVerbose = False
+    g_fVerbose = arsutils.fDetectRemoveCmdFlag( "-verbose" )
 
     fUsePsyco = arsutils.fDetectRemoveCmdFlag("-usepsyco")
     if g_fPsycoAvailable and fUsePsyco:
