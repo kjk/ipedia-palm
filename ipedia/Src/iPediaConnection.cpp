@@ -212,7 +212,7 @@ ArsLexis::status_t iPediaConnection::open()
     // according to newsgroups in os 5 linger is broken and we need to do this
     // hack. Seems to help on Tungsten. However, on Treo 600 it doesn't seem
     // to be necessary
-    if ( !isTreo600() && (5==app.romVersionMajor()))
+    if ( !isTreo600() && (5==romVersionMajor()))
         std::swap(linger.portable.onOff, linger.portable.time);
     error=socket().setLinger(linger);
     if (error)
