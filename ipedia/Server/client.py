@@ -5,7 +5,7 @@
 # For testing the server.
 #
 # Usage:
-#   -perfrandom $n : do a performance test for Get-Random-Definitions by issuing $n requests
+#   -perfrandom $n : do a performance test for Get-Random-Article by issuing $n requests
 #   -get term : get and display a definition of term
 #   -getrandom
 #   -articlecount
@@ -200,7 +200,7 @@ def handleCookie(rsp):
         print "Found cookie: %s" % rsp.getField(cookieField)
         g_cookie = rsp.getField(cookieField)
 
-def doGetRandomDef(fSilent=False,fDoTiming=False):
+def doGetRandom(fSilent=False,fDoTiming=False):
     req = getRequestHandleCookie(getRandomField, None)
     timer = arsutils.Timer(fStart=True)
     rsp = Response(req.getString())
@@ -218,7 +218,7 @@ def doGetRandomDef(fSilent=False,fDoTiming=False):
     if g_fShowTiming:
         timer.dumpInfo()
 
-def doGetRandomDefNoTiming():
+def doGetRandomNoTiming():
     req = getRequestHandleCookie(getRandomField, None)
     rsp = Response(req.getString())
     handleCookie(rsp)
@@ -272,7 +272,7 @@ def doVerifyRegCode(regCode):
 def doRandomPerf(count):
     timer = arsutils.Timer(fStart=True)
     for i in range(count):
-        doGetRandomDefNoTiming()
+        doGetRandomNoTiming()
     timer.stop()
     timer.dumpInfo()
     print "Number of runs: %d" % count
@@ -316,7 +316,7 @@ if __name__=="__main__":
             doRandomPerf(randomCount)
             sys.exit(0)
         if arsutils.fDetectRemoveCmdFlag("-getrandom"):
-            doGetRandomDef(False,True)
+            doGetRandom(False,True)
             sys.exit(0)
         term = arsutils.getRemoveCmdArg("-get")
         if term:

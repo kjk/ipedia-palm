@@ -78,23 +78,23 @@ cookieField =           "Cookie"
 #  With Results-For server also returns Definition and Format-Version
 # TODO: change that to "Get-Article-With-Title" to maintain consistent terminology
 getDefinitionField =    "Get-Definition"
-# Client uses Get-Random-Definition to get a random article
+# Client uses Get-Random-Article to get a random article
 # Value: none
 # Response: Results-For
 # TODO: change that to "Get-Random-Article" to maintain consistent terminology
-getRandomField =        "Get-Random-Definition"
+getRandomField =        "Get-Random-Article"
 # Sent by server along with Definition. Describes the format of Definition.
 # Allows us to future-proof the design.
 # Value: a number representing the format of definition. By convetion, starts
 #   with 1 and will be increased by one every time we change the format.
 #   Currently we only have one format (Format-Version is 1)
 formatVersionField =    "Format-Version"
-# Sent by server in response to Get-Definition, Get-Random-Definition. It's the
+# Sent by server in response to Get-Definition, Get-Random-Article. It's the
 # article body text.
 # Value: size of definition followed by text of definition itself.
 # TODO: change to Article-Body to improve terminology
 definitionField =       "Definition"
-# Sent by server in response to Get-Definition, Get-Random-Definition. It's the
+# Sent by server in response to Get-Definition, Get-Random-Article. It's the
 # title of the article we're sending. Note: it might be different than title
 # requested by "Get-Definition" due to redirects.
 # Value: title of the article

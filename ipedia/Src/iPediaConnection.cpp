@@ -34,7 +34,7 @@ iPediaConnection::~iPediaConnection()
 #define protocolVersion _T("1")
 
 #define getDefinitionField      _T("Get-Definition")
-#define getRandomDefField       _T("Get-Random-Definition")
+#define getRandomField          _T("Get-Random-Article")
 #define resultsForField         _T("Results-For")
 #define definitionField         _T("Definition")
 #define notFoundField           _T("Not-Found")
@@ -98,7 +98,7 @@ void iPediaConnection::prepareRequest()
     if (getRandom_)
     {
         assert(term_.empty());
-        appendField(request, getRandomDefField);
+        appendField(request, getRandomField);
     }
 
     // get number of articles and database update time in the first request to

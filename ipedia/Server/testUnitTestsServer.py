@@ -91,7 +91,7 @@ class ArsUtils(unittest.TestCase):
 
     def test_ExtraArgument(self):
         req = getRequestHandleCookie()
-        # Get-Random-Definition doesn't require an argument, but we're sending it
+        # Get-Random-Article doesn't require an argument, but we're sending it
         req.addField(getRandomField, "not needed")
         rsp = Response(req)
         self.assertFieldsExist(rsp,[errorField,transactionIdField])
