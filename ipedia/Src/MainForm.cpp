@@ -71,6 +71,7 @@ MainForm::MainForm(iPediaApplication& app):
 
     article_.setInteractionBehavior(  
         Definition::behavMouseSelection 
+        | Definition::behavDoubleClickSelection
         | Definition::behavUpDownScroll 
         | Definition::behavHyperlinkNavigation  
     );

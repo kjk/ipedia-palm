@@ -8,6 +8,7 @@ import arsutils
 
 # TODO:
 # - add per-user stats (how many requests a given user did)
+# - add requests stats
 
 DB_HOST    = 'localhost'
 DB_PWD     = "ipedia"
@@ -156,25 +157,25 @@ def decodeDeviceInfo(deviceInfo):
         result[tag] = (tagValueDecoded,tagValueHex)
     return result
 
-def fStringPrintable(txt):
-    for c in txt:
-        if -1 == string.printable.find(c):
-            return False
-    return True
-
-def deviceInfoAsTxt(deviceInfo):
-    decodedDeviceInfo = decodeDeviceInfo(deviceInfo)
+def deviceInfoAsTxt(deviceInfo, deviceInfoDecoded = None):
+    if None == deviceInfoDecoded:
+        deviceInfoDecoded = decodeDeviceInfo(deviceInfo)
     result = ""
-    for (tag,value) in decodedDeviceInfo.items():
+    platform = ""
+    for (tag,value) in deviceInfoDecoded.items():
         valueDecoded = value[0]
         valueHex = value[1]
-        if fStringPrintable(valueDecoded):
+        if tag == "PL":
+            platform = valueDecoded
+            continue
+        if arsutils.fStringPrintable(valueDecoded):
             result += "%s:%s, " % (tag, valueDecoded)
         else:
             result += "%s:0x%s, " % (tag, valueHex)
     if len(result)>2:
         # remove the last ", "
         result = result[:-2]
+    result = platform + ", " + result
     return result
 
 # TODO: add Smartphone/Pocket PC tags
@@ -214,16 +215,16 @@ def fDeviceInfoUnique(deviceInfo):
 # Which mail server to use when sending an e-mail
 MAILHOST = None
 # list of e-mail addresses to which send the e-mail
-EMAILS_TO_NOTIFY = ["krzysztofk@pobox.com", "kkowalczyk@gmail.com", "arslexis@mail.ru", "a.ciarkowski@interia.pl"]
+EMAILS_TO_NOTIFY = ["krzysztofk@pobox.com", "kkowalczyk@gmail.com"]
 #EMAILS_TO_NOTIFY = ["szknitter@wp.pl", "smiech@op.pl"]
 
 FROM = None
 
 if sys.platform == "linux2":
     # this is our rackshack server
-    #MAILHOST = "infoman.arslexis.com"
+    #MAILHOST = "ipedia.arslexis.com"
     MAILHOST = "127.0.0.1"
-    FROM = "infoman@infoman.arslexis.com"
+    FROM = "ipedia@ipedia.arslexis.com"
 else:
     # this must be windows
     if "KJKLAP1"==os.getenv("COMPUTERNAME"):
@@ -248,16 +249,11 @@ else:
 
 def mailTxt(txt):
     global MAILHOST, FROM, EMAILS_TO_NOTIFY
-    print txt
     if None == MAILHOST:
         print "Didn't send because MAILHOST empty"
         return
-
-    # TODO: debugging only
-    return
-
     curDate = time.strftime( "%Y-%m-%d", time.localtime() )
-    SUBJECT = "InfoMan log parsing results on %s" % (curDate)
+    SUBJECT = "iPedia log parsing results on %s" % (curDate)
     body = string.join((
         "From: %s" % FROM,
         "To: %s" % string.join(EMAILS_TO_NOTIFY,", "),
@@ -280,15 +276,71 @@ class RequestData:
         self.result = None
         self.error = None
 
+(DEV_PALM, DEV_POCKET_PC, DEV_SMARTPHONE, DEV_TEST_CLIENT, DEV_UNKNOWN) = range(5)
+
 class UserData:
     def __init__(self):
         self.user_id = None
         self.device_info = None
+        self.device_info_decoded = None
+        self.device_info_as_txt = None
+        self.device_type = None
         self.cookie_issue_date = None
         self.req_code = None
         self.registration_date = None
         self.disabled_p = None
         self.new_user_p = None
+
+    def ensureDecodedDeviceInfo(self):
+        if None == self.device_info_decoded:
+            self.device_info_decoded = decodeDeviceInfo(self.device_info)
+
+    def deviceType(self):
+        if None != self.device_type:
+            return self.device_type
+        self.ensureDecodedDeviceInfo()
+        platform = self.device_info_decoded["PL"][0]
+        platform = platform.lower()
+        if 0 == platform.find("palm"):
+            self.device_type = DEV_PALM
+        elif 0 == platform.find("pocketpc"):
+            self.device_type = DEV_POCKET_PC
+        elif 0 == platform.find("smartphone"):
+            self.device_type = DEV_SMARTPHONE
+        elif 0 == platform.find("00"):
+            self.device_type = DEV_TEST_CLIENT
+        else:
+            self.device_type = DEV_UNKNOWN
+        return self.device_type
+
+    def palmDeviceName(self):
+        assert DEV_PALM == self.deviceType()
+        oc = self.device_info_decoded["OC"]
+        oc = oc[0]
+        od = self.device_info_decoded["OD"]
+        od = od[0]
+        deviceName = arsutils.getDeviceNameByOcOd(oc, od)
+        return deviceName
+
+    def pocketPCDeviceName(self):
+        assert DEV_POCKET_PC == self.deviceType()
+        oc = self.device_info_decoded["OC"]
+        deviceName = oc[0]
+        return deviceName
+
+    def deviceName(self):
+        if DEV_PALM == self.deviceType():
+            return self.palmDeviceName()
+        elif DEV_POCKET_PC == self.deviceType():
+            return self.pocketPCDeviceName()
+        else:
+            return None
+
+    def deviceInfoAsTxt(self):
+        self.ensureDecodedDeviceInfo()
+        if None == self.device_info_as_txt:
+            self.device_info_as_txt = deviceInfoAsTxt(None, self.device_info_decoded)
+        return self.device_info_as_txt
 
     def isRegistered(self):
         if self.reg_code != None:
@@ -473,36 +525,81 @@ def buildDailyDetailedStats(day):
 def processUsers():
     global g_userStats
     totalUsers = 0
+    totalPalmUsers = 0
+    totalPocketPCUsers = 0
+    totalSmartphoneUsers = 0
+    totalTestClientUsers = 0
     registeredUsers = 0
+    palmRegisteredUsers = 0
+    pocketPCRegisteredUsers = 0
+    smartphoneRegisteredUsers = 0
+    testClientRegisteredUsers = 0
     newTotalUsers = 0
     newRegisteredUsers = 0
     newUsersInfo = []
 
-    for userData in g_userStats:
-        totalUsers += 1
+    deviceStats = {}
 
+    for userData in g_userStats:
         fReg = userData.isRegistered()
 
-        if userData.isRegistered():
+        totalUsers += 1
+        if fReg:
             registeredUsers += 1
+
+        if DEV_PALM == userData.deviceType():
+            totalPalmUsers += 1
+            if fReg:
+                palmRegisteredUsers += 1
+        elif DEV_POCKET_PC == userData.deviceType():
+            totalPocketPCUsers += 1
+            if fReg:
+                pocketPCRegisteredUsers += 1
+        elif DEV_SMARTPHONE == userData.deviceType():
+            totalSmartphoneUsers += 1
+            if fReg:
+                smartphoneRegisteredUsers += 1
+        elif DEV_TEST_CLIENT:
+            totalTestClientUsers += 1
+            if fReg:
+                testClientRegisteredUsers += 1
+
+        deviceName = userData.deviceName()
+        if None != deviceName:
+            if deviceStats.has_key(deviceName):
+                deviceStats[deviceName] = deviceStats[deviceName] + 1
+            else:
+                deviceStats[deviceName] = 1
 
         if userData.new_user_p == True:
             newTotalUsers += 1
-            if userData.isRegistered():
+            if fReg:
                 newRegisteredUsers += 1
 
-    result  = "Total users:            %d\n" % totalUsers
-    result += "Total registered users: %d\n" % registeredUsers
-    result += "New users:              %d\n" % newTotalUsers
-    result += "New registered users:   %d\n" % newRegisteredUsers
+    result  = "Users:     %5d, registered: %5d\n" % (totalUsers, registeredUsers)
+    result += "New users: %5d, registered: %5d\n" % (newTotalUsers, newRegisteredUsers)
+    result += "Palm: %d/%d, Smartphone: %d/%d, Pocket PC: %d/%d, test client: %d/%d\n" % (totalPalmUsers, palmRegisteredUsers, totalSmartphoneUsers, smartphoneRegisteredUsers, totalPocketPCUsers, pocketPCRegisteredUsers, totalTestClientUsers, testClientRegisteredUsers)
 
+    result += "\n"
+    # TODO: sort by count
+    devStatsSorted = []
+    for (deviceName, count) in deviceStats.items():
+        devStatsSorted.append( (deviceName, count) )
+
+    devStatsSorted.sort(cmpFieldCount)
+
+    for deviceInfo in devStatsSorted:
+        deviceName = deviceInfo[0]
+        count = deviceInfo[1]
+        result += " %s: %d\n" % (deviceName, count)
+
+    result += "\n"
     for userData in g_userStats:
         if userData.new_user_p == True:
-            deviceInfoTxt = deviceInfoAsTxt(userData.device_info)
             if userData.isRegistered():
-                result += " * %s\n" % deviceInfoTxt
+                result += "* %s\n" % userData.deviceInfoAsTxt()
             else:
-                result += "   %s\n" % deviceInfoTxt
+                result += "  %s\n" % userData.deviceInfoAsTxt()
     return result
 
 # process request data retrieved via retrieveRequests()

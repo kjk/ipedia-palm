@@ -3,7 +3,7 @@
 #
 # Collect routines frequently used in other places
 
-import os,sys,time,string,traceback
+import os,sys,time,string,binascii,traceback
 try:
     import process
 except:
@@ -156,6 +156,18 @@ def diffWithAraxis(orig,converted):
 def diffWithWinMerge(orig,converted):
     p = process.ProcessOpen(["c:\Program Files\WinMerge\WinMergeU.exe", orig, converted])
     fFinishProcess(p,True)
+
+def fStringPrintable(txt):
+    for c in txt:
+        if -1 == string.printable.find(c):
+            return False
+    return True
+
+def toHexIfNeeded(txt):
+    if fStringPrintable(txt):
+        return txt
+    else:
+        return "0x" + binascii.hexlify(txt)
 
 # code from http://aspn.activestate.com/ASPN/Cookbook/Python/Recipe/134571
 def justify_line(line, width):
@@ -311,7 +323,7 @@ def isValidDiTag(tag):
 # Based on data from http://homepage.mac.com/alvinmok/palm/codenames.html
 # and http://www.mobilegeographics.com/dev/devices.php
 def getDeviceNameByOcOd(oc, od):
-    name="Unknown (%s/%s)" % (oc, od)
+    name = "Unknown (%s/%s)" % (toHexIfNeeded(oc), toHexIfNeeded(od))
     if "hspr"==oc:
         # HANDSPRING devices
         if od==decodeDiTagValue("0000000B"):
@@ -322,8 +334,12 @@ def getDeviceNameByOcOd(oc, od):
             name = "Treo 300"
         elif od=='H101':
             name = "Treo 600"
+        elif od=='H102':
+            name = "Treo 650 (?)"
         elif od=='H201':
             name = "Treo 600 Simulator"
+        elif od=='H202':
+            name = "Treo 650 Simulator"
     elif "sony"==oc:
     # SONY devices
         if od=='mdna':
@@ -350,6 +366,10 @@ def getDeviceNameByOcOd(oc, od):
             name = "PEG-TJ37"
         elif od=='ystn':
             name = "PEG-N610C"
+        elif od=='rdwd':
+            name = "PEG-NR70, NR70V";
+        elif od=='leia':
+            name = "PEG-TJ27"
     # MISC devices
     elif oc=='psys':
         name = "simulator"
@@ -369,6 +389,8 @@ def getDeviceNameByOcOd(oc, od):
         name = "QCP 7135"
     elif oc=='Tpwv' and od=='Rdog':
         name = "Tapwave Zodiac 1/2"
+    elif oc=='gsRl' and od=='zicn':
+        name = "Xplore G18"        
     elif oc=="palm" or oc=="Palm":
     # PALM devices 
         if od=='hbbs':
@@ -379,6 +401,12 @@ def getDeviceNameByOcOd(oc, od):
             name = "Palm m515"
         elif od=='Zpth':
             name = "Zire 71"
+        elif od=='Zi72':
+            name = "Zire 72"
+        elif od=='Zi21':
+            name = "Zire 21"
+        elif od=='Zi22':
+            name = "Zire 31"
         elif od=='MT64':
             name = "Tungsten C"
         elif od=='atc1':
@@ -391,6 +419,8 @@ def getDeviceNameByOcOd(oc, od):
             name = "Tungsten T2"
         elif od=='Arz1':
             name = "Tungsten T3"
+        elif od=='TnT5':
+            name = "Tungsten T5"
     return name
     
 def decodeDi(devInfo):
