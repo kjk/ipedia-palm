@@ -96,7 +96,7 @@ Err iPediaApplication::normalLaunch()
     // if running on Treo 600 set the default server to my server
     if (runningOnTreo600() && !underSimulator())
     {
-        server_ = SERVER_OFFICIAL;
+        //server_ = SERVER_OFFICIAL;
     }
 #endif
 

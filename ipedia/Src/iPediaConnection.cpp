@@ -77,10 +77,10 @@ void iPediaConnection::prepareRequest()
     appendField(request, clientInfoField, clientInfo);
 #endif
 #if defined(WIN32_PLATFORM_PSPC)
-    appendField(request, clientInfoField, _T("PocketPC 1.0"));
+    appendField(request, clientInfoField, _T("PocketPC 1.2"));
 #endif
 #if defined(WIN32_PLATFORM_WFSP)
-    appendField(request, clientInfoField, _T("Smartphone 1.01"));
+    appendField(request, clientInfoField, _T("Smartphone 1.2"));
 #endif
 
     char_t buffer[16];
