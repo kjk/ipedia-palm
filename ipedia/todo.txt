@@ -1,14 +1,3 @@
-## ring focus on the text area should also contain the scrolling bar, not
-just the text. That's how InfoMan works and it's better.
-Owner: Andrzej
-Pri: high
-
-## transfering focus to a text field should select the text and retain ring
-focus (currently it doesn't have ring focus). This is how other apps on
-Treo 650 work.
-Owner: Andrzej
-Pri: medium
-
 ## create and send via e-mail every day access stats. Similar to what InfoMan
 does. Total number of requests (random/search/extended search), how many
 unique users did queries, terms searched for (can be long)
@@ -63,3 +52,15 @@ that english is always available) and display about
 etc. instead of just "en", "fr")
 (2004-09-12)
 
+## ring focus on the text area should also contain the scrolling bar, not
+just the text. That's how InfoMan works and it's better.
+Owner: Andrzej
+Pri: high
+(2004-12-06)
+
+## transfering focus to a text field should select the text and retain ring
+focus (currently it doesn't have ring focus). This is how other apps on
+Treo 650 work.
+Owner: Andrzej
+Pri: medium
+(2004-12-06)

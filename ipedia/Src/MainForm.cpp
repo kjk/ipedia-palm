@@ -100,6 +100,7 @@ void MainForm::attachControls()
     searchButton_.attach(searchButton);
     articleRenderer_.attach(articleRenderer);
     infoRenderer_.attach(infoRenderer);
+    infoRenderer_.setNavOrderOptions(TextRenderer::navOrderFirst);
 }
 
 bool MainForm::handleOpen()
@@ -127,7 +128,7 @@ void MainForm::resize(const ArsLexis::Rectangle& screenBounds)
     
     infoRenderer_.anchor(screenBounds, anchorRightEdge, 12, anchorBottomEdge, 36);
     articleRenderer_.anchor(screenBounds, anchorRightEdge, 12, anchorBottomEdge, 36);
-    scrollBar_.anchor(screenBounds, anchorLeftEdge, 8, anchorBottomEdge, 36);
+    scrollBar_.anchor(screenBounds, anchorLeftEdge, 9, anchorBottomEdge, 36);
     termInputField_.anchor(screenBounds, anchorRightEdge, 72, anchorTopEdge, 14);
 
     searchButton_.anchor(screenBounds, anchorLeftEdge, 34, anchorTopEdge, 14);
