@@ -400,7 +400,7 @@ void iPediaConnection::handleError(ArsLexis::status_t error)
     SimpleSocketConnection::handleError(error);
 }
 
-void iPediaConnection::notifyPayloadFinished()
+status_t iPediaConnection::notifyPayloadFinished()
 {
     switch (payloadType_)
     {
@@ -423,6 +423,6 @@ void iPediaConnection::notifyPayloadFinished()
             assert(false);
     }
     payloadType_=payloadNone;
-    FieldPayloadProtocolConnection::notifyPayloadFinished();
+    return FieldPayloadProtocolConnection::notifyPayloadFinished();
 }
 

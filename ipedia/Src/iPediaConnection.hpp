@@ -96,7 +96,7 @@ protected:
     
     ArsLexis::status_t handleField(const ArsLexis::String& name, const ArsLexis::String& value);
     
-    void notifyPayloadFinished();
+    ArsLexis::status_t notifyPayloadFinished();
     
     ArsLexis::status_t notifyProgress();
 
