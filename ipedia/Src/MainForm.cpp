@@ -794,44 +794,65 @@ void MainForm::checkArticleCount()
 void MainForm::prepareSplashScreen()
 {
     Definition::Elements_t elems;
-    FontEffects fx;
-    fx.setWeight(FontEffects::weightBold);
+
+    FontEffects fxBold;
+    fxBold.setWeight(FontEffects::weightBold);
+
+    FontEffects fxSmall;
+    fxSmall.setSmall(true);
+
     FormattedTextElement* text;
-    elems.push_back(new LineBreakElement());
+    elems.push_back(new LineBreakElement(1,3));
 
     elems.push_back(text=new FormattedTextElement("ArsLexis iPedia"));
     text->setJustification(DefinitionElement::justifyCenter);
     text->setStyle(styleHeader);
-    text->setEffects(fx);
-    
-    elems.push_back(new LineBreakElement());
-    const char* version="Version " appVersion
+    text->setEffects(fxBold);
+
+    elems.push_back(new LineBreakElement(1,2));
+
+    const char* version="Ver " appVersion
 #ifdef INTERNAL_BUILD
     " (internal)"
 #endif
-#ifdef DEMO
-        " (demo)"
-#endif
+/*
 #ifdef DEBUG
         " (debug)"
-#endif
+#endif*/
     ;
     elems.push_back(text=new FormattedTextElement(version));
     text->setJustification(DefinitionElement::justifyCenter);
+    text->setEffects(fxSmall);
     
-    elems.push_back(new LineBreakElement());
-    elems.push_back(text=new FormattedTextElement("Copyright (c) ArsLexis"));
+    elems.push_back(new LineBreakElement(3,4));
+    elems.push_back(text=new FormattedTextElement("Software \251 "));
     text->setJustification(DefinitionElement::justifyCenter);
-    text->setEffects(fx);
-    
-    elems.push_back(new LineBreakElement());
-    elems.push_back(text=new FormattedTextElement("http://www.arslexis.com"));
+
+    elems.push_back(text=new FormattedTextElement("ArsLexis"));
     text->setJustification(DefinitionElement::justifyCenter);
-    text->setHyperlink(text->text(), hyperlinkExternal);
-    
+    text->setHyperlink("http://www.arslexis.com/pda/ipedia.html", hyperlinkExternal);
+
+    elems.push_back(new LineBreakElement(1,4));
+    elems.push_back(text=new FormattedTextElement("Data \251 "));
+    text->setJustification(DefinitionElement::justifyCenter);
+
+    elems.push_back(text=new FormattedTextElement("WikiPedia"));
+    text->setJustification(DefinitionElement::justifyCenter);
+    text->setHyperlink("http://www.wikipedia.org", hyperlinkExternal);
+
     elems.push_back(new LineBreakElement());
     elems.push_back(articleCountElement_=new FormattedTextElement(" "));
     articleCountElement_->setJustification(DefinitionElement::justifyCenter);
+
+    elems.push_back(new LineBreakElement());
+    elems.push_back(new LineBreakElement(3,4));
+    elems.push_back(text=new FormattedTextElement("Using iPedia: "));
+    text->setJustification(DefinitionElement::justifyLeft);
+
+    elems.push_back(text=new FormattedTextElement("tutorial"));
+    text->setJustification(DefinitionElement::justifyLeft);
+    /*text->setHyperlink("http://www.arslexis.com/pda/ipedia.html", hyperlinkExternal);*/
+    elems.push_back(new LineBreakElement());
     
     about_.replaceElements(elems);    
 }
