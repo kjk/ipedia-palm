@@ -611,7 +611,7 @@ void DefinitionParser::manageListNesting(const String& requestedNesting)
                 else if (bulletChar==elementType)
                     element.reset(new BulletElement());
                 else 
-                    element.reset(new IndentedParagraphElement());
+                    element.reset(new ParagraphElement(true));
                 appendElement(element.get());
                 pushParent(element.release());
                 continueList=false;
