@@ -1,14 +1,25 @@
-## 1. remove timeline in the parser e.g. "List of Federal Presidents of Austria"
+## 1. fix converting/displaying for french and german
 
-## 2. change "trail expired" dialog to "Unregistered version expired. Please
+## 2. add spanish (?)
+
+## 3. modify client to take advantage of multi-lingual features
+
+## 3.1 get available langs with first request
+
+## 3.2 store available langs in preferences
+
+## 3.3 store currently selected lang in preferences
+
+## 3.4 ability to choose available lang
+
+## 3.5 when server sends langNotAvailable we need to switch to en (we assume 
+that english is always available) and display about
+
+## 4. add unit tests for new multi-langual features
+
+## 5. remove timeline in the parser e.g. "List of Federal Presidents of Austria"
+
+## 6. change "trail expired" dialog to "Unregistered version expired. Please
 register by purchasing registration code.\nEnter registration code?
 Yes/NO". Just like in iPedia/SM
-
-## 3. add menu items:
-go/Linked articles
-go/Lining articles
-go/History (displays prev/next history)
-
-## 4. add "Recent lookups" feature i.e. lookups made by other people. Kind of
-spying on what other people are looking at.
 
