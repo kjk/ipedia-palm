@@ -399,7 +399,6 @@ class iPediaProtocol(basic.LineReceiver):
 
         self.dbManagement = None
         self.dbArticles = None
-        self.error = None
 
         # dictionary to keep values of client request fields parsed so far
         self.fields = {}
@@ -493,7 +492,9 @@ class iPediaProtocol(basic.LineReceiver):
                 searchDataTxt = "'%s'" % db.escape_string(searchData)
 
             if None == searchResult:
-                assert (SEARCH_TYPE_EXTENDED == requestType) or (None != error)
+                # a standard search might turn into full-text search if term
+                # is not found.
+                assert (SEARCH_TYPE_EXTENDED == requestType) or (SEARCH_TYPE_STANDARD == requestType) or (None != error)
                 searchResultTxt = "NULL"
             else:
                 searchResultTxt = "'%s'" % db.escape_string(searchResult)
@@ -523,17 +524,17 @@ class iPediaProtocol(basic.LineReceiver):
     def logRandomSearchRequest(self,userId,articleTitle,error):
         self.logRequestGeneric(userId,SEARCH_TYPE_RANDOM,None,articleTitle,error)
 
-    def logRequest(self):
+    def logRequest(self, error):
         # sometimes we have errors before we can establish userId
         if None == self.userId:
             return
 
         if self.fHasField(getArticleField):
-            self.logSearchRequest(self.userId,self.getFieldValue(getArticleField),self.searchResult,self.error)
+            self.logSearchRequest(self.userId,self.getFieldValue(getArticleField),self.searchResult,error)
         elif self.fHasField(searchField):
-            self.logExtendedSearchRequest(self.userId,self.getFieldValue(searchField),self.error)
+            self.logExtendedSearchRequest(self.userId,self.getFieldValue(searchField),error)
         elif self.fHasField(getRandomField):
-            self.logRandomSearchRequest(self.userId,self.searchResult,self.error)
+            self.logRandomSearchRequest(self.userId,self.searchResult,error)
 
     # the last stage of processing a request: if there was an error, append
     # errorField to the response, send the response to the client and
@@ -545,7 +546,7 @@ class iPediaProtocol(basic.LineReceiver):
             self.outputField(errorField, str(error))
         self.transport.loseConnection()
 
-        self.logRequest()
+        self.logRequest(error)
         if self.dbManagement:
             self.dbManagement.close()
             self.dbManagement=None
@@ -571,9 +572,8 @@ class iPediaProtocol(basic.LineReceiver):
                 return True
         except _mysql_exceptions.Error, ex:
             if cursor:
-                cursor.close()        
-            arsutils.dumpException(ex)
-            self.error=iPediaServerError.serverFailure
+                cursor.close()
+            raise
         return False
 
     # Log all Get-Cookie requests    
@@ -642,15 +642,15 @@ class iPediaProtocol(basic.LineReceiver):
         return body
 
     def handleGetArticleRequest(self):
+        assert self.fHasField(getArticleField)
 
         if self.fHasField(searchField) or self.fHasField(getRandomField):
             # those shouldn't be in the same request
-            self.error = iPediaServerError.malformedRequest
-            return False
+            return iPediaServerError.malformedRequest
 
         if not self.fRegisteredUser:
             if self.fOverUnregisteredLookupsLimit(self.userId):
-                return False
+                return iPediaServerError.lookupLimitReached
 
         title = self.getFieldValue(getArticleField)
         #print "handleGetArticleRequest for '%s'" % title
@@ -673,19 +673,17 @@ class iPediaProtocol(basic.LineReceiver):
                     self.outputPayloadField(searchResultsField, string.join(termList, "\n"))
             cursor.close()
         except _mysql_exceptions.Error, ex:
-            arsutils.dumpException(ex)
             if cursor:
                 cursor.close()
-            self.error=iPediaServerError.serverFailure
-            return False
-        return True
-        
+            raise
+        return None
+
     def handleSearchRequest(self):
+        assert self.fHasField(searchField)
 
         if self.fHasField(getArticleField) or self.fHasField(getRandomField):
             # those shouldn't be in the same request
-            self.error = iPediaServerError.malformedRequest
-            return False
+            return iPediaServerError.malformedRequest
 
         searchTerm = self.getFieldValue(searchField)
         cursor = None
@@ -700,19 +698,16 @@ class iPediaProtocol(basic.LineReceiver):
                 self.outputPayloadField(searchResultsField, string.join(termList, "\n"))
             cursor.close()
         except _mysql_exceptions.Error, ex:
-            arsutils.dumpException(ex)
             if cursor:
                 cursor.close()
-            self.error=iPediaServerError.serverFailure
-            return False
-        return True
+        return None
 
     def handleGetRandomRequest(self):
+        assert self.fHasField(getRandomField)
 
         if self.fHasField(getArticleField) or self.fHasField(searchField):
             # those shouldn't be in the same request
-            self.error = iPediaServerError.malformedRequest
-            return False
+            return iPediaServerError.malformedRequest
 
         cursor = None
         try:
@@ -724,12 +719,9 @@ class iPediaProtocol(basic.LineReceiver):
             self.outputArticle(title,body,reverseLinks)
             cursor.close()
         except _mysql_exceptions.Error, ex:
-            arsutils.dumpException(ex)
             if cursor:
                 cursor.close()
-            self.error=iPediaServerError.serverFailure
-            return False
-        return True
+        return None
 
     # Return True if a user identified by userId is over unregistered lookup
     # limits. False if not. Assumes that we don't call this if a user is registered
@@ -754,15 +746,12 @@ class iPediaProtocol(basic.LineReceiver):
                 assert None != row
                 todayLookups = row[0]
                 if todayLookups >= g_unregisteredLookupsDailyLimit:
-                    self.error=iPediaServerError.lookupLimitReached
                     fOverLimit=True
             cursor.close()
         except _mysql_exceptions.Error, ex:
-            arsutils.dumpException(ex)
             if cursor:
                 cursor.close()
-            self.error=iPediaServerError.serverFailure
-            fOverLimit=True
+            raise
         if g_fDisableRegistrationCheck:
             fOverLimit = False
         return fOverLimit
@@ -774,13 +763,12 @@ class iPediaProtocol(basic.LineReceiver):
     def handleVerifyRegistrationCodeRequest(self):
         # by now we have to have it (from handling getCookieField, cookieField or regCodeField)
         assert self.userId
-
+        assert self.fHasField(verifyRegCodeField)
         # those are the only fields that can come with verifyRegCodeField
         allowedFields = [transactionIdField, clientInfoField, protocolVersionField, cookieField, getCookieField, verifyRegCodeField, getArticleCountField, getDatabaseTimeField]
         for field in self.fields.keys():
             if field not in allowedFields:
-                self.error = iPediaServerError.malformedRequest
-                return False
+                return iPediaServerError.malformedRequest
 
         regCode = self.getFieldValue(verifyRegCodeField)
 
@@ -790,7 +778,7 @@ class iPediaProtocol(basic.LineReceiver):
 
         if not fRegCodeExists:
             self.outputField(regCodeValidField, "0")
-            return True
+            return None
 
         # update users table to reflect the fact, that this user has registered
         cursor=None
@@ -805,23 +793,20 @@ class iPediaProtocol(basic.LineReceiver):
             cursor.close()
 
             self.outputField(regCodeValidField, "1")
-            return True
         except _mysql_exceptions.Error, ex:
-            arsutils.dumpException(ex)
             if cursor:
                 cursor.close()
-            self.error=iPediaServerError.serverFailure
-            return False;
-        assert 0
+            raise
+        return None
 
     # Set self.userId based on reg code given by client
     # Return false if there was a problem that requires aborting the connection
     def handleRegistrationCodeRequest(self):
+        assert self.fHasField(regCodeField)
 
         if self.fHasField(getCookieField) or self.fHasField(cookieField):
             # those shouldn't be in the same request
-            self.error = iPediaServerError.malformedRequest
-            return False
+            return iPediaServerError.malformedRequest
 
         regCode = self.getFieldValue(regCodeField)
         cursor = None
@@ -833,33 +818,29 @@ class iPediaProtocol(basic.LineReceiver):
             cursor.execute("SELECT user_id,disabled_p FROM users WHERE reg_code='%s';" % regCodeEscaped)
             row = cursor.fetchone()
             cursor.close()
-            if row:
-                if 't'==row[1]:
-                    self.error = iPediaServerError.userDisabled
-                    return False
-                self.userId = int(row[0])
-                self.fRegisteredUser = True
-                return True
-            else:
-                self.error = iPediaServerError.invalidRegCode
-                return False
+            if not row:
+                return iPediaServerError.invalidRegCode
+
+            if 't'==row[1]:
+                return iPediaServerError.userDisabled
+
+            self.userId = int(row[0])
+            self.fRegisteredUser = True
         except _mysql_exceptions.Error, ex:
-            arsutils.dumpException(ex)
             if cursor:
                 cursor.close()
-            self.error = iPediaServerError.serverFailure
-            return False
-        assert 0
-        return False
+            raise
+        return None
 
     # Set self.userId based on cookie given by client
-    # Return false if there was a problem that requires aborting the connection
+    # Return error if there was a problem that requires aborting the connection
+    # Return None if all was ok
     def handleCookieRequest(self):
+        assert self.fHasField(cookieField)
 
         if self.fHasField(getCookieField) or self.fHasField(regCodeField):
             # those shouldn't be in the same request
-            self.error = iPediaServerError.malformedRequest
-            return False
+            return iPediaServerError.malformedRequest
 
         cookie = self.getFieldValue(cookieField)
         cursor = None
@@ -871,37 +852,34 @@ class iPediaProtocol(basic.LineReceiver):
             cursor.execute("SELECT user_id,disabled_p FROM users WHERE cookie='%s';" % cookieEscaped)
             row = cursor.fetchone()
             cursor.close()
-            if row:
-                if 't'==row[1]:
-                    self.error = iPediaServerError.userDisabled
-                    return False
-                self.userId = int(row[0])
-                # print "userdId %d for cookie %s" % (self.userId,cookie)
-                return True
-            else:
-                self.error = iPediaServerError.invalidCookie
-                return False
+
+            if not row:
+                return iPediaServerError.invalidCookie
+
+            if 't'==row[1]:
+                return iPediaServerError.userDisabled
+
+            self.userId = int(row[0])
+            # print "userdId %d for cookie %s" % (self.userId,cookie)
         except _mysql_exceptions.Error, ex:
-            arsutils.dumpException(ex)
             if cursor:
                 cursor.close()
-            self.error = iPediaServerError.serverFailure
-            return False
-        assert 0
+            raise
+        return None
 
     # Assign a cookie to the user. Try to re-use cookie based on deviceInfo
     # or create a new entry in users table. Set self.userId
     # Return false if there was a problem that requires aborting the connection
     def handleGetCookieRequest(self):
+        assert self.fHasField(getCookieField)
+
         if self.fHasField(regCodeField) or self.fHasField(cookieField):
             # those shouldn't be in the same request
-            self.error = iPediaServerError.malformedRequest
-            return False
+            return iPediaServerError.malformedRequest
 
         deviceInfo = self.getFieldValue(getCookieField)
         if not fValidDeviceInfo(deviceInfo):
-            self.error=iPediaServerError.unsupportedDevice
-            return False
+            return iPediaServerError.unsupportedDevice
 
         cursor=None
         try:
@@ -937,14 +915,12 @@ class iPediaProtocol(basic.LineReceiver):
             cursor.close()
 
         except _mysql_exceptions.Error, ex:
-            arsutils.dumpException(ex)
             if cursor:
                 cursor.close()
-            self.error=iPediaServerError.serverFailure
-            return False
+            raise
 
         self.logGetCookie(self.userId,deviceInfo,cookie)
-        return True
+        return None
             
     # figure out user id and set self.userId
     # Possible cases:
@@ -958,7 +934,7 @@ class iPediaProtocol(basic.LineReceiver):
     #     - we try to re-issue cookie based on device_info i.e. if deviceInfoUnique($deviceInfo)
     #       select cookie from users where device_info = $deviceInfo. if present go to b)
     #       if not present, we create a new entry in users table, and use the new user_id
-    # return false if for any reson we failed and need to terminate
+    # return error if for any reson we failed and need to terminate, None if all is ok
     def computeUserId(self):
 
         # case a)
@@ -979,8 +955,6 @@ class iPediaProtocol(basic.LineReceiver):
     # If error is != None, this is the server errro code to return to the client
     def answer(self,error):
         global g_fVerbose, validClientFields
-
-        assert None == self.error
 
         try:
             if g_fVerbose:
@@ -1007,9 +981,9 @@ class iPediaProtocol(basic.LineReceiver):
             if PROTOCOL_VERSION != self.getFieldValue(protocolVersionField):
                 return self.finish(iPediaServerError.invalidProtocolVersion)
 
-            if not self.computeUserId():
-                assert None != self.error 
-                return self.finish(self.error)
+            error = self.computeUserId()
+            if None != error:
+                return self.finish(error)
 
             assert self.userId
 
@@ -1018,10 +992,9 @@ class iPediaProtocol(basic.LineReceiver):
                 fieldData = validClientFields[fieldName]
                 fieldHandleProc = fieldData[1]
                 if None != fieldHandleProc:
-                    ret = fieldHandleProc(self)
-                    if not ret:
-                        assert None != self.error 
-                        return self.finish(self.error)
+                    error = fieldHandleProc(self)
+                    if None != error:
+                        return self.finish(error)
 
             # too simple to warrant functions
             if self.fHasField(getArticleCountField):
@@ -1041,8 +1014,6 @@ class iPediaProtocol(basic.LineReceiver):
             # empty line marks end of request
             if request == "":
                 return self.answer(None)
-
-            assert None == self.error
 
             if g_fVerbose:
                 print request
