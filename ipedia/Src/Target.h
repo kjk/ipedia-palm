@@ -48,6 +48,10 @@
 
 #define ARSLEXIS_DEBUG_MEMORY_ALLOCATION 1
 
+#define ARSLEXIS_USE_MEM_GLUE 1
+
+#define ARSLEXIS_USE_SELECT_EVENTS 1
+
 #define ALLOCATION_LOG_PATH "\\var\\log\\ipedia_allocation.log"
 
 #ifndef NDEBUG

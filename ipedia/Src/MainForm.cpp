@@ -173,13 +173,12 @@ void MainForm::handleControlSelect(const EventType& event)
     if (NULL != lookupManager && lookupManager->lookupInProgress())
         return;
         
-    iPediaApplication& app = static_cast<iPediaApplication&>(application());
     bool fFullText = false;
     switch (event.data.ctlSelect.controlID)
     {
         case searchButton:
             // If button held for more than ~300msec, perform full text search.
-            if (TimGetTicks() - lastPenDownTimestamp_ > app.ticksPerSecond()/3)
+            if (TimGetTicks() - lastPenDownTimestamp_ > app().ticksPerSecond()/3)
                 fFullText = true;
             search(fFullText);
             break;
@@ -384,9 +383,6 @@ void MainForm::updateAfterLookup()
     {
         articleRenderer_.replaceElements(lookupManager->lastDefinitionElements());
         setDisplayMode(showArticle);
-        const LookupHistory& history = getHistory();
-        if (history.hasCurrentTerm())
-            setTitle(history.currentTerm());
         
         termInputField_.replace(lookupManager->lastSearchTerm());
         termInputField_.select();                    
@@ -912,6 +908,7 @@ void MainForm::prepareAbout()
     Definition::Elements_t  elems;
     FormattedTextElement *  text;
     GenericTextElement *    articleCountElement;
+    setTitle("iPedia");
 
     FontEffects fxBold;
     fxBold.setWeight(FontEffects::weightBold);
@@ -1009,6 +1006,7 @@ void MainForm::prepareAbout()
 // TODO: make those on-demand only to save memory
 void MainForm::prepareTutorial()
 {
+    setTitle("iPedia - Tutorial");
     Definition::Elements_t elems;
     FormattedTextElement* text;
 
@@ -1094,6 +1092,7 @@ static void registerActionCallback(void *data)
 // TODO: make those on-demand only to save memory
 void MainForm::prepareHowToRegister()
 {
+    setTitle("iPedia - How to register");
     Definition::Elements_t elems;
     FormattedTextElement* text;
 
@@ -1139,6 +1138,7 @@ void MainForm::prepareHowToRegister()
 
 void MainForm::prepareWikipedia()
 {
+    setTitle("iPedia - Wikipedia");
     Definition::Elements_t elems;
     FormattedTextElement* text;
     FontEffects fxBold;
@@ -1167,6 +1167,7 @@ void MainForm::prepareWikipedia()
 
 void MainForm::setDisplayMode(MainForm::DisplayMode mode) 
 {
+    
     switch (mode) 
     {
         case showAbout:
@@ -1175,11 +1176,18 @@ void MainForm::setDisplayMode(MainForm::DisplayMode mode)
             infoRenderer_.show();
             break;
             
-        case showArticle:
+        case showArticle: 
+        {
             infoRenderer_.hide();
+            const LookupHistory& history = getHistory();
+            if (history.hasCurrentTerm())
+                setTitle(history.currentTerm());
+            else
+                setTitle("iPedia");
             articleRenderer_.show();
             break;
-            
+        }
+        
         case showRegister:
             articleRenderer_.hide();
             prepareHowToRegister();

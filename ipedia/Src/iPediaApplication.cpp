@@ -130,10 +130,19 @@ void iPediaApplication::waitForEvent(EventType& event)
         manager=&lookupManager_->connectionManager();
     if (manager && manager->active())
     {
+#ifdef ARSLEXIS_USE_SELECT_EVENTS
+        if (!underSimulator())
+            manager->waitForEvent(event, evtWaitForever);
+        else 
+        {
+#else
+        {
+#endif        
         setEventTimeout(0);
         RichApplication::waitForEvent(event);
         if (nilEvent==event.eType)
             manager->manageConnectionEvents(ticksPerSecond()/20);
+        }
     }
     else
     {
