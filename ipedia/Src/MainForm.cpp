@@ -102,20 +102,13 @@ void MainForm::updateScrollBar()
 
 Err MainForm::renderDefinition(Definition& def, ArsLexis::Graphics& graphics, const ArsLexis::Rectangle& rect)
 {
-    volatile Err error=errNone;
     bool         fForceRecalculate = false;
     if ( showAbout==displayMode() )
     {
         fForceRecalculate = forceAboutRecalculation_;
         forceAboutRecalculation_ = false;
     }
-    ErrTry {
-        def.render(graphics, rect, renderingPreferences(), fForceRecalculate);
-    }
-    ErrCatch (ex) {
-        error=ex;
-    } ErrEndCatch
-    return error;
+    return def.render(graphics, rect, renderingPreferences(), fForceRecalculate);
 }
 
 
