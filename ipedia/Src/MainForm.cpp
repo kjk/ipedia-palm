@@ -7,7 +7,7 @@
 #include <Text.hpp>
 #include <StringListForm.hpp>
 
-#include <GenericTextElement.hpp>
+#include <TextElement.hpp>
 #include <LineBreakElement.hpp>
 #include <ParagraphElement.hpp>
 

@@ -1,7 +1,7 @@
 #include "iPediaHyperlinkHandler.hpp"
 #include "iPediaApplication.hpp"
 #include "LookupManager.hpp"
-#include "GenericTextElement.hpp"
+#include "TextElement.hpp"
 #include <Form.hpp>
 
 bool iPediaHyperlinkHandler::handleExternalHyperlink(const ArsLexis::String& url)
