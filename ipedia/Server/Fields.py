@@ -159,7 +159,7 @@ fieldsInfo = {
     articleCount    : (fieldTypeServer, valueInline),
     databaseTime    : (fieldTypeServer, valueInline),
     verifyRegCode   : (fieldTypeClient, valueInline),
-    regCodeValid    : (fieldTypeServer, valueInline)
+    regCodeValid    : (fieldTypeServer, valueInline),
 
     getArticle      : (fieldTypeClient, valueInline),
     getRandom       : (fieldTypeClient, valueNone),

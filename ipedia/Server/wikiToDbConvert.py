@@ -213,10 +213,10 @@ class ConvertedArticleRedirect:
 def getDbNameFromFileName(sqlFileName):
     base = os.path.basename(sqlFileName)
     lang = base[0:2]
-    txt = wikipediasql.getBaseFileName(base)
-    pos = txt.find("_cur_table")
-    date = txt[:pos]
     assert lang in ["en", "fr", "de"]
+    baseFileName = wikipediasql.getBaseFileName(base)
+    pos = baseFileName.find("_cur_table")
+    date = baseFileName[3:pos]
     dbName = "ipedia_%s_%s" % (lang, date)
     return dbName
 
@@ -593,7 +593,6 @@ def createIpediaDb(sqlDumpName,fRecreateDb=False):
         else:
             print "Database '%s' already exists. Use -recreatedb flag in order to force recreation of the database" % dbName
             sys.exit(0)
-
 
 def createFtIndex():
     print "starting to create full-text index"

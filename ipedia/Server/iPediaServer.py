@@ -55,6 +55,31 @@ testDisabledRegCode = "2347"
 # testing only
 g_fForceUpgrade = False
 
+# contains info about all available databases. databse name is the key, value
+# is a number of articles in the database
+g_allDbsInfo = {}
+# list of all database names
+g_allDbNames = []
+# list of all english databases, sorted by time
+g_enDbs = []
+# list of all french databases, sorted by time
+g_frDbs = []
+# list of all german databases, sorted by time
+g_deDbs = []
+
+class DbInfo:
+    def __init__(self,dbName,articlesCount,dbTime,redirectsCount, minDefId, maxDefId):
+        self.dbName = dbName
+        self.articlesCount = articlesCount
+        self.dbTime = dbTime
+        self.redirectsCount = redirectsCount
+        self.minDefId = minDefId
+        self.maxDefId = maxDefId
+
+g_curEnDbInfo = None
+g_curFrDbInfo = None
+g_curDeDbInfo = None
+
 # severity of the log message
 # SEV_NONE is used to indicate that we don't do any logging at all
 # SEV_HI is for messages of high severity (e.g. exception) that usually should always be logged
@@ -75,6 +100,10 @@ def log(sev,txt):
 def createManagementConnection():
     #log(SEV_LOW,"creating management connection\n")
     return MySQLdb.Connect(host=DB_HOST, user=DB_USER, passwd=DB_PWD, db=MANAGEMENT_DB)
+
+def createArticlesDatabase(dbName):
+    #log(SEV_LOW,"creating connection for db %s\n" % dbName)
+    return MySQLdb.Connect(host=DB_HOST, user=DB_USER, passwd=DB_PWD, db=dbName)
 
 lineSeparator =     "\n"
 
@@ -277,6 +306,10 @@ class iPediaProtocol(basic.LineReceiver):
     def __init__(self):
         self.delimiter = '\n'
 
+        # name of the database to use for this client
+        # must be set before we create articles connection (self.dbArticles)
+        self.dbName = None
+
         self.dbManagement = None
         self.dbArticles = None
 
@@ -318,7 +351,8 @@ class iPediaProtocol(basic.LineReceiver):
 
     def getArticlesDatabase(self):
         if not self.dbArticles:
-            self.dbArticles=self.factory.createArticlesConnection()
+            assert self.dbName != None
+            self.dbArticles = createArticlesConnection(self.dbName)
         return self.dbArticles
 
     def outputField(self, name, value=None):
@@ -519,6 +553,14 @@ class iPediaProtocol(basic.LineReceiver):
         body=body.replace("{{CURRENTTIME}}",        time.strftime("%X"))
         return body
 
+    def handleGetArticleRequestMl(self):
+        assert self.fHasField(Fields.getArticleMl)
+        if self.fHasField(Fields.searchMl) or self.fHasField(Fields.getRandomMl):
+            # those shouldn't be in the same request
+            return ServerErrors.malformedRequest
+
+        # TODO:
+
     def handleGetArticleRequest(self):
         assert self.fHasField(Fields.getArticle)
 
@@ -555,6 +597,27 @@ class iPediaProtocol(basic.LineReceiver):
             raise
         return None
 
+    def handleGetArticleCountMl(self):
+        assert self.fHasField(Fields.getArticleCountMl)
+        # TODO:
+
+    def handleGetDatabaseTimeMl(self):
+        assert self.fHasField(Fields.getDatabaseTimeMl)
+        # TODO:
+
+    def handleGetAvailableLangs(self):
+        assert self.fHasField(Fields.getAvailableLangs)
+        # TODO:
+
+    def handleSearchRequestMl(self):
+        assert self.fHasField(Fields.searchMl)
+
+        if self.fHasField(Fields.getArticleMl) or self.fHasField(Fields.getRandomMl):
+            # those shouldn't be in the same request
+            return ServerErrors.malformedRequest
+
+        # TODO:
+
     def handleSearchRequest(self):
         assert self.fHasField(Fields.search)
 
@@ -578,6 +641,15 @@ class iPediaProtocol(basic.LineReceiver):
             if cursor:
                 cursor.close()
         return None
+
+    def handleGetRandomRequestMl(self):
+        assert self.fHasField(Fields.getRandomMl)
+
+        if self.fHasField(Fields.getArticleMl) or self.fHasField(Fields.searchMl):
+            # those shouldn't be in the same request
+            return ServerErrors.malformedRequest
+
+        # TODO:
 
     def handleGetRandomRequest(self):
         assert self.fHasField(Fields.getRandom)
@@ -931,7 +1003,7 @@ clientFieldsHandlers = {
     Fields.cookie            : None,
     Fields.getCookie         : None,
     Fields.regCode           : None,
-    Fields.verifyRegCode     : iPediaProtocol.handleVerifyRegistrationCodeRequest
+    Fields.verifyRegCode     : iPediaProtocol.handleVerifyRegistrationCodeRequest,
 
     Fields.getArticle        : iPediaProtocol.handleGetArticleRequest,
     Fields.getRandom         : iPediaProtocol.handleGetRandomRequest,
@@ -941,8 +1013,8 @@ clientFieldsHandlers = {
 
     Fields.getArticleMl      : iPediaProtocol.handleGetArticleRequestMl,
     Fields.getRandomMl       : iPediaProtocol.handleGetRandomRequestMl,
-    Fields.searchMl          : iPediaProtocol.handleSearchRequesMlt,
-    Fields.getArticleCountMl : iPediaProtocol.hanldeGetArticleCountMl,
+    Fields.searchMl          : iPediaProtocol.handleSearchRequestMl,
+    Fields.getArticleCountMl : iPediaProtocol.handleGetArticleCountMl,
     Fields.getDatabaseTimeMl : iPediaProtocol.handleGetDatabaseTimeMl,
     Fields.getAvailableLangs : iPediaProtocol.handleGetAvailableLangs,
 }
@@ -951,13 +1023,27 @@ def getFieldHandler(fieldName):
     global clientFieldsHandlers
     return clientFieldsHandlers[fieldName]
 
-class iPediaFactory(protocol.ServerFactory):
+def getDbInfo(dbName):
+    parts = dbName.split("_")
+    dbTime = parts[-1]
 
-    def createArticlesConnection(self):
-        #log(SEV_LOW,"creating articles connection\n")
-        # TODO: should we try to re-use connections (e.g. from a pool)
-        # in order to improve performance ?
-        return MySQLdb.Connect(host=DB_HOST, user=DB_USER, passwd=DB_PWD, db=self.dbName)
+    db = createArticlesConnection(dbName)
+    cursor = db.cursor()
+    cursor.execute("""SELECT COUNT(*), min(id), max(id) FROM articles""")
+    row = cursor.fetchone()
+    articleCount = row[0]-ARTICLE_COUNT_DELTA
+    minDefinitionId = row[1]
+    maxDefinitionId = row[2]
+    cursor.execute("""SELECT COUNT(*) FROM redirects""")
+    row = cursor.fetchone()
+    redirectsCount = row[0]
+    cursor.close()
+    db.close()
+
+    dbInfo = DbInfo(dbName,articlesCount,dbTime,redirectCount, minDefinitionId,maxDefinitionId)
+    return dbInfo
+
+class iPediaFactory(protocol.ServerFactory):
 
     def __init__(self, dbName):
         self.changeDatabase(dbName)
@@ -965,8 +1051,9 @@ class iPediaFactory(protocol.ServerFactory):
     def changeDatabase(self, dbName):
         print "Switching to database %s" % dbName
         self.dbName = dbName
-        self.dbTime = dbName[7:]
-        db = self.createArticlesConnection()
+        parts = dbName.split("_")
+        self.dbTime = parts[-1]
+        db = createArticlesConnection(dbName)
         cursor = db.cursor()
         cursor.execute("""SELECT COUNT(*), min(id), max(id) FROM articles""")
         row = cursor.fetchone()
@@ -978,16 +1065,22 @@ class iPediaFactory(protocol.ServerFactory):
         self.redirectsCount = row[0]
         print "Number of Wikipedia articles: %d" % self.articleCount
         print "Number of redirects: %d" % self.redirectsCount
+        print "Databse time: %s" % self.dbTime
         cursor.close()
         db.close()
 
     protocol = iPediaProtocol
 
-ipediaRe = re.compile("ipedia_[0-9]{8}", re.I)
+# This is the format of the db name before we handled wikipedias in many languages
+ipediaOldRe = re.compile("ipedia_[0-9]{8}", re.I)
+# This is a format of the db name that support wikipedias in multiple languages
+ipediaMultiLangRe = re.compile("ipedia_.._[0-9]{8}", re.I)
 def fIpediaDb(dbName):
     """Return True if a given database name is a name of the database with Wikipedia
     articles"""
-    if ipediaRe.match(dbName):
+    if ipediaOldRe.match(dbName):
+        return True
+    if ipediaMultiLangRe.match(dbName):
         return True
     return False
 
@@ -1002,8 +1095,8 @@ def getIpediaDbs():
         dbName = row[0]
         if fIpediaDb(dbName):
             cur.execute("""SELECT COUNT(*) FROM %s.articles""" % dbName)
-            row=cur.fetchone()
-            articleCount=row[0]
+            row = cur.fetchone()
+            articleCount = row[0]
             dbsInfo[dbName] = articleCount
     cur.close()
     conn.close()
@@ -1079,7 +1172,7 @@ class iPediaTelnetProtocol(basic.LineReceiver):
 class iPediaTelnetFactory(protocol.ServerFactory):
 
     def __init__(self, otherFactory):
-        self.iPediaFactory=otherFactory 
+        self.iPediaFactory = otherFactory 
     
     protocol=iPediaTelnetProtocol
 
@@ -1087,8 +1180,42 @@ def usageAndExit():
     print "iPediaServer.py [-demon] [-verbose] [-usepsyco] [-listdbs] [-db name]"
     sys.exit(0)        
 
+def getLangFromDbName(dbName):
+    # database names are in 2 styles:
+    # old english db: ipedia_$date (e.g. ipedia_20040829)
+    # new multi-lang db: ipedia_$lang_$data (e.g. ipedia_fr_20040829)
+    parts = dbName.split("_")
+    if 2==len(parts):
+        # old style
+        lang = "en"
+    else:
+        lang = parts[1]
+
+    return lang
+        
+# read a list of databases in MySQL and set g_allDbsInfo, g_frDbs, g_enDbs, g_dbs
+def detectAvailableDbs():
+    global g_allDbsInfo, g_allDbNames, g_frDbs, g_enDbs, g_deDbs
+    g_enDbs = []
+    g_deDbs = []
+    g_frDbs = []
+    g_allDbsInfo = getIpediaDbs()
+    g_allDbNames = g_allDbsInfo.keys()
+    if 0 == len(g_allDbNames):
+        return
+    g_allDbNames.sort()
+
+    for dbName in g_allDbNames:
+        lang = getLangFromDbName(dbName)
+        if "en" == lang:
+            g_enDbs.append(dbName)
+        if "fr" == lang:
+            g_frDbs.append(dbName)
+        if "de" == lang:
+            g_deDbs.append(dbName)
+
 def main():
-    global g_fPsycoAvailable, g_acceptedLogSeverity
+    global g_fPsycoAvailable, g_acceptedLogSeverity, g_allDbNames
 
     fDemon = arsutils.fDetectRemoveCmdFlag("-demon")
     if not fDemon:
@@ -1103,42 +1230,43 @@ def main():
         print "using psyco"
         psyco.full()
 
-    dbsInfo = getIpediaDbs()
-    dbNames = dbsInfo.keys()
-    if 0==len(dbNames):
+    detectAvailableDbs()
+    if 0==len(g_allDbsInfo):
         print "No databases available"
         sys.exit(0)
 
-    dbNames.sort()
-
     fListDbs = arsutils.fDetectRemoveCmdFlag("-listdbs")
     if fListDbs:
-        for name in dbNames:
+        for name in g_allDbNames:
             print name
         sys.exit(0)
 
-    dbName=arsutils.getRemoveCmdArg("-db")
+    enDb = arsutils.getRemoveCmdArg("-en")
+    frDb = arsutils.getRemoveCmdArg("-fr")
+    deDb = arsutils.getRemoveCmdArg("-de")
 
     if len(sys.argv) != 1:
         usageAndExit()
 
+    # TODO: temporary hack
+    dbName = "ipedia_fr_20040908"
     if dbName:
-        if dbName in dbNames:
+        if dbName in g_allDbNames:
             print "Using database '%s'" % dbName
         else:
             print "Database '%s' doesn't exist" % dbName
             print "Available databases:"
-            for name in dbNames:
+            for name in g_allDbNames:
                 print "  %s" % name
             sys.exit(0)
     else: 
-        dbName=dbNames[-1] # use the latest database
+        dbName = g_allDbNames[-1] # use the latest database
         print "Using database '%s'" % dbName
 
     if fDemon:
         arsutils.daemonize('/dev/null','/tmp/ipedia.log','/tmp/ipedia.log')
 
-    factory=iPediaFactory(dbName)
+    factory = iPediaFactory(dbName)
     reactor.listenTCP(9000, factory)
     reactor.listenTCP(9001, iPediaTelnetFactory(factory))
     reactor.run()
