@@ -83,7 +83,7 @@ class Request:
         self.transactionId = "%x" % random.randint(0, 2**16-1)
 
         self.addField(protocolVersionField, self.protocolVer)
-        self.addField(clientVersionField,   self.clientVer)
+        self.addField(clientInfoField,      self.clientVer)
         self.addField(transactionIdField,   self.transactionId)
 
     # we expose addLine() so that clients can also create malformed requests

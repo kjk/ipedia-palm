@@ -45,13 +45,11 @@ g_fVerbose = None
 # Response: none
 # Currently we only have one protocol of version 1.
 protocolVersionField =  "Protocol-Version"
-# Client-version is sent by a client with every request. It's purely informational
-# field that enables us to track which versions are used.
-# Value: version of the client, by convention it matches the software version of the client
+# Client-Info is sent by a client with every request. It's purely informational
+# field that enables us to track what kinds of clients/devices are used most.
+# Value: version of the client e.g. "Palm 1.0", "Smartphone 0.5" etc.
 # Response: none
-# TODO: change it to Client-Info which includes both version and the platform
-# e.g. "palm 0.5" or "smartphone 1.0". This allows better tracking.
-clientVersionField =    "Client-Version"
+clientInfoField    =    "Client-Info"
 # Transaction-ID is sent by the client and echoed by the server.
 # Value: transaction id (arbitrary string)
 # Client uses it to match server response with requests
@@ -155,7 +153,7 @@ regCodeValidField =     "Registration-Code-Valid"
 # validity of the request
 validClientFields = {
   protocolVersionField   : True,
-  clientVersionField     : True,
+  clientInfoField        : True,
   transactionIdField     : True,
   cookieField            : True,
   getCookieField         : True,
@@ -751,7 +749,7 @@ class iPediaProtocol(basic.LineReceiver):
                 self.transactionId = value
             elif protocolVersionField == field:
                 self.protocolVersion = value
-            elif clientVersionField == field:
+            elif clientInfoField == field:
                 self.clientVersion = value
             elif getCookieField == field:
                 self.deviceInfoToken = value
