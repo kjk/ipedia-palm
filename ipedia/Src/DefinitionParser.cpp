@@ -141,11 +141,13 @@ void DefinitionParser::decodeHTMLCharacterEntityRefs(String& text) const
                 String entity(text, entityStart+1, index-entityStart-1);
                 if (!entity.empty() && entity[0]=='#')
                 {
-                    signed long numVal=tatoi(entity.c_str()+1);
-                    if (numVal<0 || numVal>255)
-                        chr=chrNull;
+                    long numVal;
+                    const char* begin=entity.c_str();
+                    status_t err=ArsLexis::numericValue(begin+1, begin+entity.length()-1, numVal);
+                    if (errNone!=err || numVal<0 || numVal>255)
+                        chr=1;
                     else
-                        chr=(char_t)numVal;
+                        chr=char_t(numVal);
                 }
                 else
                     chr=1;
@@ -671,7 +673,7 @@ void DefinitionParser::parseTextLine()
 status_t DefinitionParser::handleIncrement(const String& text, ulong_t& length, bool finish)
 {
     status_t error=errNone;
-    ErrTryT {
+    ErrTry {
         text_=&text;
         parsePosition_=0;
         lineEnd_=0;
@@ -740,10 +742,10 @@ status_t DefinitionParser::handleIncrement(const String& text, ulong_t& length, 
         if (!finish)
             length=parsePosition_;
     }
-    ErrCatchT (ex)
+    ErrCatch (ex) {
         clear();
         error=ex;
-    } ErrEndCatchT       
+    } ErrEndCatch
     return error;
 }
 
