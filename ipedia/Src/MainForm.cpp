@@ -913,10 +913,10 @@ void MainForm::changeDatabase()
         return;
     }
 
-    char_t **strList = StringListFromString(availableLangs, " ", app().strListSize_);
+    char_t **strList = StringListFromString(availableLangs, " ", app().strListSize);
     char_t *fullName;
 
-    for (int i=0; i<app().strListSize_; i++)
+    for (int i=0; i<app().strListSize; i++)
     {
         if (0==tstrcmp(strList[i],_T("en")) )
         {
@@ -928,7 +928,7 @@ void MainForm::changeDatabase()
         }
         else if (0==tstrcmp(strList[i],_T("de")) )
         {
-            fullName = "Germand (de)";
+            fullName = "German (de)";
         }
         else
         {
@@ -939,7 +939,7 @@ void MainForm::changeDatabase()
         strList[i] = StringCopy(fullName);
     }
 
-    app().strList_ = strList;
+    app().strList = strList;
 
     Application::popupForm(stringListSelectDbId);
 }
@@ -952,7 +952,7 @@ void MainForm::doDbSelected(EventType& event)
     if (NOT_SELECTED == selectedStr)
         goto Exit;
 
-    char_t *fullName = app().strList_[selectedStr];
+    char_t *fullName = app().strList[selectedStr];
     // a hack: lang is what is inside "(" and ")"
     while (*fullName && (*fullName!='('))
         ++fullName;

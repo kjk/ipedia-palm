@@ -41,6 +41,10 @@ g_fDumpPayload = False
 DEFINITION_FORMAT_VERSION = "1"
 PROTOCOL_VERSION = "1"
 
+# list of supported languages. also defines the order in which we return
+# languages in Available-Languages
+g_supportedLangs = ["en", "de", "fr"]
+
 # for some reason we count more things as articles than WikiPedia. In order
 # to not look like we have more than them, we substract ARTICLE_COUNT_DELTA
 # to the number of articles we show to people. This is just a guess - we want
@@ -103,8 +107,8 @@ def getCurrDbForLang(lang):
         return None
 
 def getAllLangs():
-    global g_dbInfoPerLang
-    langs = g_dbInfoPerLang.keys()
+    global g_dbInfoPerLang, g_supportedLangs
+    langs = [lang for lang in g_supportedLangs if g_dbInfoPerLang.has_key(lang)]
     return string.join(langs," ")
 
 def createManagementConnection():
@@ -1041,8 +1045,6 @@ class iPediaFactory(protocol.ServerFactory):
         pass
 
     protocol = iPediaProtocol
-
-g_supportedLangs = ["en", "fr", "de"]
 
 dbDateRe = re.compile("[0-9]{8}", re.I)
 def fDbDate(dbDate):

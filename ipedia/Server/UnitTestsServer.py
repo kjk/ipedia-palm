@@ -226,6 +226,9 @@ class ServerTests(unittest.TestCase):
         self.getResponse([Fields.transactionId,Fields.error])
         self.assertError(ServerErrors.malformedRequest)
 
+    def reqWithCookie(self,fieldName,fieldValue):
+        self.req = getRequestHandleCookie(fieldName,fieldValue)
+
     def test_DuplicateField(self):
         self.req = getRequestHandleCookie(Fields.getArticleCount, None)
         self.req.addField(Fields.getArticleCount, None)
@@ -314,6 +317,17 @@ class ServerTests(unittest.TestCase):
         self.req.addField(Fields.getArticle, "seattle")
         self.getResponse([Fields.transactionId,Fields.error])
         self.assertError(ServerErrors.unsupportedDevice)
+
+    def test_InvalidLang(self):
+        self.reqWithCookie(Fields.useLang, "invalidLang")
+        self.req.addField(Fields.getArticleCount, None)
+        self.getResponse([Fields.transactionId,Fields.error])
+        self.assertError(ServerErrors.langNotAvailable)
+
+    def test_availableLangs(self):
+        self.reqWithCookie(Fields.getAvailableLangs, None)
+        self.getResponse([Fields.transactionId, Fields.availableLangs])
+        self.assertEqual("en de fr", self.rsp.getField(Fields.availableLangs))
 
     # verify that a registered user doesn't trigger lookup limits
     def test_RegisteredNoLookupLimits(self):
