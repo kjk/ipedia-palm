@@ -270,11 +270,13 @@ def convertArticles(sqlDump,dbName,articleLimit):
     # go over articles again (hopefully now using the cache),
     # convert them to a destination format (including removing invalid links)
     # and insert into a database
+    sizeStats = {}
     count = 0
     convWriter = wikipediasql.ConvertedArticleCacheWriter(sqlDump)
     convWriter.open()
     for article in wikipediasql.iterWikipediaArticles(sqlDump,articleLimit,True,False):
         title = article.getTitle()
+        articleSize = 0 # 0 is for redirects, which we don't log
         if article.fRedirect():
             convertedArticle = ConvertedArticleRedirect(article.getNamespace(), title, article.getRedirect())
         else:
@@ -284,6 +286,7 @@ def convertArticles(sqlDump,dbName,articleLimit):
             if noLinks:
                 converted = noLinks
             convertedArticle = ConvertedArticle(article.getNamespace(), article.getTitle(), converted)
+            articleSize = len(converted)
 
         #title = title.lower()
         if article.fRedirect():
@@ -304,7 +307,10 @@ def convertArticles(sqlDump,dbName,articleLimit):
                 if g_fVerbose:
                     log_txt += "*New record"
             except:
-                # assuming that the exception happend because of
+                # assuming that the exception happend because of trying to insert
+                # item with a duplicate title (duplication due to lower-case
+                # conversion might convert 2 differnt titles into the same,
+                # lower-cased title)
                 if g_fShowDups:
                     print "dup: " + title
                 if g_fVerbose:
@@ -314,11 +320,24 @@ def convertArticles(sqlDump,dbName,articleLimit):
             if g_fVerbose:
                 print log_txt
         convWriter.write(convertedArticle)
+        if articleSize != 0:
+            if not sizeStats.has_key(articleSize):
+                sizeStats[articleSize] = 1
+            else:
+                sizeStats[articleSize] = sizeStats[articleSize]+1
         count += 1
         if count % 1000 == 0:
             sys.stderr.write("phase 2 processed %d, last title=%s\n" % (count,article.getTitle()))
-
     convWriter.close()
+    # dump size stats to a file
+    statsFileName = wikipediasql.getSizeStatsFileName(sqlDump)
+    statsFo = open(statsFileName, "wb")
+    sizes = sizeStats.keys()
+    sizes.sort()
+    for size in sizes:
+        count = sizeStats[size]
+        statsFo.write("%d\t\t%d\n" % (size,count))
+    statsFo.close()
 
 g_dbList = None
 # return a list of databases on the server
@@ -517,13 +536,20 @@ if __name__=="__main__":
     sqlDump = sys.argv[1]
 
     dbName = getDbNameFromFileName(sqlDump)
+    foLog = None
     try:
         createIpediaDb(sqlDump,dbName,fRecreateDb,fRecreateDataDb)
         timer = arsutils.Timer(fStart=True)
+        logFileName = wikipediasql.getLogFileName(sqlDump)
+        foLog = open(logFileName, "wb")
+        sys.stdout = foLog
+        sys.stderr = foLog
         convertArticles(sqlDump,dbName,articleLimit)
         timer.stop()
         timer.dumpInfo()
         createFtIndex()
     finally:
         deinitDatabase()
+        if None != foLog:
+            foLog.close()
 

@@ -191,6 +191,12 @@ def getConvIdxFileName(inFileName):
 def getConvBodyFileName(inFileName):
     return genBaseAndSuffix(inFileName,"_conv_body.txt")
 
+def getSizeStatsFileName(inFileName):
+    return genBaseAndSuffix(inFileName, "_size_stats.txt")
+
+def getLogFileName(inFileName):
+    return genBaseAndSuffix(inFileName, "_log.txt")
+
 def fConvertedCacheExists(sqlDumpFileName):
     txtName=  getConvBodyFileName(sqlDumpFileName)
     idxFileName = getConvIdxFileName(sqlDumpFileName)
