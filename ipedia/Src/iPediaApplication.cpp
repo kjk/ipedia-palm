@@ -2,7 +2,9 @@
 #include "iPediaApplication.hpp"
 #include <SysUtils.hpp>
 #include <DeviceInfo.hpp>
-#include <StringListForm.hpp>
+
+//#include <StringListForm.hpp>
+
 #include "MainForm.hpp"
 #include "RegistrationForm.hpp"
 #include "SearchResultsForm.hpp"
@@ -68,6 +70,9 @@ iPediaApplication::~iPediaApplication()
         delete lookupManager_;
     if (NULL != history_)
         delete history_;
+        
+    if (NULL != strList)
+        FreeStringList(strList, strListSize);
 }
 
 Err iPediaApplication::normalLaunch()
@@ -129,7 +134,7 @@ void iPediaApplication::waitForEvent(EventType& event)
 Form* iPediaApplication::createForm(UInt16 formId)
 {
     Form* form;
-    StringListForm *strListForm;
+//    StringListForm *strListForm;
 
     switch (formId)
     {
@@ -144,6 +149,8 @@ Form* iPediaApplication::createForm(UInt16 formId)
         case searchResultsForm:
             form = new SearchResultsForm(*this);
             break;
+
+/*
 
         case stringListSelectDbId:
             strListForm = new StringListForm(*this, (uint_t)stringListForm, (uint_t)stringList, (uint_t)selectButton, (uint_t)cancelButton);
@@ -168,6 +175,8 @@ Form* iPediaApplication::createForm(UInt16 formId)
             strListForm->SetStringList(strListSize, strList, appLinkingArticlesStringSelected);
             form = strListForm;
             break;
+
+*/
 
         default:
             assert(false);

@@ -5,6 +5,7 @@
 #include "LookupHistory.hpp"
 #include <SysUtils.hpp>
 #include <Text.hpp>
+#include <StringListForm.hpp>
 
 #include <FormattedTextElement.hpp>
 #include <LineBreakElement.hpp>
@@ -834,10 +835,13 @@ void MainForm::doHistory()
     if (NULL==lookupManager)
         return;
     LookupHistory& lookupHistory = lookupManager->getHistory();
+    if (lookupHistory.empty())
+        return;
     const StringList_t& history = lookupHistory.getHistory();
-    app().strList = StringListFromStringList(history, app().strListSize);
-//    ReverseStringList(app().strList, app().strListSize);
-    Application::popupForm(stringListHistoryId);
+    StringListForm* form = new StringListForm(app(), stringListForm, stringList, selectButton, cancelButton, iPediaApplication::appHistoryStringSelected);
+    app().strList = StringListFromStringList(history, app().strListSize); 
+    form->SetStringList(app().strListSize, app().strList);
+    form->popup();
 }
 
 void MainForm::doLookupSelectedTerm(EventType& event)
@@ -855,21 +859,18 @@ void MainForm::doLookupSelectedTerm(EventType& event)
         lookupManager->lookupIfDifferent(term, app().preferences().currentLang);
 
 Exit:
-    if (NULL!=app().strList)
-    {
-        for (int i=0; i<app().strListSize; i++)
-        {
-            delete [] app().strList[i];
-        }
-    }
+
+    FreeStringList(app().strList, app().strListSize);
     app().strList = NULL;
 }
 
 void MainForm::doLinkedArticles()
 {
     Definition& def = currentDefinition();
-    Application::popupForm(stringListLinkedArticlesId);
+    StringListForm* form = new StringListForm(app(), stringListForm, stringList, selectButton, cancelButton, iPediaApplication::appLinkedArticlesStringSelected);
     app().strList = ExtractLinksFromDefinition(def, app().strListSize);
+    form->SetStringList(app().strListSize, app().strList);
+    form->popup();
 }
 
 void MainForm::doLinkingArticles()
@@ -878,15 +879,15 @@ void MainForm::doLinkingArticles()
     if (NULL==lookupManager)
         return;
 
-    String& reverseLinks = lookupManager->lastReverseLinks();
+    StringListForm* form = new StringListForm(app(), stringListForm, stringList, selectButton, cancelButton, iPediaApplication::appLinkingArticlesStringSelected);
+    const String& reverseLinks = lookupManager->lastReverseLinks();
     app().strList = StringListFromString(reverseLinks, "\n", app().strListSize);
-
     for (int i=0; i<app().strListSize; i++)
     {
         replaceCharInString(app().strList[i], _T('_'), _T(' '));
     }
-
-    Application::popupForm(stringListLinkingArticlesId);
+    form->SetStringList(app().strListSize, app().strList);
+    form->popup();
 }
 
 void MainForm::changeDatabase()
@@ -918,12 +919,13 @@ void MainForm::changeDatabase()
         nameToDisplay.append(_T(")"));
 
         delete [] strList[i];
-        strList[i] = StringCopy(nameToDisplay.c_str());
+        strList[i] = StringCopy(nameToDisplay);
     }
 
     app().strList = strList;
-
-    Application::popupForm(stringListSelectDbId);
+    StringListForm* form = new StringListForm(app(), stringListForm, stringList, selectButton, cancelButton, iPediaApplication::appDbnameStringSelected);
+    form->SetStringList(app().strListSize, app().strList);
+    form->popup();
 }
 
 void MainForm::doDbSelected(EventType& event)
@@ -959,13 +961,7 @@ void MainForm::doDbSelected(EventType& event)
     }
 
 Exit:
-    if (NULL!=app().strList)
-    {
-        for (int i=0; i<app().strListSize; i++)
-        {
-            delete [] app().strList[i];
-        }
-    }
+    FreeStringList(app().strList, app().strListSize);
     app().strList = NULL;
 }
 

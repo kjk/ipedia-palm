@@ -63,6 +63,8 @@ public:
 
     const StringList_t& getHistory() const {return termHistory_;}
     
+    bool empty() const {return termHistory_.empty();}
+    
 };
 
 #endif
