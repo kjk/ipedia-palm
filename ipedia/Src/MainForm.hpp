@@ -6,6 +6,7 @@
 #include "iPediaForm.hpp"
 #include <TextRenderer.hpp>
 #include "iPediaApplication.hpp"
+#include "iPediaRenderingProgressReporter.hpp"
 
 class LookupHistory;
 class RenderingPreferences;
@@ -62,26 +63,7 @@ class PediaMainForm: public iPediaForm
     
     void updateNavigationButtons();
     
-    class RenderingProgressReporter: public Definition::RenderingProgressReporter
-    {
-        PediaMainForm& form_;
-        UInt32 ticksAtStart_;
-        uint_t lastPercent_;
-        bool showProgress_:1;
-        bool afterTrigger_:1;
-        ArsLexis::String waitText_;
-        
-    public:
-        
-        RenderingProgressReporter(PediaMainForm& form);
-        
-        virtual void reportProgress(uint_t percent);
-
-    };
-    
-    friend class RenderingProgressReporter;
-    
-    RenderingProgressReporter renderingProgressReporter_;
+    iPediaRenderingProgressReporter renderingProgressReporter_;
     
     void prepareAbout();
 
