@@ -145,22 +145,19 @@ ArsLexis::status_t iPediaConnection::enqueue()
 
 ArsLexis::status_t iPediaConnection::open()
 {
-    
     prepareRequest();
     ArsLexis::status_t error=SimpleSocketConnection::open();
     if (error)
         return error;
 
-    String status;
 #ifdef DETAILED_CONNECTION_STATUS
     // sometimes we want to see detailed info about the connection stages
     // but for users we simplify as much as possible
-    status=_T("Sending requests...");
-#else
-    status=_T("Downloading article...");
+    lookupManager_.setStatusText(_T("Sending requests..."));
+#else    
+    lookupManager_.setStatusText(_T("Downloading article..."));
 #endif
 
-    lookupManager_.setStatusText(status);
     ArsLexis::sendEvent(LookupManager::lookupProgressEvent);
 
 #if defined(_PALM_OS)        
@@ -201,7 +198,7 @@ ArsLexis::status_t iPediaConnection::notifyProgress()
         else
             status = _T("Downloading article...");
     }
-    lookupManager_.setStatusText(status);
+    lookupManager_.setStatusText(status.c_txt());
 #else
     lookupManager_.setStatusText(_T("Downloading article..."));
 #endif

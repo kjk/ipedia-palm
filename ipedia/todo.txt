@@ -1,0 +1,1 @@
+## 1. remove timeline in the parser e.g. "List of Federal Presidents of Austria"
