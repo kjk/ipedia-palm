@@ -824,7 +824,8 @@ void MainForm::doHistory()
     if (lookupHistory.empty())
         return;
     const StringList_t& history = lookupHistory.getHistory();
-    app().strList = StringListFromStringList(history, app().strListSize); 
+    app().strList = StringListFromStringList(history, app().strListSize);
+    ReverseStringList(app().strList, app().strListSize);
     int sel = showStringListForm(app().strList, app().strListSize);
     doLookupSelectedTerm(sel);    
 }
