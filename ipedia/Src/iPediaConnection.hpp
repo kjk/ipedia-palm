@@ -1,15 +1,16 @@
 #ifndef __DEFINITION_REQUEST_CONNECTION_HPP__
 #define __DEFINITION_REQUEST_CONNECTION_HPP__
 
-#include <FieldPayloadProtocolConnection.hpp>
 #include "LookupManager.hpp"
+#include <FieldPayloadProtocolConnection.hpp>
+#include <BaseTypes.hpp>
 
 class DefinitionParser;
 
 class iPediaConnection: public ArsLexis::FieldPayloadProtocolConnection
 {
     LookupManager& lookupManager_;
-    UInt32 transactionId_;
+    ulong_t transactionId_;
     ArsLexis::String term_;
     uint_t formatVersion_;
     ArsLexis::String resultsFor_;
@@ -24,7 +25,7 @@ class iPediaConnection: public ArsLexis::FieldPayloadProtocolConnection
         statusStringRetrievingResponse
     };        
     
-    class SearchResultsHandler: public PayloadHandler
+    class SearchResultsHandler: public ArsLexis::FieldPayloadProtocolConnection::PayloadHandler
     {
         ArsLexis::String searchResults_;
 
@@ -33,7 +34,7 @@ class iPediaConnection: public ArsLexis::FieldPayloadProtocolConnection
         SearchResultsHandler()
         {}
         
-        Err handleIncrement(const ArsLexis::String& text, ulong_t& length, bool finish)
+        ArsLexis::status_t handleIncrement(const ArsLexis::String& text, ulong_t& length, bool finish)
         {
             if (finish)
                 searchResults_.assign(text, 0, length);
@@ -62,21 +63,21 @@ class iPediaConnection: public ArsLexis::FieldPayloadProtocolConnection
 
 protected:
 
-    Err notifyFinished();
+    ArsLexis::status_t notifyFinished();
     
-    void handleError(Err error);
+    void handleError(ArsLexis::status_t error);
     
-    Err handleField(const ArsLexis::String& name, const ArsLexis::String& value);
+    ArsLexis::status_t handleField(const ArsLexis::String& name, const ArsLexis::String& value);
     
     void notifyPayloadFinished();
     
-    Err notifyProgress();
+    ArsLexis::status_t notifyProgress();
 
-    Err open();
+    ArsLexis::status_t open();
     
 public:
 
-    Err enqueue();
+    ArsLexis::status_t enqueue();
 
     iPediaConnection(LookupManager& lm);
     

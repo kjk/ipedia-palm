@@ -5,13 +5,14 @@
 #include <DeviceInfo.hpp>
 #include <Text.hpp>
 #include "LookupManager.hpp"
+#include "ipedia.h"
 
 using namespace ArsLexis;
 
 iPediaConnection::iPediaConnection(LookupManager& lookupManager):
     FieldPayloadProtocolConnection(lookupManager.connectionManager()),
     lookupManager_(lookupManager),
-    transactionId_(random((UInt32)-1)),
+    transactionId_(random((ulong_t)-1)),
     formatVersion_(0),
     definitionParser_(0),
     searchResultsHandler_(0),
@@ -31,25 +32,25 @@ iPediaConnection::~iPediaConnection()
     delete searchResultsHandler_;
 }
 
-#define protocolVersion "1"
+#define protocolVersion _T("1")
 
-#define transactionIdField      "Transaction-ID"
-#define protocolVersionField    "Protocol-Version"
-#define clientVersionField      "Client-Version"
-#define getCookieField          "Get-Cookie"
-#define getDefinitionField      "Get-Definition"
-#define getRandomDefField       "Get-Random-Definition"
-#define cookieField             "Cookie"
-#define registerField           "Register"
-#define formatVersionField      "Format-Version"
-#define resultsForField         "Results-For"
-#define definitionField         "Definition"
-#define errorField              "Error"
-#define notFoundField           "Not-Found"
-#define searchField             "Search"
-#define searchResultsField      "Search-Results"
-#define getArticleCountField    "Get-Article-Count"
-#define articleCountField       "Article-Count"
+#define transactionIdField      _T("Transaction-ID")
+#define protocolVersionField    _T("Protocol-Version")
+#define clientVersionField      _T("Client-Version")
+#define getCookieField          _T("Get-Cookie")
+#define getDefinitionField      _T("Get-Definition")
+#define getRandomDefField       _T("Get-Random-Definition")
+#define cookieField             _T("Cookie")
+#define registerField           _T("Register")
+#define formatVersionField      _T("Format-Version")
+#define resultsForField         _T("Results-For")
+#define definitionField         _T("Definition")
+#define errorField              _T("Error")
+#define notFoundField           _T("Not-Found")
+#define searchField             _T("Search")
+#define searchResultsField      _T("Search-Results")
+#define getArticleCountField    _T("Get-Article-Count")
+#define articleCountField       _T("Article-Count")
 
 void iPediaConnection::prepareRequest()
 {
@@ -57,8 +58,8 @@ void iPediaConnection::prepareRequest()
     String request;
     appendField(request, protocolVersionField, protocolVersion);
     appendField(request, clientVersionField, appVersion);
-    char buffer[9];
-    StrPrintF(buffer, "%lx", transactionId_);
+    char_t buffer[9];
+    tprintf(buffer, _T("%lx"), transactionId_);
     appendField(request, transactionIdField, buffer);
     if (chrNull==app.preferences().cookie[0])
         appendField(request, getCookieField, deviceInfoToken());
@@ -85,9 +86,9 @@ void iPediaConnection::prepareRequest()
     setRequest(request); 
 }
 
-Err iPediaConnection::enqueue()
+ArsLexis::status_t iPediaConnection::enqueue()
 {
-    Err error=FieldPayloadProtocolConnection::enqueue();
+    ArsLexis::status_t error=FieldPayloadProtocolConnection::enqueue();
     if (error)
         return error;
 
@@ -97,7 +98,7 @@ Err iPediaConnection::enqueue()
 #else
     // I don't really see the value of storing strings in resuources (if we don't
     // have localizations for different languages)
-    String status = "Downloading article"
+    String status = _T("Downloading article");
 #endif
     lookupManager_.setStatusText(status);
     lookupManager_.setPercentProgress(LookupManager::percentProgressDisabled);
@@ -106,16 +107,21 @@ Err iPediaConnection::enqueue()
 }
 
 
-Err iPediaConnection::open()
+ArsLexis::status_t iPediaConnection::open()
 {
     
     prepareRequest();
-    Err error=SimpleSocketConnection::open();
+    ArsLexis::status_t error=SimpleSocketConnection::open();
     if (error)
         return error;
 
     String status;
-    getResource(connectionStatusStrings, statusStringSendingRequest, status);
+    #if defined(_PALM_OS)        
+        getResource(connectionStatusStrings, statusStringSendingRequest, status);
+    #else
+        status=_T("Opening connection to server...");
+    #endif
+
     lookupManager_.setStatusText(status);
     ArsLexis::sendEvent(LookupManager::lookupProgressEvent);
         
@@ -136,16 +142,21 @@ Err iPediaConnection::open()
     return errNone;
 }
 
-Err iPediaConnection::notifyProgress()
+ArsLexis::status_t iPediaConnection::notifyProgress()
 {
-    Err error=FieldPayloadProtocolConnection::notifyProgress();
+    ArsLexis::status_t error=FieldPayloadProtocolConnection::notifyProgress();
     if (!error)
     {
         String status;
         StatusString index=statusStringSendingRequest;
         if (!sending())
             index=(response().empty()?statusStringWaitingForAnswer:statusStringRetrievingResponse);
-        getResource(connectionStatusStrings, index, status);
+        #if defined(_PALM_OS)        
+            getResource(connectionStatusStrings, index, status);
+        #else
+            status=_T("Receiving...");
+        #endif
+
         lookupManager_.setStatusText(status);
         uint_t progress=LookupManager::percentProgressDisabled;
         if (inPayload())
@@ -157,10 +168,10 @@ Err iPediaConnection::notifyProgress()
 }
 
 
-Err iPediaConnection::handleField(const String& name, const String& value)
+ArsLexis::status_t iPediaConnection::handleField(const String& name, const String& value)
 {
     long numValue;
-    Err error=errNone;
+    ArsLexis::status_t error=errNone;
     if (0==name.find(transactionIdField))
     {
         error=numericValue(value, numValue, 16);
@@ -240,9 +251,9 @@ Err iPediaConnection::handleField(const String& name, const String& value)
     return error;
 }
 
-Err iPediaConnection::notifyFinished()
+ArsLexis::status_t iPediaConnection::notifyFinished()
 {
-    Err error=FieldPayloadProtocolConnection::notifyFinished();
+    ArsLexis::status_t error=FieldPayloadProtocolConnection::notifyFinished();
     if (!error)
     {
         LookupFinishedEventData data;
@@ -280,9 +291,9 @@ Err iPediaConnection::notifyFinished()
     return error;        
 }
 
-void iPediaConnection::handleError(Err error)
+void iPediaConnection::handleError(ArsLexis::status_t error)
 {
-    log().error()<<"handleError(): error code "<<error;
+    log().error()<<_T("handleError(): error code ")<<error;
     LookupFinishedEventData data(LookupFinishedEventData::outcomeError, error);
     ArsLexis::sendEvent(LookupManager::lookupFinishedEvent, data);
     SimpleSocketConnection::handleError(error);
