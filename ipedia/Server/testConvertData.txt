@@ -283,3 +283,10 @@ Over the years, Grace has been the subject of two biographies. The first, writte
 test
 }}
 @
+@40
+{{multi line macro
+}}
+do not remove
+{{another macro}}
+@
+do not remove
