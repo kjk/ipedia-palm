@@ -10,30 +10,9 @@
 #include <LineBreakElement.hpp>
 #include <ParagraphElement.hpp>
 
-using namespace ArsLexis;
+#include <Locale.hpp>
 
-static const char_t* GetLangNameByLangCode(const String& langCode)
-{
-    if (langCode.empty() || "en"==langCode)
-    {
-        return "English";
-    }
-    else if ("fr" == langCode)
-    {
-        return "French";
-    }
-    else if ("de" == langCode)        
-    {
-        return "German";
-    }
-    else
-    {
-        assert(false);
-        return "Unknown";
-    }
-    assert(false);
-    return NULL;
-}
+using namespace ArsLexis;
 
 static char_t **ExtractLinksFromDefinition(Definition& def, int& strListSize)
 {
@@ -462,6 +441,9 @@ void MainForm::updateArticleCountEl(long articleCount, ArsLexis::String& dbTime)
 
     const String& langCode = app().preferences().currentLang;
     const char_t* langName = GetLangNameByLangCode(langCode);
+    if (NULL == langName)
+        langName = _T("Unknown");
+        
     articleCountText.append(langName);
 
     articleCountText.append(" encyclopedia last updated on ");
@@ -914,19 +896,19 @@ void MainForm::changeDatabase()
     }
 
     char_t **strList = StringListFromString(availableLangs, " ", app().strListSize);
-    char_t *fullName;
+    const char_t* fullName;
 
     for (int i=0; i<app().strListSize; i++)
     {
-        if (0==tstrcmp(strList[i],_T("en")) )
+        if (0==tstrcmp(strList[i], _T("en")) )
         {
             fullName = "English (en)";
         }
-        else if (0==tstrcmp(strList[i],_T("fr")) )
+        else if (0==tstrcmp(strList[i], _T("fr")) )
         {
             fullName = "French (fr)";
         }
-        else if (0==tstrcmp(strList[i],_T("de")) )
+        else if (0==tstrcmp(strList[i], _T("de")) )
         {
             fullName = "German (de)";
         }

@@ -193,7 +193,7 @@ def supportedLanguagesRe():
 
 commentRe=re.compile("<!--.*?-->", re.S)
 scriptRe=re.compile("<script.*?</script>", re.I+re.S)
-badLinkRe=re.compile(r"\[\[((\w\w\w?(-\w\w)?)|(simple)|(image)|(media)|(tokipona)):.*?\]\]", re.I+re.S)
+badLinkRe=re.compile(r"\[\[((\w+?(-\w\w)?)|(simple)|(image)|(media)|(tokipona)):.*?\]\]", re.I+re.S)
 
 multipleLinesRe=re.compile("\n{3,100}")
 # replace multiple (1+) empty lines with just one empty line.
@@ -219,7 +219,7 @@ wikiMacroRe=re.compile("\{\{((msg)|(subst))\:.*?\}\}", re.I)
 
 wikiTemplateRe=re.compile("\{\{.*\}\}", re.I)
 
-categoryRe=re.compile("\[\[Category:.*\]\]", re.I)
+#categoryRe=re.compile("\[\[Category:.*\]\]", re.I)
 
 def replaceWikiMacros(text):
     for (macro,replacement) in wikiMacrosReplacements.items():
@@ -243,7 +243,7 @@ def convertArticle(term, text):
         # remove categories. TODO: provide a better support for categories
         # i.e. we remember categories on the server and client can display
         # all articles in a given category
-        text=replaceRegExp(text, categoryRe, '')
+#        text=replaceRegExp(text, categoryRe, '')
         text=replaceWikiMacros(text)
         # remove remaining templates. TODO: better support for templates
         # in wikipedia template text is replaced by a page from Template:
@@ -321,6 +321,14 @@ def articleExtractLinksSimple(articleTxt):
     return links
 
 def fValidLink(link,redirects,articlesLinks):
+    import wikiToDbConvert
+    pos = link.find(':')
+    if -1 != pos:
+        lang = link[:pos]
+        if lang in wikiToDbConvert.g_supportedLanguages:
+            # don't validate multilingual links
+            return True
+            
     if redirects.has_key(link) or articlesLinks.has_key(link):
         return True
     return False

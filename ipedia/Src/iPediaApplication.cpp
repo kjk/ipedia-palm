@@ -62,9 +62,11 @@ Err iPediaApplication::initialize()
 
 iPediaApplication::~iPediaApplication()
 {
-    delete lookupManager_;
-    delete history_;
-    server_.clear();
+    // Don't remove if or expect crash on non-global launch. I really KNOW that you can delete NULL. But not here.
+    if (NULL != lookupManager_)
+        delete lookupManager_;
+    if (NULL != history_)
+        delete history_;
 }
 
 Err iPediaApplication::normalLaunch()

@@ -99,13 +99,15 @@ def utf8ToLatin1(text):
 
 class WikipediaArticleFromSql:
     def __init__(self, row, isUtf8 = False):
+        import entities
         self.row = row
         assert not fInvalidRedirect(row)
         self.md5Hash = None
         txt = row[CUR_TEXT]
         if isUtf8:
+            title = utf8ToLatin1(self.row[CUR_TITLE])
+            self.row[CUR_TITLE] = entities.convertNumberedEntities(title, title)
             txt = utf8ToLatin1(txt)
-            self.row[CUR_TITLE] = utf8ToLatin1(self.row[CUR_TITLE])
             
         #redirectNum = int(row[CUR_IS_REDIRECT])
         #assert redirectNum==0 or redirectNum==1
@@ -117,7 +119,7 @@ class WikipediaArticleFromSql:
         # we treat it as redirect anyway
         redirect = getRedirectFromText(txt)
         if redirect:
-            self.redirect = redirect.replace(" ", "_")
+            self.redirect = entities.convertNumberedEntities(self.row[CUR_TITLE], redirect.replace(" ", "_"))
             if int(row[CUR_IS_REDIRECT])==0:
                 # redirect not marked as such
                 print "%s is a redirect but not marked as such" % self.getTitle()

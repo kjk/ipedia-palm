@@ -8,13 +8,9 @@
 #include <memory>
 #include <Utility.hpp>
 #include <Text.hpp>
+#include <Locale.hpp>
 
-using ArsLexis::String;
-using ArsLexis::FontEffects;
-using ArsLexis::startsWith;
-using ArsLexis::startsWithIgnoreCase;
-using ArsLexis::char_t;
-using ArsLexis::status_t;
+using namespace ArsLexis;
 
 namespace {
     typedef std::auto_ptr<ParagraphElement> ParagraphPtr;
@@ -53,7 +49,7 @@ void DefinitionParser::clear()
     currentNumberedList_.clear();
     numListsStack_.clear();
     lastListNesting_.clear();
-    std::for_each(elements_.begin(), elements_.end(), ArsLexis::ObjectDeleter<DefinitionElement>());
+    std::for_each(elements_.begin(), elements_.end(), ObjectDeleter<DefinitionElement>());
     elements_.clear();
 }
     
@@ -121,6 +117,7 @@ namespace {
 
 }    
 
+/*
 void DefinitionParser::decodeHTMLCharacterEntityRefs(String& text) const
 {
     uint_t length=text.length();
@@ -144,7 +141,7 @@ void DefinitionParser::decodeHTMLCharacterEntityRefs(String& text) const
                 {
                     long numVal;
                     const char_t* begin=entity.c_str();
-                    status_t err=ArsLexis::numericValue(begin+1, begin+entity.length()-1, numVal);
+                    status_t err=numericValue(begin+1, begin+entity.length()-1, numVal);
                     if (errNone!=err || numVal<0 || numVal>255)
                         chr=1;
                     else
@@ -160,13 +157,14 @@ void DefinitionParser::decodeHTMLCharacterEntityRefs(String& text) const
                 }
                 inEntity=false;
             }
-            else if (!(chr=='#' || ArsLexis::isAlNum(chr)))
+            else if (!(chr=='#' || isAlNum(chr)))
                 inEntity=false;
         }
         ++index;
     }
 }
 
+*/
 namespace {
 
     static const char_t indentLineChar=':';
@@ -348,7 +346,7 @@ bool DefinitionParser::detectHyperlink(uint_t end)
         if (hasSeparator)
         {
             textPosition_=separatorPos+1;
-            while (textPosition_<end && ArsLexis::isSpace(textLine_[textPosition_]))
+            while (textPosition_<end && isSpace(textLine_[textPosition_]))
                 ++textPosition_;
         }
         else
@@ -360,7 +358,7 @@ bool DefinitionParser::detectHyperlink(uint_t end)
                 char_t buffer[8];
                 //TODO
                 tprintf(buffer, _T("[%hu]"), unnamedLinksCount_);
-                ArsLexis::String hyperlinkTitle=buffer;
+                String hyperlinkTitle=buffer;
                 createTextElement(hyperlinkTitle, 0, hyperlinkTitle.length());
             }
         }
@@ -372,18 +370,18 @@ bool DefinitionParser::detectHyperlink(uint_t end)
         while (textPosition_<end && linkCloseChar==textLine_[textPosition_])
             ++textPosition_;
         const uint_t pastLinkEnd=textPosition_;
-        while (textPosition_<end && ArsLexis::isAlNum(textLine_[textPosition_]))
+        while (textPosition_<end && isAlNum(textLine_[textPosition_]))
             ++textPosition_;
         if (pastLinkEnd==textPosition_)
         {
             lastElementEnd_=linkEndPos;
-            while (lastElementEnd_>lastElementStart_ && ArsLexis::isSpace(textLine_[lastElementEnd_-1]))
+            while (lastElementEnd_>lastElementStart_ && isSpace(textLine_[lastElementEnd_-1]))
                 --lastElementEnd_;
             createTextElement();
         }
         else 
         {
-            ArsLexis::String text(textLine_, lastElementStart_, lastElementEnd_-lastElementStart_);
+            String text(textLine_, lastElementStart_, lastElementEnd_-lastElementStart_);
             text.append(textLine_, pastLinkEnd, textPosition_-pastLinkEnd);
             createTextElement(text, 0, text.length());
         }
@@ -421,7 +419,7 @@ void DefinitionParser::parseText(uint_t end, ElementStyle style)
         return;
 
     uint_t length=end-parsePosition_;
-    while (length && ArsLexis::isSpace((*text_)[parsePosition_+length-1]))
+    while (length && isSpace((*text_)[parsePosition_+length-1]))
         --length;
     textLine_.assign(*text_, parsePosition_, length);
     parsePosition_=end;
@@ -455,7 +453,18 @@ void DefinitionParser::parseText(uint_t end, ElementStyle style)
 GenericTextElement* DefinitionParser::createTextElement(const String& text, String::size_type start, String::size_type length)
 {
     String copy(text, start, length);
-    decodeHTMLCharacterEntityRefs(copy);
+    String::size_type colonPos;
+    if (insideHyperlink_ && hyperlinkTerm == hyperlinkType_ && String::npos != (colonPos = hyperlinkTarget_.find(_T(':'))))
+    {
+        if (copy == hyperlinkTarget_)
+            copy.erase(0, colonPos+1);
+        String langCode(hyperlinkTarget_, 0, colonPos);
+        const char_t* langName = GetLangNameByLangCode(langCode);
+        if (NULL != langName)
+            copy.append(_T(" (")).append(langName).append(1, _T(')'));
+    }
+// We no longer send HTML entity refs    
+//    decodeHTMLCharacterEntityRefs(copy);
     TextPtr textElement;
     if (isPlainText())
         textElement=TextPtr(new GenericTextElement(copy));
@@ -754,10 +763,10 @@ status_t DefinitionParser::handleIncrement(const String& text, ulong_t& length, 
 //! @todo Add header indexing
 void DefinitionParser::parseHeaderLine()
 {
-    while (parsePosition_<lineEnd_ && (headerChar==(*text_)[parsePosition_] || ArsLexis::isSpace((*text_)[parsePosition_])))
+    while (parsePosition_<lineEnd_ && (headerChar==(*text_)[parsePosition_] || isSpace((*text_)[parsePosition_])))
         ++parsePosition_;
     uint_t lineEnd=lineEnd_;
-    while (lineEnd>parsePosition_ && (headerChar==(*text_)[lineEnd-1] || ArsLexis::isSpace((*text_)[lineEnd-1])))
+    while (lineEnd>parsePosition_ && (headerChar==(*text_)[lineEnd-1] || isSpace((*text_)[lineEnd-1])))
         --lineEnd;
     ParagraphPtr para(new ParagraphElement());
     appendElement(para.get());
@@ -776,17 +785,17 @@ void DefinitionParser::parseListElementLine()
     String elementDesc(*text_, parsePosition_, start-parsePosition_);
     manageListNesting(elementDesc);
     parsePosition_=start;
-    while (parsePosition_<lineEnd_ && ArsLexis::isSpace((*text_)[parsePosition_]))
+    while (parsePosition_<lineEnd_ && isSpace((*text_)[parsePosition_]))
         ++parsePosition_;
     parseText(lineEnd_, styleDefault);
 }
 
 void DefinitionParser::parseDefinitionListLine()
 {
-    while (parsePosition_<lineEnd_ && (definitionListChar==(*text_)[parsePosition_] || ArsLexis::isSpace((*text_)[parsePosition_])))
+    while (parsePosition_<lineEnd_ && (definitionListChar==(*text_)[parsePosition_] || isSpace((*text_)[parsePosition_])))
         ++parsePosition_;
     uint_t lineEnd=lineEnd_;
-    while (lineEnd>parsePosition_ && ArsLexis::isSpace((*text_)[lineEnd-1]))
+    while (lineEnd>parsePosition_ && isSpace((*text_)[lineEnd-1]))
         --lineEnd;
     ParagraphPtr para(new ParagraphElement());
     appendElement(para.get());

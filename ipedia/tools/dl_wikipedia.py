@@ -13,7 +13,7 @@
 
 import sys,string,re,time,urllib2,os,os.path,process
 
-g_workingDir = "g:\\wikipedia\\"
+g_workingDir = "c:\\ArsLexis\\wikipedia\\"
 g_logFileName = g_workingDir + "log.txt"
 
 g_reEnName = re.compile('archives/en/(\d+)_cur_table.sql.bz2', re.I)
@@ -138,7 +138,7 @@ def downloadUrl(url):
         return
     os.chdir(g_workingDir)
     (fileNameGzipped, fileNameUngzipped) = fileNamesFromUrl(url)
-    p = process.ProcessOpen(['wget.exe', '-q', url, '--output-document', fileNameGzipped])
+    p = process.ProcessOpen(['wget.exe', '-c', url, '--output-document', fileNameGzipped])
 
     res_stdout = p.stdout.read()                                     
     res_stderr = p.stderr.read()
