@@ -59,7 +59,7 @@ iPediaHyperlinkHandler::iPediaHyperlinkHandler(UInt16 viewerCardNo, LocalID view
 {
 }
 
-void iPediaHyperlinkHandler::handleHyperlink(Definition& definition, DefinitionElement& element)
+void iPediaHyperlinkHandler::handleHyperlink(Definition& definition, DefinitionElement& element, const Point*)
 {
     assert(element.isTextElement());
     GenericTextElement& textElement=static_cast<GenericTextElement&>(element);

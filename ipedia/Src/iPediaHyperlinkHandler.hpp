@@ -19,7 +19,7 @@ public:
     void setViewerLocation(UInt16 viewerCardNo, LocalID viewerDatabaseId)
     {viewerCardNo_=viewerCardNo; viewerDatabaseId_=viewerDatabaseId;}
 
-    void handleHyperlink(Definition& definition, DefinitionElement& hyperlinkElement);
+    void handleHyperlink(Definition& definition, DefinitionElement& hyperlinkElement, const Point* point = NULL);
     
     ~iPediaHyperlinkHandler();
 };

@@ -165,9 +165,9 @@ void iPediaConnection::prepareRequest()
     }
 
     request += '\n';
-    NarrowString req;
-    TextToByteStream(request, req);
-    setRequest(req); 
+//    NarrowString req;
+//    TextToByteStream(request, req);
+    setRequest(request); 
 }
 
 ArsLexis::status_t iPediaConnection::enqueue()
