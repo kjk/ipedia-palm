@@ -402,7 +402,6 @@ regUsersSql = """CREATE TABLE `registered_users` (
 requestsSql = """CREATE TABLE `requests` (
   `id` int(10) unsigned NOT NULL auto_increment,
   `client_ip` int(10) unsigned NOT NULL default '0',
-  `transaction_id` int(10) unsigned NOT NULL default '0',
   `has_get_cookie_field` tinyint(1) NOT NULL default '0',
   `cookie_id` int(10) unsigned default '0',
   `has_register_field` tinyint(1) NOT NULL default '0',

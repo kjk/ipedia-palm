@@ -292,9 +292,6 @@ class iPediaProtocol(basic.LineReceiver):
         cursor=None
         try:
             db=self.getManagementDatabase()
-            trIdStr='0'
-            if self.transactionId:
-                trIdStr=str(long(self.transactionId, 16))
             hasGetCookie=0
             if self.deviceInfoToken:
                 hasGetCookie=1
@@ -312,8 +309,8 @@ class iPediaProtocol(basic.LineReceiver):
                 defFor='\''+db.escape_string(self.term)+'\''
             cursor=db.cursor()
             clientIp=0
-            query=("""INSERT INTO requests (client_ip, transaction_id, has_get_cookie_field, cookie_id, has_register_field, requested_term, error, definition_for, request_date) """
-                                        """VALUES (%d, %s, %d, %s, %d, %s, %d, %s, now())""" % (clientIp, trIdStr, hasGetCookie, cookieIdStr, hasRegister, reqTerm, self.error, defFor))
+            query=("""INSERT INTO requests (client_ip, has_get_cookie_field, cookie_id, has_register_field, requested_term, error, definition_for, request_date) """
+                                        """VALUES (%d, %d, %s, %d, %s, %d, %s, now())""" % (clientIp, hasGetCookie, cookieIdStr, hasRegister, reqTerm, self.error, defFor))
             cursor.execute(query)
             cursor.close()
         except _mysql_exceptions.Error, ex:
