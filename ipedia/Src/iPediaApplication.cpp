@@ -10,7 +10,7 @@
 
 #include <PrefsStore.hpp>
 
-IMPLEMENT_APPLICATION_INSTANCE(appFileCreator)
+//IMPLEMENT_APPLICATION_INSTANCE(appFileCreator)
 
 using namespace ArsLexis;
 
