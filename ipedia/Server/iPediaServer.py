@@ -13,8 +13,9 @@
 #   -usepsyco : will use psyco, if available
 #   -db name  : use database name
 #   -listdbs  : list all available ipedia databases
+#   -demon    : start in deamon mode
 
-import sys, re, random, datetime, MySQLdb, _mysql_exceptions
+import sys, re, random, time, MySQLdb, _mysql_exceptions
 import arsutils,iPediaDatabase
 from twisted.internet import protocol, reactor
 from twisted.protocols import basic
@@ -378,16 +379,16 @@ class iPediaProtocol(basic.LineReceiver):
         
     def preprocessDefinition(self, db, cursor, definition):
 #        definition=iPediaDatabase.validateInternalLinks(db, cursor, definition)
-        definition=definition.replace("{{CURRENTMONTH}}", str(datetime.date.today().month));
-        definition=definition.replace("{{CURRENTMONTHNAME}}", datetime.date.today().strftime("%B"))
-        definition=definition.replace("{{CURRENTMONTHNAMEGEN}}", datetime.date.today().strftime("%B"))
-        definition=definition.replace("{{CURRENTDAY}}", str(datetime.date.today().day))
-        definition=definition.replace("{{CURRENTDAYNAME}}", datetime.date.today().strftime("%A"))
-        definition=definition.replace("{{CURRENTYEAR}}", str(datetime.date.today().year))
-        definition=definition.replace("{{CURRENTTIME}}", datetime.date.today().strftime("%X"))
+        definition=definition.replace("{{CURRENTMONTH}}", str(int(time.strftime('%m'))));
+        definition=definition.replace("{{CURRENTMONTHNAME}}", time.strftime('%B'))
+        definition=definition.replace("{{CURRENTMONTHNAMEGEN}}", time.strftime("%B"))
+        definition=definition.replace("{{CURRENTDAY}}", str(int(time.strftime("%d"))))
+        definition=definition.replace("{{CURRENTDAYNAME}}", time.strftime("%A"))
+        definition=definition.replace("{{CURRENTYEAR}}", time.strftime("%Y"))
+        definition=definition.replace("{{CURRENTTIME}}", time.strftime("%X"))
         definition=definition.replace("{{NUMBEROFARTICLES}}", str(self.factory.articleCount))
         return definition
-        
+
     def handleDefinitionRequest(self):
         sys.stderr.write( "'%s' returned from handleDefinitionRequest()\n" % self.requestedTerm )
         cursor=None
@@ -685,7 +686,10 @@ class iPediaTelnetFactory(protocol.ServerFactory):
         self.iPediaFactory=otherFactory 
     
     protocol=iPediaTelnetProtocol
-        
+
+def usageAndExit():
+    print "iPediaServer.py [-demon] [-silent] [-usepsyco] [-listdbs] [-db name]"
+    sys.exit(0)        
 
 def main():
     global g_fVerbose, g_fPsycoAvailable
@@ -724,13 +728,19 @@ def main():
     else: 
         dbName=dbs[-1] # use the latest database
 
+    if len(sys.argv) != 1:
+        usageAndExit()
+
     factory=iPediaFactory(dbName)
     reactor.listenTCP(9000, factory)
     reactor.listenTCP(9001, iPediaTelnetFactory(factory))
     reactor.run()
 
 if __name__ == "__main__":
-    #TODO: only for unix
-    #daemonize('/dev/null','/tmp/daemon.log','/tmp/daemon.log')
+    fDemon = arsutils.fDetectRemoveCmdFlag("-demon")
+    if not fDemon:
+        fDemon = arsutils.fDetectRemoveCmdFlag("-daemon")
+    if fDemon:
+        daemonize('/dev/null','/tmp/daemon.log','/tmp/daemon.log')
     main()
 
