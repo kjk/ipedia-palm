@@ -373,9 +373,16 @@ void MainForm::handleLookupFinished(const EventType& event)
 // for the result.
 static int formatNumber(long num, char *buf, int bufSize)
 {
-    char buffer[32];
-    int len = StrPrintF(buffer,"%ld",num);
+    char dontMind;
+    char thousand=',';
 
+#ifndef DONT_LOCALIZE_NUMBERS
+    NumberFormatType nf=static_cast<NumberFormatType>(PrefGetPreference(prefNumberFormat));
+    LocGetNumberSeparators(nf, &thousand, &dontMind);
+#endif
+    
+    char buffer[32];
+    int len = StrPrintF(buffer, "%ld", num);
     int lenOut = len + ((len-1)/3);  // a dot "." every 3 chars
     assert(bufSize>=lenOut+1);
     // copy str in buffer to output buf from the end, adding "." every 3 chars
@@ -394,7 +401,7 @@ static int formatNumber(long num, char *buf, int bufSize)
         if (0==toDot)
         {
             toDot = 3;
-            *out-- = '.';  // don't put "." if this is the last number
+            *out-- = thousand;  // don't put "." if this is the last number
         }
     }
     assert(out==buf);
@@ -407,22 +414,22 @@ void MainForm::updateArticleCountEl(long articleCount, ArsLexis::String& dbTime)
     assert(-1!=articleCount);
     assert(8==dbTime.length());
     char buffer[32];
-    int len = formatNumber(articleCount,(char*)buffer,sizeof(buffer));
+    int len = formatNumber(articleCount, buffer, sizeof(buffer));
     assert(len != -1 );
 #ifdef TEST_BAD
     // TODO: BUG: this text shows the problem with rendering of centered text
     // on sim 5.3 the "2" from "273..." is cut and on emu 3.5 the first line
     // is not even visible (I only see 2004-05-22 centered in second line)
-    ArsLexis::String articleCountText="273.551 articles, database updated on 2004-05-22";
+    String articleCountText="273.551 articles, database updated on 2004-05-22";
 #else
-    ArsLexis::String articleCountText="";
+    String articleCountText;
     articleCountText.append(buffer, len);
     articleCountText.append(" articles, database updated on ");
-    articleCountText.append(dbTime.substr(0,4));
-    articleCountText.append("-");
-    articleCountText.append(dbTime.substr(4,2));
-    articleCountText.append("-");
-    articleCountText.append(dbTime.substr(6,2));
+    articleCountText.append(dbTime, 0, 4);
+    articleCountText.append(1, '-');
+    articleCountText.append(dbTime, 4, 2);
+    articleCountText.append(1, '-');
+    articleCountText.append(dbTime, 6, 2);
 #endif
     articleCountElement_->setText(articleCountText);
 }
