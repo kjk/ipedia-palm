@@ -1,10 +1,11 @@
 #include "iPediaConnection.hpp"
-#include "iPediaApplication.hpp"
+#include <iPediaApplication.hpp>
 #include "DefinitionParser.hpp"
 #include <SysUtils.hpp>
 #include <DeviceInfo.hpp>
 #include <Text.hpp>
 #include "LookupManager.hpp"
+#include <ipedia.h>
 
 using namespace ArsLexis;
 
