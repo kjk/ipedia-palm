@@ -68,7 +68,7 @@ void iPediaConnection::prepareRequest()
     appendField(request, protocolVersionField, protocolVersion);
 
 #if defined(_PALM_OS)
-    appendField(request, clientInfoField, _T("Palm 1.0"))
+    appendField(request, clientInfoField, _T("Palm 1.0"));
 #elif defined(PPC2)
     appendField(request, clientInfoField, _T("PocketPC 1.0"));
 #else

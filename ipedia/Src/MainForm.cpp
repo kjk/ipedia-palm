@@ -1103,15 +1103,14 @@ void MainForm::prepareHowToRegister()
     elems.push_back(new LineBreakElement());
 
     elems.push_back(text=new FormattedTextElement("In order to register iPedia you need to purchase registration code at "));
-    // TODO: different stuff for PalmGear/Handango
 
-// those 3 should be mutually exclusive
+// those 3 #defines should be mutually exclusive
 #ifdef PALMGEAR
-    elems.push_back(text=new FormattedTextElement("palmgear.com?"));
+    elems.push_back(text=new FormattedTextElement("palmgear.com?67708"));
 #endif
 
 #ifdef HANDANGO
-    elems.push_back(text=new FormattedTextElement("handango.com/"));
+    elems.push_back(text=new FormattedTextElement("handango.com/purchase, product id: 128991"));
 #endif
 
 #ifdef ARSLEXIS_VERSION
