@@ -16,6 +16,9 @@ While it should be:
 ## instead of prev/next buttons, do a popup button showing a history
 in a popup list, just like blazer on 650 does it.
 
+## improve the copy to clipboard. Currently the first line (which is what shows 
+in the list of memos in memo app) is empty. It should be the title of the article
+instead.
 
 Release 1.3
 

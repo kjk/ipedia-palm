@@ -449,7 +449,7 @@ bool MainForm::handleMenuCommand(UInt16 itemId)
             break;
             
         case copyMenuItem:
-            copySelectionToClipboard();
+            copySelectionOrAllToClipboard();
             handled = true;
             break;
             
@@ -686,7 +686,7 @@ void MainForm::randomArticle()
         lookupManager->lookupRandomTerm();
 }
 
-void MainForm::copySelectionToClipboard()
+void MainForm::copySelectionOrAllToClipboard()
 {
     TextRenderer* renderer = &infoRenderer_;
     if (showArticle == displayMode_)
@@ -695,7 +695,7 @@ void MainForm::copySelectionToClipboard()
     if (renderer->empty())
         return;
     ArsLexis::String text;
-    renderer->copySelection();
+    renderer->copySelectionOrAll();
 }
 
 bool MainForm::handleWindowEnter(const struct _WinEnterEventType& data)

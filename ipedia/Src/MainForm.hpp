@@ -42,7 +42,7 @@ class MainForm: public iPediaForm
     
     void randomArticle();
     
-    void copySelectionToClipboard();
+    void copySelectionOrAllToClipboard();
 
     void updateAfterLookup();
     
