@@ -153,24 +153,6 @@ verifyRegCodeField =    "Verify-Registration-Code"
 # Value: 1 - reg code was valid, 0 - reg code was not valid
 regCodeValidField =     "Registration-Code-Valid"
 
-# a dict of valid client requests. The value is a boolean saying if a given
-# request has arguments (True if has, False if doesn't). We use it to verify
-# validity of the request
-validClientFields = {
-  protocolVersionField   : True,
-  clientInfoField        : True,
-  transactionIdField     : True,
-  cookieField            : True,
-  getCookieField         : True,
-  getArticleField        : True,
-  getRandomField         : False,
-  regCodeField           : True,
-  searchField            : True,
-  getArticleCountField   : False,
-  getDatabaseTimeField   : False,
-  verifyRegCodeField     : True
- }
-
 DEFINITION_FORMAT_VERSION = "1"
 PROTOCOL_VERSION = "1"
 
@@ -430,6 +412,7 @@ class iPediaProtocol(basic.LineReceiver):
 
     # return true if current request has a given field
     def fHasField(self,field):
+        global validClientFields
         assert validClientFields.has_key(field)
         if self.fields.has_key(field):
             return True
@@ -439,12 +422,14 @@ class iPediaProtocol(basic.LineReceiver):
     #  - field was no present
     #  - field had no value (no argument) (so use fHasField() to tell those cases apart)
     def getFieldValue(self,field):
+        global validClientFields
         assert validClientFields.has_key(field)
         if self.fHasField(field):
             return self.fields[field]
         return None
 
     def setFieldValue(self,field,value):
+        global validClientFields
         assert validClientFields.has_key(field)
         # shouldn't be called more than once per value
         assert not self.fHasField(field)
@@ -661,6 +646,10 @@ class iPediaProtocol(basic.LineReceiver):
             # those shouldn't be in the same request
             self.error = iPediaServerError.malformedRequest
             return False
+
+        if not self.fRegisteredUser:
+            if self.fOverUnregisteredLookupsLimit(self.userId):
+                return False
 
         title = self.getFieldValue(getArticleField)
         #print "handleGetArticleRequest for '%s'" % title
@@ -984,7 +973,7 @@ class iPediaProtocol(basic.LineReceiver):
             return self.handleGetCookieRequest()
 
     def answer(self):
-        global g_fVerbose
+        global g_fVerbose, validClientFields
         try:
             if g_fVerbose:
                 print "--------------------------------------------------------------------------------"
@@ -1013,23 +1002,16 @@ class iPediaProtocol(basic.LineReceiver):
 
             assert self.userId
 
-            if self.fHasField(verifyRegCodeField) and not self.handleVerifyRegistrationCodeRequest():
-                return self.finish()
-
-            if self.fHasField(getRandomField) and not self.handleGetRandomRequest():
-                return self.finish()
-
-            if self.fHasField(getArticleField):
-                if not self.fRegisteredUser:
-                    if self.fOverUnregisteredLookupsLimit(self.userId):
+            # dispatch a function handling a given request field
+            for fieldName in self.fields.keys():
+                fieldData = validClientFields[fieldName]
+                fieldHandleProc = fieldData[1]
+                if None != fieldHandleProc:
+                    ret = fieldHandleProc(self)
+                    if not ret:
                         return self.finish()
 
-                if not self.handleGetArticleRequest():
-                    return self.finish()
-
-            if self.fHasField(searchField) and not self.handleSearchRequest():
-                return self.finish();
-
+            # too simple to warrant functions
             if self.fHasField(getArticleCountField):
                 self.outputField(articleCountField, str(self.factory.articleCount))
 
@@ -1054,16 +1036,17 @@ class iPediaProtocol(basic.LineReceiver):
             if g_fVerbose:
                 print request
 
-            (field,value) = parseRequestLine(request)
-            if None == field:
+            (fieldName,value) = parseRequestLine(request)
+            if None == fieldName:
                 self.error = iPediaServerError.malformedRequest
                 return self.answer()
 
-            if not validClientFields.has_key(field):
+            if not validClientFields.has_key(fieldName):
                 self.error = iPediaServerError.invalidRequest
                 return self.answer()                
 
-            fHasArguments = validClientFields[field]
+            fieldData = validClientFields[fieldName]
+            fHasArguments = fieldData[0]
             if fHasArguments:
                 if None == value:
                     # expected arguments for this request, but didn't get it
@@ -1075,17 +1058,38 @@ class iPediaProtocol(basic.LineReceiver):
                     self.error = iPediaServerError.unexpectedRequestArgument
                     return self.answer()
 
-            if self.fHasField(field):
+            if self.fHasField(fieldName):
                 # duplicate field
                 self.error = iPediaServerError.malformedRequest
                 return self.answer()
 
-            self.setFieldValue(field,value)
+            self.setFieldValue(fieldName,value)
 
         except Exception, ex:
             arsutils.dumpException(ex)
             self.error=iPediaServerError.serverFailure
             self.answer()
+
+# a dict of valid client requests. The value is a tuple.
+# The first element is a boolean saying if a given
+# request has arguments (True if has, False if doesn't). We use it to verify
+# validity of the request
+# Second element is a function to be called for handling this request. None
+# if there is not function for a given field.
+validClientFields = {
+    protocolVersionField   : (True, None),
+    clientInfoField        : (True, None),
+    transactionIdField     : (True, None),
+    cookieField            : (True, None),
+    getCookieField         : (True, None),
+    getArticleField        : (True, iPediaProtocol.handleGetArticleRequest),
+    getRandomField         : (False,iPediaProtocol.handleGetRandomRequest),
+    regCodeField           : (True, None),
+    searchField            : (True, iPediaProtocol.handleSearchRequest),
+    getArticleCountField   : (False,None),
+    getDatabaseTimeField   : (False,None),
+    verifyRegCodeField     : (True, iPediaProtocol.handleVerifyRegistrationCodeRequest)
+}
 
 class iPediaFactory(protocol.ServerFactory):
 

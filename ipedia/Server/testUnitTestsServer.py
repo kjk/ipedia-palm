@@ -90,7 +90,8 @@ class ArsUtils(unittest.TestCase):
     # Note: since server uses validClientFields as well to check for this,
     # we might not always detect a bug here
     def test_ArgumentCorrectness(self):
-        for (field,fRequiresArguments) in validClientFields.items():
+        for (field,fieldData) in validClientFields.items():
+            fRequiresArguments = fieldData[0]
             self.req = getRequestHandleCookie()
             # do the exact opposite of what's expected
             if fRequiresArguments:
