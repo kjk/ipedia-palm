@@ -706,7 +706,7 @@ class iPediaProtocol(basic.LineReceiver):
         assert self.userId
         assert self.fHasField(Fields.verifyRegCode)
         # those are the only fields that can come with Fields.verifyRegCode
-        allowedFields = [Fields.transactionId, Fields.clientInfo, Fields.protocolVersion, Fields.cookie, Fields.getCookie, Fields.verifyRegCode, Fields.getArticleCount, Fields.getDatabaseTime]
+        allowedFields = [Fields.transactionId, Fields.clientInfo, Fields.protocolVersion, Fields.cookie, Fields.getCookie, Fields.verifyRegCode, Fields.getArticleCount, Fields.getDatabaseTime, Fields.getAvailableLangs]
         for field in self.fields.keys():
             if field not in allowedFields:
                 return ServerErrors.malformedRequest
