@@ -108,7 +108,8 @@ Err MainForm::renderDefinition(Definition& def, ArsLexis::Graphics& graphics, co
         fForceRecalculate = forceAboutRecalculation_;
         forceAboutRecalculation_ = false;
     }
-    return def.render(graphics, rect, renderingPreferences(), fForceRecalculate);
+    def.render(graphics, rect, renderingPreferences(), fForceRecalculate);
+    return errNone;
 }
 
 
