@@ -48,7 +48,7 @@ class MainForm: public iPediaForm
     
     void moveHistory(bool forward);
     
-    void switchServer(const char* server);
+    void switchServer(char_t * server);
     
     void setControlsState(bool enabled);
     

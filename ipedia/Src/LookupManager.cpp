@@ -210,7 +210,7 @@ void LookupManager::lookupTerm(const String& term, const String& lang)
         lastSearchLang_ = lastFoundLang_;
     conn->setTerm(term);
     conn->setLang(lastSearchLang_);
-    conn->setAddress(iPediaApplication::instance().server());
+    conn->serverAddress = iPediaApplication::instance().serverAddress;
     conn->enqueue();
 }
 
@@ -218,7 +218,7 @@ void LookupManager::switchDatabase(const char_t* langCode)
 {
     iPediaApplication& app=iPediaApplication::instance();
     iPediaConnection* conn = new iPediaConnection(*this);
-    conn->setAddress(iPediaApplication::instance().server());
+    conn->serverAddress = iPediaApplication::instance().serverAddress;
     conn->switchDatabase(langCode);
     conn->enqueue();
 }
@@ -227,7 +227,7 @@ void LookupManager::getAvailableLangs()
 {
     iPediaConnection* conn = new iPediaConnection(*this);
     conn->getAvailableLangs();
-    conn->setAddress(iPediaApplication::instance().server());
+    conn->serverAddress = iPediaApplication::instance().serverAddress;
     conn->enqueue();
 }
 
@@ -238,7 +238,7 @@ void LookupManager::lookupRandomTerm()
     conn->setRandom();
     iPediaApplication& app = iPediaApplication::instance();
     conn->setLang(lastSearchLang_ = app.preferences().currentLang);
-    conn->setAddress(app.server());
+    conn->serverAddress = iPediaApplication::instance().serverAddress;
     conn->enqueue();
 }
 
@@ -251,7 +251,7 @@ void LookupManager::search(const ArsLexis::String& expression)
     iPediaApplication& app = iPediaApplication::instance();
     conn->setLang(lastSearchLang_ = app.preferences().currentLang);
     conn->setPerformFullTextSearch(true);
-    conn->setAddress(iPediaApplication::instance().server());
+    conn->serverAddress = iPediaApplication::instance().serverAddress;
     conn->enqueue();
 }
 
@@ -276,7 +276,7 @@ void LookupManager::moveHistory(bool forward)
 
         conn->setTerm(lastSearchTerm_);
         conn->setLang(lastSearchLang_);
-        conn->setAddress(iPediaApplication::instance().server());
+        conn->serverAddress = iPediaApplication::instance().serverAddress;
         conn->enqueue();
     }
 }
@@ -288,7 +288,7 @@ void LookupManager::verifyRegistrationCode(const ArsLexis::String& regCode)
 {
     iPediaConnection* conn = new iPediaConnection(*this);
     conn->regCodeToVerify = regCode;
-    conn->setAddress(iPediaApplication::instance().server());
+    conn->serverAddress = iPediaApplication::instance().serverAddress;
     conn->enqueue();
 }
 

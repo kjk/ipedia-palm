@@ -411,9 +411,9 @@ bool MainForm::handleKeyPress(const EventType& event)
     return handled;
 }
 
-void MainForm::switchServer(const char* server)
+void MainForm::switchServer(char_t * server)
 {
-    app().setServer(server);    
+    app().serverAddress = server;    
 }
 
 bool MainForm::handleMenuCommand(UInt16 itemId)

@@ -20,7 +20,6 @@ class iPediaApplication: public ArsLexis::RichApplication
     iPediaHyperlinkHandler*  hyperlinkHandler_;
     LookupHistory*          history_;
     LookupManager*          lookupManager_;
-    ArsLexis::String        server_;
     
     void detectViewer();
     
@@ -115,16 +114,6 @@ public:
         appLangNotAvailable,
         appFirstAvailableEvent
     };
-    
-    void setServer(const ArsLexis::String& server)
-    {
-        server_ = server;
-    }
-
-    const ArsLexis::String& server() const
-    {
-        return server_;
-    }
 
     static iPediaApplication& instance()
     {
@@ -156,8 +145,10 @@ public:
     // intentional lack of accessor functions, treat it like a property
     bool        fArticleCountChecked;
 
-    int             strListSize;
+    int         strListSize;
     char_t**    strList;
+
+    char_t *     serverAddress;
 
 private:
     Preferences preferences_;

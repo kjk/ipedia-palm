@@ -85,7 +85,7 @@ iPediaApplication::~iPediaApplication()
 
 Err iPediaApplication::normalLaunch()
 {
-    server_ = SERVER_TO_USE;
+    serverAddress = SERVER_TO_USE;
     preferences_.currentLang = _T("en");
     hyperlinkHandler_ = new iPediaHyperlinkHandler();
     detectViewer();
