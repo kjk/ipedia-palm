@@ -12,8 +12,8 @@ BEGIN
     PULLDOWN "Main"
     BEGIN
          MENUITEM "Search" ID searchMenuItem "S"
-         MENUITEM "Full-text search" ID fullTextSearchMenuItem "T"
-         MENUITEM "Last search results" ID searchResultsMenuItem  "L"
+         MENUITEM "Extended search" ID extendedSearchMenuItem "T"
+         MENUITEM "Extended search results" ID searchResultsMenuItem  "L"
          MENUITEM SEPARATOR ID AUTOID
          MENUITEM "Random article" ID randomMenuItem  "R"
          MENUITEM SEPARATOR ID AUTOID

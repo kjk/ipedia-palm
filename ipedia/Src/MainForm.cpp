@@ -28,6 +28,7 @@ MainForm::MainForm(iPediaApplication& app):
     article_.setRenderingProgressReporter(&renderingProgressReporter_);
     article_.setHyperlinkHandler(&app.hyperlinkHandler());
     about_.setHyperlinkHandler(&app.hyperlinkHandler());
+    tutorial_.setHyperlinkHandler(&app.hyperlinkHandler());
     prepareAbout();    
     // TODO: make those on-demand
     prepareHowToRegister();
@@ -673,7 +674,7 @@ bool MainForm::handleMenuCommand(UInt16 itemId)
             handled=true;
             break;
 
-        case fullTextSearchMenuItem:
+        case extendedSearchMenuItem:
             search(true);
             handled=true;
             break;
@@ -891,7 +892,7 @@ static void aboutActionCallback(void *data)
 {
     assert(NULL!=data);
     MainForm * mf = static_cast<MainForm*>(data);
-    assert(MainForm::showTutorial!=mf->displayMode());
+    assert(MainForm::showAbout!=mf->displayMode());
     mf->setDisplayMode(MainForm::showAbout);
     mf->update();
 }
@@ -900,6 +901,7 @@ static void randomArticleActionCallback(void *data)
 {
     assert(NULL!=data);
     MainForm * mf = static_cast<MainForm*>(data);
+    assert(MainForm::showTutorial==mf->displayMode());
     sendEvent(iPediaApplication::appRandomWord);
 }
 
@@ -960,7 +962,7 @@ void MainForm::prepareAbout()
     elems.push_back(text=new FormattedTextElement("how to register"));
     text->setJustification(DefinitionElement::justifyCenter);
     // url doesn't really matter, it's only to establish a hotspot
-    text->setHyperlink("", hyperlinkExternal);
+    text->setHyperlink("", hyperlinkTerm);
     text->setActionCallback( unregisteredActionCallback, static_cast<void*>(this) );
     elems.push_back(text=new FormattedTextElement(")"));
     text->setJustification(DefinitionElement::justifyCenter);
@@ -997,7 +999,7 @@ void MainForm::prepareAbout()
     elems.push_back(text=new FormattedTextElement("tutorial"));
     text->setJustification(DefinitionElement::justifyLeft);
     // url doesn't really matter, it's only to establish a hotspot
-    text->setHyperlink("", hyperlinkExternal);
+    text->setHyperlink("", hyperlinkTerm);
     text->setActionCallback( tutorialActionCallback, static_cast<void*>(this) );
 
     about_.replaceElements(elems);    
@@ -1017,7 +1019,7 @@ void MainForm::prepareTutorial()
     elems.push_back(text=new FormattedTextElement("Go back to main screen."));
     text->setJustification(DefinitionElement::justifyLeft);
     // url doesn't really matter, it's only to establish a hotspot
-    text->setHyperlink("", hyperlinkExternal);
+    text->setHyperlink("", hyperlinkTerm);
     text->setActionCallback( aboutActionCallback, static_cast<void*>(this) );
     elems.push_back(new LineBreakElement(4,3));
 
@@ -1032,13 +1034,19 @@ void MainForm::prepareTutorial()
 
     elems.push_back(text=new FormattedTextElement("Finding all articles with a given word."));
     text->setEffects(fxBold);
-    elems.push_back(text=new FormattedTextElement(" Let's assume you want to find all article that mention Seattle. Enter 'Seattle' in the text field and use 'Main/Full-text search' menu item. In response you'll receive a list of articles with word 'Seattle'."));
+    elems.push_back(text=new FormattedTextElement(" Let's assume you want to find all articles that mention Seattle. Enter 'Seattle' in the text field and use 'Main/Extended search' menu item. In response you'll receive a list of articles with word 'Seattle'."));
     text->setJustification(DefinitionElement::justifyLeft);
     elems.push_back(new LineBreakElement(4,3));
 
     elems.push_back(text=new FormattedTextElement("Refining the search."));
     text->setEffects(fxBold);
     elems.push_back(text=new FormattedTextElement(" If there are too many results, you can refine (narrow) the search results by adding additional terms e.g. type 'museum' and press 'Refine' button. You'll get a smaller list of articles that contain both 'Seattle' and 'museum'."));
+    text->setJustification(DefinitionElement::justifyLeft);
+    elems.push_back(new LineBreakElement(4,3));
+
+    elems.push_back(text=new FormattedTextElement("Results of last extended search."));
+    text->setEffects(fxBold);
+    elems.push_back(text=new FormattedTextElement(" At any time you can get a list of results from last extended search by using 'Main/Extended search results' menu item."));
     text->setJustification(DefinitionElement::justifyLeft);
     elems.push_back(new LineBreakElement(4,3));
 
@@ -1049,7 +1057,7 @@ void MainForm::prepareTutorial()
     elems.push_back(text=new FormattedTextElement("click here"));
     text->setJustification(DefinitionElement::justifyLeft);
     // url doesn't really matter, it's only to establish a hotspot
-    text->setHyperlink("", hyperlinkExternal);
+    text->setHyperlink("", hyperlinkTerm);
     text->setActionCallback( randomArticleActionCallback, static_cast<void*>(this) );
     elems.push_back(text=new FormattedTextElement(") to get a random article."));
     text->setJustification(DefinitionElement::justifyLeft);
@@ -1059,9 +1067,11 @@ void MainForm::prepareTutorial()
     text->setEffects(fxBold);
     elems.push_back(text=new FormattedTextElement(" Please visit our website "));
     text->setJustification(DefinitionElement::justifyLeft);
+
     elems.push_back(text=new FormattedTextElement("arslexis.com"));
-    text->setJustification(DefinitionElement::justifyLeft);
     text->setHyperlink("http://www.arslexis.com/pda/palm.html", hyperlinkExternal);
+    text->setJustification(DefinitionElement::justifyLeft);
+
     elems.push_back(text=new FormattedTextElement(" for more information about iPedia."));
     text->setJustification(DefinitionElement::justifyLeft);
     elems.push_back(new LineBreakElement(4,3));
@@ -1069,7 +1079,7 @@ void MainForm::prepareTutorial()
     elems.push_back(text=new FormattedTextElement("Go back to main screen."));
     text->setJustification(DefinitionElement::justifyLeft);
     // url doesn't really matter, it's only to establish a hotspot
-    text->setHyperlink("", hyperlinkExternal);
+    text->setHyperlink("", hyperlinkTerm);
     text->setActionCallback( aboutActionCallback, static_cast<void*>(this) );
 
     tutorial_.replaceElements(elems);
@@ -1106,14 +1116,14 @@ void MainForm::prepareHowToRegister()
     elems.push_back(text=new FormattedTextElement("After obtaining registration code use menu item Option/Register (or "));
     elems.push_back(text=new FormattedTextElement("click here"));
     // url doesn't really matter, it's only to establish a hotspot
-    text->setHyperlink("", hyperlinkExternal);
+    text->setHyperlink("", hyperlinkTerm);
     text->setActionCallback( registerActionCallback, static_cast<void*>(this) );
     elems.push_back(text=new FormattedTextElement(") to enter registration number. "));
 
     elems.push_back(text=new FormattedTextElement("Go back to main screen."));
     text->setJustification(DefinitionElement::justifyLeft);
     // url doesn't really matter, it's only to establish a hotspot
-    text->setHyperlink("", hyperlinkExternal);
+    text->setHyperlink("", hyperlinkTerm);
     text->setActionCallback( aboutActionCallback, static_cast<void*>(this) );
 
     register_.replaceElements(elems);
