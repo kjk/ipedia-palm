@@ -89,6 +89,12 @@ class MainForm: public iPediaForm
 
     void updateArticleCountEl(long articleCount, ArsLexis::String& dbTime);
 
+    void doHistory();
+
+    void doLinkedArticles();
+
+    void doLinkingArticles();
+
 protected:
 
     void resize(const ArsLexis::Rectangle& screenBounds);

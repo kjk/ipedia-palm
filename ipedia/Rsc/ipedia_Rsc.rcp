@@ -30,6 +30,9 @@ BEGIN
     BEGIN
         MENUITEM "Forward" ID forwardMenuItem  "F"
         MENUITEM "Back"    ID backMenuItem  "B"
+        MENUITEM "History" ID historyMenuItem "H"
+        MENUITEM "Linked articles" ID linkedArticlesMenuItem "L"
+        MENUITEM "Linking articles" ID linkingArticlesMenuItem "I"
     END
 
     PULLDOWN "Options"
@@ -345,6 +348,15 @@ BEGIN
     BUTTON "Cancel" ID cancelButton  AT (126 146 32 Auto)
     BUTTON "Refine" ID refineSearchButton  AT (91 146 32 Auto)
     FIELD           ID refineSearchInputField  AT (2 146 86 Auto) MAXCHARS 255 EDITABLE DYNAMICSIZE HASSCROLLBAR UNDERLINED MULTIPLELINES
+END
+
+FORM ID stringListForm   AT ( 0 0 160 160 )
+NOFRAME
+BEGIN
+    TITLE "Select"
+    LIST   ""       ID stringList    AT (2 17 156 123) VISIBLEITEMS 11
+    BUTTON "Select" ID selectButton  AT (2   146 32 Auto)
+    BUTTON "Cancel" ID cancelButton  AT (126 146 32 Auto)
 END
 
 MENU ID searchResultsMenu 

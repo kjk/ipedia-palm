@@ -319,18 +319,18 @@ void MainForm::handleLookupFinished(const EventType& event)
         case data.outcomeArticleBody:
             updateAfterLookup();
             break;
-            
+
         case data.outcomeList:
             Application::popupForm(searchResultsForm);
             break;
-            
+
         case data.outcomeNotFound:
             {
                 Field field(*this, termInputField);
                 field.select();
             }
             // No break is intentional.
-            
+
         default:
             update();
     }
@@ -692,13 +692,43 @@ bool MainForm::handleMenuCommand(UInt16 itemId)
                     control.hit();
             }
             break;
-        
+
+        case historyMenuItem:
+            Application::popupForm(stringListForm);
+            handled = true;
+            break;
+
+        case linkedArticlesMenuItem:
+            // TODO:
+            break;
+
+        case linkingArticlesMenuItem:
+            // TODO:
+            break;
+
         default:
             handled=iPediaForm::handleMenuCommand(itemId);
     }
     // to prevent accidental selection of links in main About page
     penUpsToEat_ = 1;
     return handled;
+}
+
+void MainForm::doHistory()
+{
+
+
+}
+
+void MainForm::doLinkedArticles()
+{
+
+}
+
+void MainForm::doLinkingArticles()
+{
+
+
 }
 
 void MainForm::randomArticle()

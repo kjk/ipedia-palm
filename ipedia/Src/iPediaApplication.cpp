@@ -5,6 +5,7 @@
 #include "MainForm.hpp"
 #include "RegistrationForm.hpp"
 #include "SearchResultsForm.hpp"
+#include "StringListForm.hpp"
 #include "LookupManager.hpp"
 #include "LookupHistory.hpp"
 
@@ -128,17 +129,21 @@ Form* iPediaApplication::createForm(UInt16 formId)
     switch (formId)
     {
         case mainForm:
-            form=new MainForm(*this);
+            form = new MainForm(*this);
             break;
             
         case registrationForm:
-            form=new RegistrationForm(*this);
+            form = new RegistrationForm(*this);
             break;
             
         case searchResultsForm:
-            form=new SearchResultsForm(*this);
+            form = new SearchResultsForm(*this);
             break;
-        
+
+        case stringListForm:
+            form = new StringListForm(*this);
+            break;
+
         default:
             assert(false);
     }

@@ -17,8 +17,7 @@ def searchResultsCount(resultTxt):
     parts = resultTxt.split("\n")
     return len(parts)
 
-# tests for functions in arsutils module
-class ArsUtils(unittest.TestCase):
+class ServerTests(unittest.TestCase):
 
     def assertFieldExists(self,response,field):
         if not response.hasField(field):

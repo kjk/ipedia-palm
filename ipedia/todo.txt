@@ -4,3 +4,11 @@
 register by purchasing registration code.\nEnter registration code?
 Yes/NO". Just like in iPedia/SM
 
+## 3. add menu items:
+go/Linked articles
+go/Lining articles
+go/History (displays prev/next history)
+
+## 4. add "Recent lookups" feature i.e. lookups made by other people. Kind of
+spying on what other people are looking at.
+
