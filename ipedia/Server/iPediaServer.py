@@ -411,29 +411,26 @@ class iPediaProtocol(basic.LineReceiver):
         self.searchResult = None
 
     # return true if current request has a given field
-    def fHasField(self,field):
-        global validClientFields
-        assert validClientFields.has_key(field)
-        if self.fields.has_key(field):
+    def fHasField(self,fieldName):
+        assert fValidClientField(fieldName)
+        if self.fields.has_key(fieldName):
             return True
         return False
 
     # return value of a given field or None if:
     #  - field was no present
     #  - field had no value (no argument) (so use fHasField() to tell those cases apart)
-    def getFieldValue(self,field):
-        global validClientFields
-        assert validClientFields.has_key(field)
-        if self.fHasField(field):
-            return self.fields[field]
+    def getFieldValue(self,fieldName):
+        assert fValidClientField(fieldName)
+        if self.fHasField(fieldName):
+            return self.fields[fieldName]
         return None
 
-    def setFieldValue(self,field,value):
-        global validClientFields
-        assert validClientFields.has_key(field)
+    def setFieldValue(self,fieldName,value):
+        assert fValidClientField(fieldName)
         # shouldn't be called more than once per value
-        assert not self.fHasField(field)
-        self.fields[field] = value
+        assert not self.fHasField(fieldName)
+        self.fields[fieldName] = value
 
     def getManagementDatabase(self):
         if not self.dbManagement:
@@ -1041,7 +1038,7 @@ class iPediaProtocol(basic.LineReceiver):
                 self.error = iPediaServerError.malformedRequest
                 return self.answer()
 
-            if not validClientFields.has_key(fieldName):
+            if not fValidClientField(fieldName):
                 self.error = iPediaServerError.invalidRequest
                 return self.answer()                
 
@@ -1090,6 +1087,11 @@ validClientFields = {
     getDatabaseTimeField   : (False,None),
     verifyRegCodeField     : (True, iPediaProtocol.handleVerifyRegistrationCodeRequest)
 }
+
+def fValidClientField(fieldName):
+    if validClientFields.has_key(fieldName):
+        return True
+    return False
 
 class iPediaFactory(protocol.ServerFactory):
 
