@@ -60,18 +60,18 @@ void iPediaConnection::prepareRequest()
     iPediaApplication& app=iPediaApplication::instance();
     // get number of articles and database update time in the first request to
     // the server. do it only once per application launch
-    if (!app.fArticleCountChecked_)
+    if (!app.fArticleCountChecked)
     {
         getArticleCount_ = true;
         getDatabaseTime_ = true;
-        app.fArticleCountChecked_ = true; // or do it later, when we process the response
+        app.fArticleCountChecked = true; // or do it later, when we process the response
     }
 
     String request;
     appendField(request, protocolVersionField, protocolVersion);
     appendField(request, clientVersionField, appVersion);
     char_t buffer[9];
-    tprintf(buffer, _T("%lx"), transactionId_);
+    tprintf(buffer, _T("%08lx"), transactionId_);
     appendField(request, transactionIdField, buffer);
     if (chrNull==app.preferences().cookie[0])
         appendField(request, getCookieField, deviceInfoToken());

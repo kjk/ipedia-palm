@@ -19,7 +19,7 @@ iPediaApplication::iPediaApplication():
     lookupManager_(0),
     server_(defaultServer),
     stressMode_(false),
-    fArticleCountChecked_(false)
+    fArticleCountChecked(false)
 {
 #ifdef INTERNAL_BUILD
 # ifndef NDEBUG    

@@ -9,7 +9,7 @@
 
 class LookupManager;
 class LookupHistory;
-struct LookupFinishedEventData;
+
 #define serverLocalhost        "127.0.0.1:9000"
 //#define serverLocalhost    "192.168.0.1:9000"
 #define serverOfficial   "ipedia.arslexis.com:9000"
@@ -105,7 +105,7 @@ public:
     
     static iPediaApplication& instance()
     {return static_cast<iPediaApplication&>(Application::instance());}
-   
+
     bool inStressMode() const
     {return stressMode_;}
     
@@ -125,7 +125,7 @@ public:
     {return hyperlinkHandler_;}    
 
     // intentional lack of accessor functions, treat it like a property
-    bool fArticleCountChecked_;
+    bool fArticleCountChecked;
 
 private:
     
