@@ -3,6 +3,7 @@
 
 #include "ipedia.h"
 #include <RichApplication.hpp>
+#include <StringListForm.hpp>
 #include "RenderingPreferences.hpp"
 #include "iPediaHyperlinkHandler.hpp"
 #include <SysUtils.hpp>
@@ -98,6 +99,10 @@ public:
         appRandomWord,
         appRegistrationFinished,
         appForceUpgrade,
+        appDbnameStringSelected,
+        appHistoryStringSelected,
+        appLinkedArticlesStringSelected,
+        appLinkingArticlesStringSelected,
         appFirstAvailableEvent
     };
     
@@ -130,6 +135,9 @@ public:
 
     // intentional lack of accessor functions, treat it like a property
     bool fArticleCountChecked;
+    
+    int         dbNameStringCount_;
+    char_t **   dbNameStrList_;
 
 private:
     

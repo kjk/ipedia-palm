@@ -4,16 +4,12 @@
 
 ## 3. modify client to take advantage of multi-lingual features
 
-## 3.1 get available langs with first request
-
-## 3.2 store available langs in preferences
-
-## 3.3 store currently selected lang in preferences
-
-## 3.4 ability to choose available lang
-
 ## 3.5 when server sends langNotAvailable we need to switch to en (we assume 
 that english is always available) and display about
+
+## 3.6 make sure it works if we try to change database if we haven't downloaded
+list of available langs yet. Currently we just pretend that we only have en
+database (see MainForm::changeDatabase)
 
 ## 4. add unit tests for new multi-langual features
 
@@ -22,4 +18,13 @@ that english is always available) and display about
 ## 6. change "trail expired" dialog to "Unregistered version expired. Please
 register by purchasing registration code.\nEnter registration code?
 Yes/NO". Just like in iPedia/SM
+
+                DONE
+
+## 3.1 get available langs with first request
+## 3.2 store available langs in preferences
+## 3.3 store currently selected lang in preferences
+## 3.4 ability to choose available lang
+(2004-09-11)
+
 

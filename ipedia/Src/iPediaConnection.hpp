@@ -16,6 +16,7 @@ class iPediaConnection: public ArsLexis::FieldPayloadProtocolConnection
     uint_t              formatVersion_;
     ArsLexis::String    articleTitle_;
     DefinitionParser*   definitionParser_;
+    const char_t *      newDbLangCode_;
 
     class SearchResultsHandler: public ArsLexis::FieldPayloadProtocolConnection::PayloadHandler
     {
@@ -121,6 +122,11 @@ public:
 
     // if set, send Verify-Registration-Code
     ArsLexis::String  regCodeToVerify;
+
+    void switchDatabase(const char_t* langCode)
+    {
+        newDbLangCode_ = langCode;
+    }
 
 private:
 

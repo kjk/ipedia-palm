@@ -345,6 +345,14 @@ void MainForm::handleLookupFinished(const EventType& event)
             Application::popupForm(searchResultsForm);
             break;
 
+        case data.outcomeDatabaseSwitched:
+            // recalc about info and show about screen
+            setDisplayMode(showAbout);
+            updateArticleCountEl(app().preferences().articleCount, app().preferences().databaseTime);
+            forceAboutRecalculation_ = true;
+            update();
+            break;
+
         case data.outcomeNotFound:
             {
                 Field field(*this, termInputField);
@@ -487,7 +495,12 @@ bool MainForm::handleEvent(EventType& event)
             prepareAbout();
             forceAboutRecalculation_=true;
             update();
-            handled=true;
+            handled = true;
+            break;
+
+        case iPediaApplication::appDbnameStringSelected:
+            doDbSelected(event);
+            handled = true;
             break;
 
         case iPediaApplication::appForceUpgrade:
@@ -722,16 +735,18 @@ bool MainForm::handleMenuCommand(UInt16 itemId)
             break;
 
         case historyMenuItem:
-            Application::popupForm(stringListForm);
+            doHistory();
             handled = true;
             break;
 
         case linkedArticlesMenuItem:
-            // TODO:
+            doLinkedArticles();
+            handled = true;
             break;
 
         case linkingArticlesMenuItem:
-            // TODO:
+            doLinkingArticles();
+            handled = true;
             break;
 
         default:
@@ -744,25 +759,54 @@ bool MainForm::handleMenuCommand(UInt16 itemId)
 
 void MainForm::doHistory()
 {
-
-
+    Application::popupForm(stringListHistoryId);
 }
 
 void MainForm::doLinkedArticles()
 {
-
+    Application::popupForm(stringListLinkedArticlesId);
 }
 
 void MainForm::doLinkingArticles()
 {
-
-
+    Application::popupForm(stringListLinkingArticlesId);
 }
 
 void MainForm::changeDatabase()
 {
+    String availableLangs = app().preferences().availableLangs;
+    // TODO: a hackk. we should request a list of available langs from the server
+    if (availableLangs.empty())
+    {
+        availableLangs.assign(_T("en"));
+    }
+    app().dbNameStrList_ = StringListFromString(availableLangs, " ", app().dbNameStringCount_);
+    Application::popupForm(stringListSelectDbId);
+}
 
+void MainForm::doDbSelected(EventType& event)
+{
+    StringListEventData& data=reinterpret_cast<StringListEventData&>(event.data);
 
+    int selectedStr = data.value;
+    if (NOT_SELECTED==selectedStr)
+        goto Exit;
+
+    const char_t *dbName = app().dbNameStrList_[selectedStr];
+
+    LookupManager* lookupManager=app().getLookupManager(true);
+    if (lookupManager && !lookupManager->lookupInProgress())
+        lookupManager->switchDatabase(dbName);
+
+Exit:
+    if (NULL!=app().dbNameStrList_)
+    {
+        for (int i=0; i<app().dbNameStringCount_; i++)
+        {
+            delete [] app().dbNameStrList_[i];
+        }
+    }
+    app().dbNameStrList_ = NULL;
 }
 
 void MainForm::randomArticle()

@@ -22,7 +22,8 @@ iPediaConnection::iPediaConnection(LookupManager& lookupManager):
     notFound_(false),
     performFullTextSearch_(false),
     getRandom_(false),
-    regCodeValid_(regCodeTypeUnset)
+    regCodeValid_(regCodeTypeUnset),
+    newDbLangCode_(NULL)
 {
 }
 
@@ -49,6 +50,7 @@ iPediaConnection::~iPediaConnection()
 #define databaseTimeField       _T("Database-Time")
 #define verifyRegCodeField      _T("Verify-Registration-Code")
 #define regCodeValidField       _T("Registration-Code-Valid")
+#define getAvailableLangsField  _T("Get-Available-Langs")
 #define availableLangsField     _T("Available-Langs")
 #define useLangField            _T("Use-Lang")
 
@@ -91,7 +93,12 @@ void iPediaConnection::prepareRequest()
             appendField(request, cookieField, app.preferences().cookie);
     }
 
-    if (!app.preferences().currentLang.empty())
+    if (NULL!=newDbLangCode_)
+    {
+        // a bit of a hack but this one has priority over currentLang in prefs
+        appendField(request, useLangField, newDbLangCode_);
+    }
+    else if (!app.preferences().currentLang.empty())
     {
         appendField(request, useLangField, app.preferences().currentLang);
     }
@@ -123,7 +130,7 @@ void iPediaConnection::prepareRequest()
     // (because on smartphone applications rarely quit)
     bool fNeedsToGetArticleCount = false;
 
-    if (!app.fArticleCountChecked)
+    if (!app.fArticleCountChecked || (NULL!=newDbLangCode_))
     {
         fNeedsToGetArticleCount = true;
     }
@@ -142,6 +149,7 @@ void iPediaConnection::prepareRequest()
     {
         appendField(request, getArticleCountField);
         appendField(request, getDatabaseTimeField);
+        appendField(request, getAvailableLangsField);
 #ifndef _PALM_OS
         // wince only code
         GetSystemTime(&app.lastArticleCountCheckTime);
@@ -190,8 +198,8 @@ ArsLexis::status_t iPediaConnection::open()
 #if defined(_PALM_OS)        
     assert(!error);
     ArsLexis::SocketLinger linger;
-    linger.portable.onOff=true;
-    linger.portable.time=0;
+    linger.portable.onOff = true;
+    linger.portable.time = 0;
     ArsLexis::Application& app=ArsLexis::Application::instance();
     // according to newsgroups in os 5 linger is broken and we need to do this
     // hack. Seems to help on Tungsten. However, on Treo 600 it doesn't seem
@@ -430,6 +438,12 @@ ArsLexis::status_t iPediaConnection::notifyFinished()
         assert(data.outcomeNothing==data.outcome);
         data.outcome = data.outcomeRegCodeInvalid;
     }        
+
+    if (NULL!=newDbLangCode_)
+    {
+        data.outcome = data.outcomeDatabaseSwitched;
+        app.preferences().currentLang.assign(newDbLangCode_);
+    }
 
     assert(data.outcomeNothing!=data.outcome);
     if (data.outcomeNothing==data.outcome)

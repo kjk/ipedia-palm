@@ -1,6 +1,10 @@
 /* pilrc generated file.  Do not edit!*/
-#define cancelSearchMenuItem 1080
-#define refineSearchMenuItem 1079
+#define cancelSearchMenuItem 1084
+#define refineSearchMenuItem 1083
+#define stringListLinkingArticlesId 1082
+#define stringListLinkedArticlesId 1081
+#define stringListHistoryId 1080
+#define stringListSelectDbId 1079
 #define selectButton 1078
 #define stringList 1077
 #define stringListForm 1076

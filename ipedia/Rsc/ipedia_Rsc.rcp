@@ -370,10 +370,16 @@ BEGIN
     BUTTON "Cancel" ID cancelButton  AT (126 146 32 Auto)
 END
 
+// those are dummy values, just so that I can get unique ids generated
+INTEGER ID stringListSelectDbId VALUE 0
+INTEGER ID stringListHistoryId VALUE 0
+INTEGER ID stringListLinkedArticlesId VALUE 0
+INTEGER ID stringListLinkingArticlesId VALUE 0
+
 MENU ID searchResultsMenu 
 BEGIN
     PULLDOWN "Search"
-     BEGIN
+    BEGIN
           MENUITEM "Refine" ID refineSearchMenuItem "R"
           MENUITEM "Cancel" ID cancelSearchMenuItem "C"
      END

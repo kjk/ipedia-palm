@@ -2,10 +2,10 @@
 #include "iPediaApplication.hpp"
 #include <SysUtils.hpp>
 #include <DeviceInfo.hpp>
+#include <StringListForm.hpp>
 #include "MainForm.hpp"
 #include "RegistrationForm.hpp"
 #include "SearchResultsForm.hpp"
-#include "StringListForm.hpp"
 #include "LookupManager.hpp"
 #include "LookupHistory.hpp"
 
@@ -37,6 +37,7 @@ iPediaApplication::iPediaApplication():
     log().addSink(new MemoLogSink(), Logger::logError);
 # endif
 #endif
+    dbNameStrList_ = NULL;
 }
 
 inline void iPediaApplication::detectViewer()
@@ -60,14 +61,10 @@ Err iPediaApplication::initialize()
 
 iPediaApplication::~iPediaApplication()
 {
-    if (lookupManager_)
-        delete lookupManager_;
-
-    if (history_)
-        delete history_;
+    delete lookupManager_;
+    delete history_;
     server_.clear();
 }
-
 
 Err iPediaApplication::normalLaunch()
 {
@@ -81,9 +78,6 @@ Err iPediaApplication::normalLaunch()
         server_ = SERVER_OFFICIAL;
     }
 #endif
-
-    // TODO: temporary
-    preferences().currentLang = "de";
 
     gotoForm(mainForm);
     runEventLoop();
@@ -129,7 +123,9 @@ void iPediaApplication::waitForEvent(EventType& event)
 
 Form* iPediaApplication::createForm(UInt16 formId)
 {
-    Form* form=0;
+    Form* form;
+    StringListForm *strListForm;
+
     switch (formId)
     {
         case mainForm:
@@ -144,8 +140,31 @@ Form* iPediaApplication::createForm(UInt16 formId)
             form = new SearchResultsForm(*this);
             break;
 
-        case stringListForm:
-            form = new StringListForm(*this);
+        case stringListSelectDbId:
+            strListForm = new StringListForm(*this, (uint_t)stringListForm, (uint_t)stringList, (uint_t)selectButton, (uint_t)cancelButton);
+            strListForm->SetStringList(dbNameStringCount_, dbNameStrList_, appDbnameStringSelected);
+            form = strListForm;
+            break;
+
+        case stringListLinkedArticlesId:
+            // TODO:
+            strListForm = new StringListForm(*this, (uint_t)stringListForm, (uint_t)stringList, (uint_t)selectButton, (uint_t)cancelButton);
+            // strListForm->SetStringList(dbNameStringCount_, dbNameStrList_, appDbnameStringSelected);
+            form = strListForm;
+            break;
+
+        case stringListHistoryId:
+            // TODO:
+            strListForm = new StringListForm(*this, (uint_t)stringListForm, (uint_t)stringList, (uint_t)selectButton, (uint_t)cancelButton);
+            // strListForm->SetStringList(dbNameStringCount_, dbNameStrList_, appDbnameStringSelected);
+            form = strListForm;
+            break;
+
+        case stringListLinkingArticlesId:
+            // TODO:
+            strListForm = new StringListForm(*this, (uint_t)stringListForm, (uint_t)stringList, (uint_t)selectButton, (uint_t)cancelButton);
+            // strListForm->SetStringList(dbNameStringCount_, dbNameStrList_, appDbnameStringSelected);
+            form = strListForm;
             break;
 
         default:

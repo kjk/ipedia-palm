@@ -20,7 +20,7 @@ class MainForm: public iPediaForm
     bool forceAboutRecalculation_;    
     long articleCountSet_;
     int  penUpsToEat_;
-    
+
     const LookupHistory& getHistory() const;
     
     const RenderingPreferences& renderingPreferences() const
@@ -96,6 +96,8 @@ class MainForm: public iPediaForm
     void doLinkingArticles();
 
     void changeDatabase();
+
+    void doDbSelected(EventType &event);
 
 protected:
 

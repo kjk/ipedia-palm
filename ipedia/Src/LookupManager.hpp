@@ -44,6 +44,7 @@ struct LookupFinishedEventData
         outcomeNotFound,
         outcomeRegCodeValid, // set if server sends Registration-Code-Valid with value "1"
         outcomeRegCodeInvalid, // set if server sends Registratoin-Code-Valid with value "0"
+        outcomeDatabaseSwitched,
     } outcome;
     
     union
@@ -125,7 +126,9 @@ public:
     void handleLookupFinishedInForm(const LookupFinishedEventData& data);
 
     void verifyRegistrationCode(const String& regCode);
-    
+
+    void switchDatabase(const char_t* langCode);
+
 private:
     
     void handleServerError(iPediaServerError serverError);

@@ -186,18 +186,27 @@ bool LookupManager::lookupIfDifferent(const ArsLexis::String& term)
 
 void LookupManager::lookupTerm(const ArsLexis::String& term)
 {
-    historyChange_=historyReplaceForward;
-    iPediaConnection* conn=new iPediaConnection(*this);
+    historyChange_ = historyReplaceForward;
+    iPediaConnection* conn = new iPediaConnection(*this);
     lastSearchTerm_ = term;
     conn->setTerm(term);
     conn->setAddress(iPediaApplication::instance().server());
     conn->enqueue();
 }
 
+void LookupManager::switchDatabase(const char_t* langCode)
+{
+    iPediaApplication& app=iPediaApplication::instance();
+    iPediaConnection* conn = new iPediaConnection(*this);
+    conn->setAddress(iPediaApplication::instance().server());
+    conn->switchDatabase(langCode);
+    conn->enqueue();
+}
+
 void LookupManager::lookupRandomTerm()
 {
-    historyChange_=historyReplaceForward;
-    iPediaConnection* conn=new iPediaConnection(*this);
+    historyChange_ = historyReplaceForward;
+    iPediaConnection* conn = new iPediaConnection(*this);
     conn->setRandom();
     conn->setAddress(iPediaApplication::instance().server());
     conn->enqueue();
@@ -205,8 +214,8 @@ void LookupManager::lookupRandomTerm()
 
 void LookupManager::search(const ArsLexis::String& expression)
 {
-    historyChange_=historyReplaceForward;
-    iPediaConnection* conn=new iPediaConnection(*this);
+    historyChange_ = historyReplaceForward;
+    iPediaConnection* conn = new iPediaConnection(*this);
     lastSearchTerm_ = expression;
     conn->setTerm(expression);
     conn->setPerformFullTextSearch(true);
@@ -238,14 +247,19 @@ void LookupManager::moveHistory(bool forward)
 // is 1 (reg code valid) or 0 (reg code invalid)
 void LookupManager::verifyRegistrationCode(const ArsLexis::String& regCode)
 {
-    iPediaConnection* conn=new iPediaConnection(*this);
+    iPediaConnection* conn = new iPediaConnection(*this);
     conn->regCodeToVerify = regCode;
     conn->setAddress(iPediaApplication::instance().server());
     conn->enqueue();
 }
 
 bool LookupManager::hasPreviousHistoryTerm() const
-{ return  history_.hasPrevious(); }
+{
+    return  history_.hasPrevious(); 
+}
 
 bool LookupManager::hasNextHistoryTerm() const 
-{ return history_.hasNext(); }
+{
+    return history_.hasNext(); 
+}
+
