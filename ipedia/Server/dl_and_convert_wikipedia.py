@@ -26,7 +26,7 @@ except:
 # this is the whole text that was logged during this session
 g_logTotal = ""
 
-g_workingDir = "g:\\wikipedia\\"
+g_workingDir = None
 
 # Which mail server to use when sending an e-mail
 MAILHOST = None
@@ -55,11 +55,13 @@ else:
         g_machine = "KJKLAP1"
     if "DVD"==os.getenv("COMPUTERNAME"):
         # this must be my desktop machine
-        g_workingDir = "g:\\wikipedia\\"
+        g_workingDir = "f:\\wikipedia\\"
         # this will only work when I'm connected to nwlink.com
         MAILHOST = "mail.nwlink.com"
         FROM = "kjk@nwlink.com"
         g_machine = "DVD"
+
+assert None != g_workingDir
 
 #print "Working dir: %s" % g_workingDir
 

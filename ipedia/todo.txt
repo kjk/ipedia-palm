@@ -1,4 +1,17 @@
-## pressing "center" in text field should launch the search
+## ring focus on the text area should also contain the scrolling bar, not
+just the text. That's how InfoMan works and it's better.
+Owner: Andrzej
+Pri: high
+
+## transfering focus to a text field should select the text and retain ring
+focus (currently it doesn't have ring focus). This is how other apps on
+Treo 650 work.
+Owner: Andrzej
+Pri: medium
+
+## create and send via e-mail every day access stats. Similar to what InfoMan
+does. Total number of requests (random/search/extended search), how many
+unique users did queries, terms searched for (can be long)
 
 ## Huayan_Jing (linked from Huayan as "scripture of the same name) doesn't
 exist. English encyclopedia.
@@ -24,10 +37,6 @@ is a efficient sound compression for speech).
 ## don't use mysql for storing article body. implies doing full-text search
 using lucene. This is to decrease amount of time taken by the conversion process
 as well as use less space on disk.
-
-## create and send via e-mail every day access stats. Similar to what InfoMan
-does. Total number of requests (random/search/extended search), how many
-unique users did queries, terms searched for (can be long)
 
 
                 DONE
