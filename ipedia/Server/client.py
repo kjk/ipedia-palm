@@ -17,6 +17,7 @@
 #   -tcnc : test get cookie no cookie
 import sys, string, re, socket, random, pickle, time
 import arsutils
+import Fields
 from iPediaServer import *
 
 # server string must be of form "name:port"
@@ -82,13 +83,13 @@ class Request:
         self.fields = []
         self.lines = []
 
-        self.addField(protocolVersionField, protocolVer)
-        self.addField(clientInfoField,      clientVer)
+        self.addField(Fields.protocolVersion, protocolVer)
+        self.addField(Fields.clientInfo,      clientVer)
         self.addTransactionId()
 
     def addTransactionId(self):
         self.transactionId = "%x" % random.randint(0, 2**16-1)
-        self.addField(transactionIdField,   self.transactionId)
+        self.addField(Fields.transactionId,   self.transactionId)
 
     # we expose addLine() so that clients can also create malformed requests
     def addLine(self,line):
@@ -115,9 +116,9 @@ class Request:
 
     def addCookie(self):
         if getGlobalCookie():
-            self.addField(cookieField, getGlobalCookie())
+            self.addField(Fields.cookie, getGlobalCookie())
         else:
-            self.addField(getCookieField, g_exampleDeviceInfo)
+            self.addField(Fields.getCookie, g_exampleDeviceInfo)
 
 def getRequestHandleCookie(field=None,value=None):
     r = Request()
@@ -140,7 +141,7 @@ def getResponseFromServer(req):
     return response
 
 # parser server response. Returns a dictionary where keys are the
-# names of fields e.g. like formatVersionField, cookieField and values their values
+# names of fields e.g. like Fields.formatVersion, Fields.cookie and values their values
 # returns None if there was an error parsing (the response didn't follow
 # the format we expect)
 def parseServerResponse2(response):
@@ -168,7 +169,7 @@ def parseServerResponse2(response):
             print "'%s' is not a valid request line" % fld
             print "*** payloadLenLeft=%d" % payloadLenLeft
             return None
-        if articleBodyField==field or searchResultsField==field:
+        if Fields.fPayloadField(field):
             payloadLenLeft = int(value)
             payloadField = field
             #print "*** payloadLenLeft=%d" % payloadLenLeft
@@ -194,7 +195,7 @@ def parseServerResponse(response):
         if None == field:
             print "'%s' is not a valid request line" % fld
             return None
-        if articleBodyField==field or searchResultsField==field or reverseLinksField==field:
+        if Fields.fPayloadField(field):
             payloadLen = int(value)
             payload = rest[:payloadLen]
             result[field] = payload
@@ -242,39 +243,39 @@ class Response:
 
 def handleCookie(rsp):
     global g_cookie
-    if not getGlobalCookie() and rsp.hasField(cookieField):
-        print "Found cookie: %s" % rsp.getField(cookieField)
-        g_cookie = rsp.getField(cookieField)
+    if not getGlobalCookie() and rsp.hasField(Fields.cookie):
+        print "Found cookie: %s" % rsp.getField(Fields.cookie)
+        g_cookie = rsp.getField(Fields.cookie)
 
 def test_NoCookieAndGetCookie():
-    # verify that server rejects a query with both cookieField and getCookieField
+    # verify that server rejects a query with both Fields.cookie and Fields.getCookie
     req = Request()
-    req.addField(getCookieField,g_exampleDeviceInfo)
+    req.addField(Fields.getCookie,g_exampleDeviceInfo)
     rsp = Response(req.getString())
     print rsp.getText()
     return
-    assert rsp.hasField(transactionIdField)
-    assert rsp.hasField(cookieField)
-    cookie = self.rsp.getField(cookieField)
+    assert rsp.hasField(Fields.transactionId)
+    assert rsp.hasField(Fields.cookie)
+    cookie = self.rsp.getField(Fields.cookie)
     self.req = Request()
-    self.req.addField(cookieField,cookie)
-    self.req.addField(getCookieField,g_exampleDeviceInfo)
-    self.getResponse([transactionIdField,errorField])
+    self.req.addField(Fields.cookie,cookie)
+    self.req.addField(Fields.getCookie,g_exampleDeviceInfo)
+    self.getResponse([Fields.transactionId,Fields.error])
     self.assertError(iPediaServerError.malformedRequest)
 
 def doGetRandom(fSilent=False,fDoTiming=False):
-    req = getRequestHandleCookie(getRandomField, None)
+    req = getRequestHandleCookie(Fields.getRandom, None)
     timer = arsutils.Timer(fStart=True)
     rsp = Response(req.getString())
     timer.stop()
     handleCookie(rsp)
-    assert rsp.hasField(transactionIdField)
-    assert rsp.getField(transactionIdField) == req.transactionId
-    assert rsp.hasField(articleTitleField)
-    assert rsp.hasField(articleBodyField)
-    assert rsp.hasField(reverseLinksField)
-    assert rsp.hasField(formatVersionField)
-    assert rsp.getField(formatVersionField) == CUR_FORMAT_VER
+    assert rsp.hasField(Fields.transactionId)
+    assert rsp.getField(Fields.transactionId) == req.transactionId
+    assert rsp.hasField(Fields.articleTitle)
+    assert rsp.hasField(Fields.articleBody)
+    assert rsp.hasField(Fields.reverseLinks)
+    assert rsp.hasField(Fields.formatVersion)
+    assert rsp.getField(Fields.formatVersion) == CUR_FORMAT_VER
     if not fSilent:
         print "# response:"
         print rsp.getText()
@@ -282,73 +283,73 @@ def doGetRandom(fSilent=False,fDoTiming=False):
         timer.dumpInfo()
 
 def doGetRandomNoTiming():
-    req = getRequestHandleCookie(getRandomField, None)
+    req = getRequestHandleCookie(Fields.getRandom, None)
     rsp = Response(req.getString())
     handleCookie(rsp)
-    assert rsp.hasField(transactionIdField)
-    assert rsp.getField(transactionIdField) == req.transactionId
-    assert rsp.hasField(articleTitleField)
-    assert rsp.hasField(formatVersionField)
-    assert rsp.getField(formatVersionField) == CUR_FORMAT_VER
-    assert rsp.hasField(articleBodyField)
-    assert rsp.hasField(reverseLinksField)
+    assert rsp.hasField(Fields.transactionId)
+    assert rsp.getField(Fields.transactionId) == req.transactionId
+    assert rsp.hasField(Fields.articleTitle)
+    assert rsp.hasField(Fields.formatVersion)
+    assert rsp.getField(Fields.formatVersion) == CUR_FORMAT_VER
+    assert rsp.hasField(Fields.articleBody)
+    assert rsp.hasField(Fields.reverseLinks)
 
 def doGetDef(term,fSilent=True):
     print "term: %s" % term
-    req = getRequestHandleCookie(getArticleField, term)
+    req = getRequestHandleCookie(Fields.getArticle, term)
     rsp = Response(req.getString())
     handleCookie(rsp)
-    assert rsp.hasField(transactionIdField)
-    assert rsp.getField(transactionIdField) == req.transactionId
+    assert rsp.hasField(Fields.transactionId)
+    assert rsp.getField(Fields.transactionId) == req.transactionId
     if not fSilent:
         print "# response:"
         print rsp.getText()
-    if rsp.hasField(articleTitleField):        
-        assert rsp.hasField(formatVersionField)
-        assert rsp.getField(formatVersionField) == CUR_FORMAT_VER
-        assert rsp.hasField(articleBodyField)
-        #assert rsp.hasField(reverseLinksField)
+    if rsp.hasField(Fields.articleTitle):        
+        assert rsp.hasField(Fields.formatVersion)
+        assert rsp.getField(Fields.formatVersion) == CUR_FORMAT_VER
+        assert rsp.hasField(Fields.articleBody)
+        #assert rsp.hasField(Fields.reverseLinks)
     else:
-        assert rsp.hasField(notFoundField)
-    #print "Definition: %s" % rsp.getField(articleBodyField)
+        assert rsp.hasField(Fields.notFound)
+    #print "Definition: %s" % rsp.getField(Fields.articleBody)
 
 def doSearch(term):
     print "full-text search for: %s" % term
-    req = getRequestHandleCookie(searchField, term)
+    req = getRequestHandleCookie(Fields.search, term)
     rsp = Response(req.getString())
     handleCookie(rsp)
-    assert rsp.hasField(transactionIdField)
-    assert rsp.getField(transactionIdField) == req.transactionId
-    if rsp.hasField(articleTitleField):        
-        assert rsp.hasField(searchResultsField)
+    assert rsp.hasField(Fields.transactionId)
+    assert rsp.getField(Fields.transactionId) == req.transactionId
+    if rsp.hasField(Fields.articleTitle):        
+        assert rsp.hasField(Fields.searchResults)
     else:
-        assert rsp.hasField(notFoundField)
-    #print "Definition: %s" % rsp.getField(articleBodyField)
+        assert rsp.hasField(Fields.notFound)
+    #print "Definition: %s" % rsp.getField(Fields.articleBody)
 
 def doGetArticleCount():
-    req = getRequestHandleCookie(getArticleCountField, None)
+    req = getRequestHandleCookie(Fields.getArticleCount, None)
     rsp = Response(req.getString())
     handleCookie(rsp)
-    assert rsp.hasField(transactionIdField)
-    assert rsp.getField(transactionIdField) == req.transactionId
-    assert rsp.hasField(articleCountField)
-    print "Article count: %s" % rsp.getField(articleCountField)
+    assert rsp.hasField(Fields.transactionId)
+    assert rsp.getField(Fields.transactionId) == req.transactionId
+    assert rsp.hasField(Fields.articleCount)
+    print "Article count: %s" % rsp.getField(Fields.articleCount)
 
 def doGetDatabaseTime():
-    req = getRequestHandleCookie(getDatabaseTimeField, None)
+    req = getRequestHandleCookie(Fields.getDatabaseTime, None)
     rsp = Response(req.getString())
     handleCookie(rsp)
-    assert rsp.hasField(transactionIdField)
-    assert rsp.hasField(databaseTimeField)
-    print "Database time: %s" % rsp.getField(databaseTimeField)
+    assert rsp.hasField(Fields.transactionId)
+    assert rsp.hasField(Fields.databaseTime)
+    print "Database time: %s" % rsp.getField(Fields.databaseTime)
 
 def doVerifyRegCode(regCode):
-    req = getRequestHandleCookie(verifyRegCodeField, regCode)
+    req = getRequestHandleCookie(Fields.verifyRegCode, regCode)
     rsp = Response(req.getString())
     handleCookie(rsp)
-    assert rsp.hasField(transactionIdField)
-    assert rsp.hasField(regCodeValidField)
-    print "Reg code valid: %s" % rsp.getField(regCodeValidField)
+    assert rsp.hasField(Fields.transactionId)
+    assert rsp.hasField(Fields.regCodeValid)
+    print "Reg code valid: %s" % rsp.getField(Fields.regCodeValid)
 
 def doRandomPerf(count):
     timer = arsutils.Timer(fStart=True)
@@ -369,17 +370,17 @@ def doMalformed():
 def doPing():
     req = getRequestHandleCookie()
     rsp = Response(req)
-    assert rsp.hasField(transactionIdField)
-    assert rsp.getField(transactionIdField) == req.transactionId
+    assert rsp.hasField(Fields.transactionId)
+    assert rsp.getField(Fields.transactionId) == req.transactionId
 
 def doInvalidCookie():
     req = Request()
-    req.addField(cookieField, "blah")
+    req.addField(Fields.cookie, "blah")
     print req.getString()
     rsp = Response(req)
     print rsp.getText()
-    assert rsp.hasField(transactionIdField)
-    assert rsp.getField(transactionIdField) == req.transactionId
+    assert rsp.hasField(Fields.transactionId)
+    assert rsp.getField(Fields.transactionId) == req.transactionId
 
 def usageAndExit():
     print "client.py [-showtiming] [-perfrandom N] [-getrandom] [-get term] [-articlecount] [-dbtime] [-ping] [-verifyregcode $regCode] [-malformed]"

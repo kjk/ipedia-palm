@@ -437,7 +437,7 @@ status_t iPediaConnection::notifyPayloadFinished()
         default:
             assert(false);
     }
-    payloadType_=payloadNone;
+    payloadType_ = payloadNone;
     return FieldPayloadProtocolConnection::notifyPayloadFinished();
 }
 

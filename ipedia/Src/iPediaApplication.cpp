@@ -10,6 +10,12 @@
 
 #include <PrefsStore.hpp>
 
+#define SERVER_DICT_PC       "dict-pc.arslexis.com:9000"
+#define SERVER_LOCALHOST_2   "192.168.0.1:9000"
+
+#define SERVER_TO_USE SERVER_LOCALHOST
+//#define SERVER_TO_USE SERVER_OFFICIAL
+
 IMPLEMENT_APPLICATION_CREATOR(appFileCreator)
 
 using namespace ArsLexis;

@@ -33,7 +33,7 @@ unexpectedRequestArgument = 7
 # but client didn't send one
 requestArgumentMissing = 8
 
-# return invalidProtocolVersion if the value of protocolVersionField is
+# return invalidProtocolVersion if the value of protocolVersion is
 # not something we handle
 invalidProtocolVersion = 9
 
