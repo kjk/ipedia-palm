@@ -42,7 +42,7 @@ status_t LookupHistory::serializeOut(ArsLexis::PrefsStoreWriter& writer, int uni
         {
             if (historyPosition_!=it)
                 ++currentItem;
-            if (errNone!=(error=writer.ErrSetStr(uniqueId++, it->c_str())))
+            if (errNone!=(error=writer.ErrSetStr(uniqueId++, (*it).c_str())))
                 goto OnError;
         }
         if (itemCount>=0 && currentItem==itemCount)
