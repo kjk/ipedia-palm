@@ -97,12 +97,12 @@ void iPediaConnection::prepareRequest()
 
     if (!newDbLangCode_.empty())
     {
-        // a bit of a hack but this one has priority over currentLang in prefs
+        // a bit of a hack but this one has priority over langToUse
         appendField(request, useLangField, newDbLangCode_);
     }
-    else if (!app.preferences().currentLang.empty())
+    else if (!langToUse_.empty())
     {
-        appendField(request, useLangField, app.preferences().currentLang);
+        appendField(request, useLangField, langToUse_);
     }
 
     if (!term_.empty())
