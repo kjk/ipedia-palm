@@ -154,7 +154,7 @@ bool LookupManager::lookupIfDifferent(const ArsLexis::String& term)
     bool result=false;
     if (lastDefinitionElements_.empty() || !equalsIgnoreCase(lastInputTerm(), term))
     {
-        lookupTerm(term);
+        lookupTerm(lastInputTerm_=term);
         result=true;
     }
     return result;
