@@ -101,7 +101,11 @@ public:
     bool lookupIfDifferent(const ArsLexis::String& term);
 
     void moveHistory(bool forward=false);
-
+    
+    bool hasPreviousHistoryTerm() const;
+    
+    bool hasNextHistoryTerm() const;    
+    
     const ArsLexis::String& lastSearchExpression() const
     {return lastSearchExpression_;}
 

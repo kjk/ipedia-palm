@@ -211,3 +211,9 @@ void LookupManager::verifyRegistrationCode(const ArsLexis::String& regCode)
     conn->setAddress(iPediaApplication::instance().server());
     conn->enqueue();
 }
+
+bool LookupManager::hasPreviousHistoryTerm() const
+{ return  history_.hasPrevious(); }
+
+bool LookupManager::hasNextHistoryTerm() const 
+{ return history_.hasNext(); }
