@@ -52,7 +52,11 @@ void DefinitionParser::clear()
     parentsStack_.clear();
     currentNumberedList_.clear();
     numListsStack_.clear();
-    lastListNesting_.clear();
+    if (NULL != lastListNesting_)
+    {
+        free(lastListNesting_);
+        lastListNesting_ = NULL;
+    }
     std::for_each(elements_.begin(), elements_.end(), ObjectDeleter<DefinitionElement>());
     elements_.clear();
 }
@@ -552,73 +556,89 @@ void DefinitionParser::finishCurrentNumberedList()
         currentNumberedList_.clear();
 }
 
-void DefinitionParser::manageListNesting(const String& requestedNesting)
+#define maxNestingDepth 8
+
+void DefinitionParser::manageListNesting(const char_t* requestedNesting)
 {
-    static const uint_t maxNestingDepth=8;
-    String newNesting(requestedNesting, 0, maxNestingDepth);
-    uint_t lastNestingDepth=lastListNesting_.length();
-    uint_t newNestingDepth=newNesting.length();
-    if (lastNestingDepth || newNestingDepth)
-    {
-        uint_t firstDiff=0;  // This will be index of first character that makes previous and current nesting descr. differ.
-        while (firstDiff<std::min(lastNestingDepth, newNestingDepth) && 
-            lastListNesting_[firstDiff]==newNesting[firstDiff])
-            firstDiff++;
-            
-        if (lastNestingDepth>0)
-        {
-            for (uint_t i=lastNestingDepth; i>firstDiff; --i)
-            {
-                //TODO check
-                char_t listType=lastListNesting_[i-1];
-                if (numberedListChar==listType)
-                    finishCurrentNumberedList();
-                popParent();
-            }
-        }
+    uint_t newNestingDepth = tstrlen(requestedNesting);
+
+    if (newNestingDepth > maxNestingDepth)
+        newNestingDepth = maxNestingDepth;
+
+    uint_t lastNestingDepth = 0;
+    if (NULL != lastListNesting_)
+        lastNestingDepth = tstrlen(lastListNesting_);
+
+    if ( (0==lastNestingDepth) && (0==newNestingDepth) )
+        return;
+
+    char_t * newNesting = StringCopy2N(requestedNesting, newNestingDepth);
+    if (NULL == newNesting)
+        return;
         
-        if (newNestingDepth>0)
+    uint_t firstDiff=0;  // This will be index of first character that makes previous and current nesting descr. differ.
+    while (firstDiff<std::min(lastNestingDepth, newNestingDepth) && 
+        lastListNesting_[firstDiff]==newNesting[firstDiff])
+    {
+        firstDiff++;
+    }
+        
+    if (lastNestingDepth>0)
+    {
+        for (uint_t i=lastNestingDepth; i>firstDiff; --i)
         {
-            bool continueList=false;
-            if (firstDiff==newNestingDepth) // Means we have just finished a sublist and next element will be another point in current list, not a sublist
-            {
-                assert(firstDiff>0); 
-                popParent();  
-                --firstDiff;                
-                continueList=true;    // Mark that next created element should be continuation of existing list, not start of new one
-            }
-            for (uint_t i=firstDiff; i<newNestingDepth; ++i)
-            {
-                //TODO: check
-                char_t elementType=newNesting[i];
-                ElementPtr element;
-                if (numberedListChar==elementType)
-                {
-                    if (continueList)
-                    {
-                        assert(!currentNumberedList_.empty());
-                        std::auto_ptr<ListNumberElement> listElement(new ListNumberElement(currentNumberedList_.back()->number()+1));
-                        currentNumberedList_.push_back(listElement.get());
-                        element=ElementPtr(listElement.release());
-                    }
-                    else
-                    {
-                        std::auto_ptr<ListNumberElement> listElement(new ListNumberElement(1));
-                        startNewNumberedList(listElement.get());
-                        element=ElementPtr(listElement.release());
-                    }                    
-                }
-                else if (bulletChar==elementType)
-                    element.reset(new BulletElement());
-                else 
-                    element.reset(new ParagraphElement(true));
-                appendElement(element.get());
-                pushParent(element.release());
-                continueList=false;
-            }
+            //TODO check
+            char_t listType = lastListNesting_[i-1];
+            if (numberedListChar == listType)
+                finishCurrentNumberedList();
+            popParent();
         }
     }
-    lastListNesting_=newNesting;
+    
+    if (newNestingDepth>0)
+    {
+        bool continueList=false;
+        if (firstDiff==newNestingDepth) // Means we have just finished a sublist and next element will be another point in current list, not a sublist
+        {
+            assert(firstDiff>0); 
+            popParent();  
+            --firstDiff;                
+            continueList=true;    // Mark that next created element should be continuation of existing list, not start of new one
+        }
+        for (uint_t i=firstDiff; i<newNestingDepth; ++i)
+        {
+            //TODO: check
+            char_t elementType=newNesting[i];
+            ElementPtr element;
+            if (numberedListChar==elementType)
+            {
+                if (continueList)
+                {
+                    assert(!currentNumberedList_.empty());
+                    std::auto_ptr<ListNumberElement> listElement(new ListNumberElement(currentNumberedList_.back()->number()+1));
+                    currentNumberedList_.push_back(listElement.get());
+                    element=ElementPtr(listElement.release());
+                }
+                else
+                {
+                    std::auto_ptr<ListNumberElement> listElement(new ListNumberElement(1));
+                    startNewNumberedList(listElement.get());
+                    element=ElementPtr(listElement.release());
+                }                    
+            }
+            else if (bulletChar==elementType)
+                element.reset(new BulletElement());
+            else 
+                element.reset(new ParagraphElement(true));
+            appendElement(element.get());
+            pushParent(element.release());
+            continueList=false;
+        }
+    }
+
+    if (NULL == lastListNesting_)
+        free(lastListNesting_);
+    lastListNesting_ = newNesting;
 }
 
 void DefinitionParser::appendElement(DefinitionElement* element)
@@ -734,7 +754,7 @@ status_t DefinitionParser::handleIncrement(const String& text, ulong_t& length, 
                     popParent(); 
                     
                 if (listElementLine==previousLineType_ && listElementLine!=lineType_)
-                    manageListNesting(String());
+                    manageListNesting(_T(""));
 
                 ElementPtr ptr;  
                 switch (lineType_)
@@ -778,7 +798,7 @@ status_t DefinitionParser::handleIncrement(const String& text, ulong_t& length, 
                 popParent(); 
                 
             if (listElementLine==previousLineType_)
-                manageListNesting(String());
+                manageListNesting(_T(""));
             
             assert(numListsStack_.empty());
             assert(currentNumberedList_.empty());            
@@ -811,14 +831,20 @@ void DefinitionParser::parseHeaderLine()
 
 void DefinitionParser::parseListElementLine()
 {
-    String::size_type startLong=text_->find_first_not_of(listCharacters, parsePosition_);
-    uint_t start=lineEnd_;
-    if (text_->npos!=startLong && startLong<lineEnd_)
-        start=startLong;
-    String elementDesc(*text_, parsePosition_, start-parsePosition_);
-    manageListNesting(elementDesc);
-    parsePosition_=start;
-    while (parsePosition_<lineEnd_ && isSpace((*text_)[parsePosition_]))
+    String::size_type startLong = text_->find_first_not_of(listCharacters, parsePosition_);
+    uint_t start = lineEnd_;
+    if (text_->npos != startLong && startLong < lineEnd_)
+        start = startLong;
+
+    uint_t elementDescLen = start - parsePosition_;
+    char_t *elementDesc = StringCopy2N(text_->c_str() + parsePosition_, elementDescLen);
+    if (NULL != elementDesc)
+    {
+        manageListNesting(elementDesc);
+        free(elementDesc);
+    }
+    parsePosition_ = start;
+    while (parsePosition_ < lineEnd_ && isSpace((*text_)[parsePosition_]))
         ++parsePosition_;
     parseText(lineEnd_, styleDefault);
 }

@@ -57,7 +57,7 @@ class DefinitionParser: public ArsLexis::FieldPayloadProtocolConnection::Payload
      * parsed list element is continuation of previous list or start of a new one.
      * Therefore this variable should be cleared when we get outside of any list.
      */
-    ArsLexis::String lastListNesting_;
+    ArsLexis::char_t * lastListNesting_;
 
     /**
      * @internal
@@ -97,7 +97,7 @@ class DefinitionParser: public ArsLexis::FieldPayloadProtocolConnection::Payload
      * (if newNesting isn't empty, which means that we want simply to finish all currently
      * opened lists and parse non-list element.
      */
-    void manageListNesting(const ArsLexis::String& newNesting);
+    void manageListNesting(const ArsLexis::char_t* newNesting);
     
     Definition::Elements_t elements_;
     const ArsLexis::String* text_;
