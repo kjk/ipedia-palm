@@ -372,6 +372,10 @@ void MainForm::handleLookupFinished(const EventType& event)
             setDisplayMode(showAbout);
             updateArticleCountEl(app().preferences().articleCount, app().preferences().databaseTime);
             forceAboutRecalculation_ = true;
+            {
+                Field field(*this, termInputField);        
+                field.replace(_T(""));
+            }
             update();
             break;
 
@@ -729,7 +733,6 @@ bool MainForm::handleMenuCommand(UInt16 itemId)
 
         case changeDatabaseMenuItem:
             changeDatabase();
-            update();
             handled = true;
             break;
 
@@ -932,10 +935,6 @@ void MainForm::doDbSelected(int selectedStr)
 
     LookupManager* lookupManager=app().getLookupManager(true);
     assert(NULL != lookupManager);
-    if (lookupManager->lookupInProgress())
-    {
-        log().error() << _T("doDbSelected lookupInProgress");
-    }
 
     if (lookupManager && !lookupManager->lookupInProgress())
     {
