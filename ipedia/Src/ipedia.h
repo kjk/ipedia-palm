@@ -11,11 +11,14 @@
 
 /* centralize all the strings that depend on the version number so that we
    don't forget update them when we update version number */
-#define appVersion              _T("1.2")
+#define appVersion              _T("1.3")
 /* this is what we send as our id (clientInfoField) to the server */
-#define clientInfo              _T("iPedia 1.2")
+#define clientInfo              _T("iPedia 1.3")
 
-#define updateCheckURL          _T("http://www.arslexis.com/updates/palm-ipedia-1-2.html")
+#define pocketPCClientInfo      _T("PocketPC 1.2")
+#define smartphoneClientInfo    _T("Smartphone 1.2")
+
+#define updateCheckURL          _T("http://www.arslexis.com/updates/palm-ipedia-1-3.html")
 
 #define appPrefDatabase   appName _T(" Prefs")
 

@@ -7,47 +7,6 @@
 GENERATEHEADER "ipedia_Rsc.h"
 RESETAUTOID 1000
 
-MENU ID mainMenuBar
-BEGIN
-    PULLDOWN "Main"
-    BEGIN
-         MENUITEM "Search" ID searchMenuItem                          "S"
-         MENUITEM "Extended search" ID extendedSearchMenuItem         "T"
-         MENUITEM "Extended search results" ID searchResultsMenuItem  "X"
-         MENUITEM SEPARATOR ID AUTOID
-         MENUITEM "Random article" ID randomMenuItem                  "R"
-         MENUITEM SEPARATOR ID AUTOID
-         MENUITEM "Copy to clipboard" ID copyMenuItem                 "C"
-         MENUITEM SEPARATOR ID AUTOID
-         MENUITEM "Change language" ID changeDatabaseMenuItem         "D"
-#ifdef  INTERNAL_BUILD
-         MENUITEM SEPARATOR ID AUTOID
-         MENUITEM "localhost" ID useLocalhostMenuItem  
-         MENUITEM "ipedia.arslexis.com" ID useDictPcMenuItem    
-         MENUITEM "Stress mode" ID toggleStressModeMenuItem   
-#endif
-    END
-
-    PULLDOWN "Go"
-    BEGIN
-        MENUITEM "Forward" ID forwardMenuItem                         "F"
-        MENUITEM "Back"    ID backMenuItem                            "B"
-        MENUITEM "History" ID historyMenuItem                         "H"
-        //MENUITEM "Linked articles" ID linkedArticlesMenuItem        "L"
-        //MENUITEM "Linking articles" ID linkingArticlesMenuItem      "I"
-    END
-
-    PULLDOWN "Options"
-    BEGIN
-        MENUITEM "Register"          ID registerMenuItem
-        MENUITEM SEPARATOR
-        MENUITEM "Tutorial"          ID tutorialMenuItem
-        MENUITEM "Check for updates" ID checkUpdatesMenuItem          "U"
-        MENUITEM "ArsLexis website"  ID arslexisWebsiteMenuItem       "W"
-        MENUITEM "About"             ID aboutMenuItem                 "A"
-    END
-END
-
 ALERT ID romIncompatibleAlert
     DEFAULTBUTTON 0
     ERROR
@@ -312,6 +271,47 @@ BEGIN
      BITMAP "back-disabled-lg.bmp" BPP 1 DENSITY 2        
 END
 
+MENU ID mainMenuBar
+BEGIN
+    PULLDOWN "Main"
+    BEGIN
+         MENUITEM "Search" ID searchMenuItem                          "S"
+         MENUITEM "Extended search" ID extendedSearchMenuItem         "T"
+         MENUITEM "Extended search results" ID searchResultsMenuItem  "X"
+         MENUITEM SEPARATOR ID AUTOID
+         MENUITEM "Random article" ID randomMenuItem                  "R"
+         MENUITEM SEPARATOR ID AUTOID
+         MENUITEM "Copy to clipboard" ID copyMenuItem                 "C"
+         MENUITEM SEPARATOR ID AUTOID
+         MENUITEM "Change language" ID changeDatabaseMenuItem         "D"
+#ifdef  INTERNAL_BUILD
+         MENUITEM SEPARATOR ID AUTOID
+         MENUITEM "localhost" ID useLocalhostMenuItem  
+         MENUITEM "ipedia.arslexis.com" ID useDictPcMenuItem    
+         MENUITEM "Stress mode" ID toggleStressModeMenuItem   
+#endif
+    END
+
+    PULLDOWN "Go"
+    BEGIN
+        MENUITEM "Forward" ID forwardMenuItem                         "F"
+        MENUITEM "Back"    ID backMenuItem                            "B"
+        MENUITEM "History" ID historyMenuItem                         "H"
+        MENUITEM "Linked articles"  ID linkedArticlesMenuItem         "L"
+        MENUITEM "Linking articles" ID linkingArticlesMenuItem        "I"
+    END
+
+    PULLDOWN "Options"
+    BEGIN
+        MENUITEM "Register"          ID registerMenuItem
+        MENUITEM SEPARATOR
+        MENUITEM "Tutorial"          ID tutorialMenuItem
+        MENUITEM "Check for updates" ID checkUpdatesMenuItem          "U"
+        MENUITEM "ArsLexis website"  ID arslexisWebsiteMenuItem       "W"
+        MENUITEM "About"             ID aboutMenuItem                 "A"
+    END
+END
+
 FORM ID mainForm AT (0 0 160 160)
     NOSAVEBEHIND NOFRAME
     MENUID mainMenuBar DEFAULTBTNID searchButton  
@@ -328,13 +328,12 @@ BEGIN
 END
 
 NAVIGATION ID mainForm
-    INITIALSTATE kFrmNavHeaderFlagsObjectFocusStartState
-    NAVIGATIONMAP
-      ROW infoRenderer
-      ROW articleRenderer 
-      ROW backButton forwardButton termInputField searchButton
-    END
-
+INITIALSTATE kFrmNavHeaderFlagsObjectFocusStartState
+NAVIGATIONMAP
+  ROW infoRenderer
+  ROW articleRenderer 
+  ROW backButton forwardButton termInputField searchButton
+END
 
 ICONFAMILYEX
 BEGIN
@@ -371,14 +370,30 @@ BEGIN
     GRAFFITISTATEINDICATOR AT (144 PREVTOP)
 END
 
+MENU ID searchResultsMenu 
+BEGIN
+    PULLDOWN "Search"
+    BEGIN
+          MENUITEM "Refine" ID refineSearchMenuItem "R"
+          MENUITEM "Cancel" ID cancelSearchMenuItem "C"
+     END
+END
+
 FORM ID searchResultsForm   AT ( 0 0 160 160 )
 NOFRAME MENUID searchResultsMenu  
 BEGIN
     TITLE "Search results"
     LIST   ""       ID searchResultsList  AT (2 17 156 123) VISIBLEITEMS 11
-    BUTTON "Cancel" ID cancelButton  AT (126 146 32 Auto)
-    BUTTON "Refine" ID refineSearchButton  AT (91 146 32 Auto)
     FIELD           ID refineSearchInputField  AT (2 146 86 Auto) MAXCHARS 255 EDITABLE DYNAMICSIZE HASSCROLLBAR UNDERLINED MULTIPLELINES
+    BUTTON "Refine" ID refineSearchButton  AT (91 146 32 Auto)
+    BUTTON "Cancel" ID cancelButton  AT (126 146 32 Auto)
+END
+
+NAVIGATION ID searchResultsForm
+INITIALSTATE kFrmNavHeaderFlagsObjectFocusStartState
+NAVIGATIONMAP
+  ROW searchResultsList
+  ROW refineSearchInputField refineSearchButton cancelButton
 END
 
 FORM ID stringListForm   AT ( 0 0 160 160 )
@@ -390,18 +405,16 @@ BEGIN
     BUTTON "Cancel" ID cancelButton  AT (126 146 32 Auto)
 END
 
+NAVIGATION ID stringListForm
+INITIALSTATE kFrmNavHeaderFlagsObjectFocusStartState
+NAVIGATIONMAP
+  ROW stringList
+  ROW selectButton cancelButton
+END
+
 // those are dummy values, just so that I can get unique ids generated
 INTEGER ID stringListSelectDbId VALUE 0
 INTEGER ID stringListHistoryId VALUE 0
 INTEGER ID stringListLinkedArticlesId VALUE 0
 INTEGER ID stringListLinkingArticlesId VALUE 0
-
-MENU ID searchResultsMenu 
-BEGIN
-    PULLDOWN "Search"
-    BEGIN
-          MENUITEM "Refine" ID refineSearchMenuItem "R"
-          MENUITEM "Cancel" ID cancelSearchMenuItem "C"
-     END
-END
 

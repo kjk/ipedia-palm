@@ -523,7 +523,7 @@ bool MainForm::handleMenuCommand(UInt16 itemId)
             handled = true;
             break;
 
-/*        case linkedArticlesMenuItem:
+        case linkedArticlesMenuItem:
             doLinkedArticles();
             handled = true;
             break;
@@ -531,7 +531,7 @@ bool MainForm::handleMenuCommand(UInt16 itemId)
         case linkingArticlesMenuItem:
             doLinkingArticles();
             handled = true;
-            break;*/
+            break;
 
         default:
             handled = iPediaForm::handleMenuCommand(itemId);
@@ -575,9 +575,11 @@ Exit:
 
 void MainForm::doLinkedArticles()
 {
-    TextRenderer* renderer = &infoRenderer_;
-    if (showArticle == displayMode_)
-        renderer = &articleRenderer_;
+    // this only applies to articles, not about etc.
+    if (showArticle != displayMode_)
+        return;
+
+    TextRenderer* renderer = &articleRenderer_;
         
     app().strList = ExtractLinksFromDefinition(*renderer, app().strListSize);
     int sel = showStringListForm(app().strList, app().strListSize);
@@ -586,6 +588,10 @@ void MainForm::doLinkedArticles()
 
 void MainForm::doLinkingArticles()
 {
+    // this only applies to articles, not about etc.
+    if (showArticle != displayMode_)
+        return;
+
     LookupManager* lookupManager = app().getLookupManager(true);
     if (NULL==lookupManager)
         return;
