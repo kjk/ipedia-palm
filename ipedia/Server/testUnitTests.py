@@ -63,7 +63,16 @@ class ArticleConvert(unittest.TestCase):
         self.assertEqual(txt,"alme ko gol a")
 
     def test_stripBlocks(self):
-    
+        testData = [ ["<div>ah</div>eh", "div", "eh"],
+                     ["<bl></bl>\nt", "bl", "\nt"],
+                     ["<div>ah</div>\nas", "div", "\nas"],
+                     [ """<div style="float:right; margin:0 0 1em 1em;">[[Image:LeonardoDiCaprio.jpg]]</div>
+
+'''""", "div", "\n\n'''"],
+                     ]
+        for td in testData:
+            txt = stripTagBlocks( td[0], td[1])
+            self.assertEqual(txt,td[2])
 
 class WikipediaSql(unittest.TestCase):
 
