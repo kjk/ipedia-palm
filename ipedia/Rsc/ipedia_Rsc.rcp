@@ -47,7 +47,7 @@ ALERT ID romIncompatibleAlert
     DEFAULTBUTTON 0
     ERROR
 BEGIN
-    TITLE "System Incompatible"
+    TITLE "System incompatible"
     MESSAGE "System Version 4.0 or greater is required to run iPedia."
     BUTTONS "OK"
 END
@@ -56,7 +56,7 @@ ALERT ID networkUnavailableAlert
     DEFAULTBUTTON 0
     ERROR
 BEGIN
-    TITLE "Network Unavailable"
+    TITLE "Network unavailable"
     MESSAGE "Unable to initialize network subsystem."
     BUTTONS "OK"
 END
@@ -101,7 +101,7 @@ ALERT ID serverFailureAlert
     DEFAULTBUTTON 0
     ERROR
 BEGIN
-    TITLE "Server Error"
+    TITLE "Server error"
     MESSAGE "Unable to complete request due to server error."
     BUTTONS "OK"
 END
@@ -111,7 +111,7 @@ ALERT ID invalidAuthorizationAlert
     ERROR
 BEGIN
     TITLE "Invalid Authorization"
-    MESSAGE "Unable to complete request due to invalid authorization data. Please check if you entered serial number correctly."
+    MESSAGE "Unable to complete request due to invalid authorization data. Please check if you entered serial number correctly (using menu 'Options/Register')."
     BUTTONS "OK"
 END
 
@@ -144,8 +144,8 @@ ALERT ID unsupportedDeviceAlert
     DEFAULTBUTTON 0
     ERROR
 BEGIN
-    TITLE "Unsupported Device"
-    MESSAGE "Your hardware configuration is unsupported."
+    TITLE "Unsupported device"
+    MESSAGE "Your hardware configuration is unsupported. Please contact support@arslexis.com if the problem persists."
     BUTTONS "OK"
 END
 
@@ -153,8 +153,8 @@ ALERT ID malformedRequestAlert
     DEFAULTBUTTON 0
     ERROR
 BEGIN
-    TITLE "Malformed Request"
-    MESSAGE "Server rejected your query."
+    TITLE "Malformed request"
+    MESSAGE "Server rejected your query. Please contact support@arslexis.com if the problem persists."
     BUTTONS "OK"
 END
 
@@ -163,7 +163,7 @@ ALERT ID invalidRequestAlert
     ERROR
 BEGIN
     TITLE "Invalid request"
-    MESSAGE "Client sent invalid request. Please contact support@arslexis.com."
+    MESSAGE "Client sent invalid request. Please contact support@arslexis.com if the problem persists."
     BUTTONS "OK"
 END
 
@@ -179,8 +179,8 @@ ALERT ID malformedResponseAlert
     DEFAULTBUTTON 0
     ERROR
 BEGIN
-    TITLE "Malformed Response"
-    MESSAGE "Server returned malformed response."
+    TITLE "Malformed response"
+    MESSAGE "Server returned malformed response. Please contact support@arslexis.com if the problem persists."
     BUTTONS "OK"
 END
 
@@ -188,7 +188,7 @@ ALERT ID connectionTimedOutAlert
     DEFAULTBUTTON 0
     ERROR
 BEGIN
-    TITLE "Timed Out"
+    TITLE "Connection timed out"
     MESSAGE "Connection timed out."
     BUTTONS "OK"
 END
@@ -207,7 +207,7 @@ ALERT ID connectionServerNotRunning
     ERROR
 BEGIN
     TITLE "Error"
-    MESSAGE "The iPedia server is not available. Please contact support@arslexis.com."
+    MESSAGE "The iPedia server is not available. Please contact support@arslexis.com if the problem persists."
     BUTTONS "OK"
 END
 

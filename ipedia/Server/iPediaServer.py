@@ -216,9 +216,9 @@ lineSeparator =     "\n"
 # validClientField = "Get-Cookie" | "Protocol-Version" etc.
 # In other words:
 #  - if request has no parameters, then it must be a requestField immediately
-#    followed by a colon and a newline
+#    followed by a colon (":") and a newline ("\n")
 #  - if request has parameters, then it must be a requestField immediately
-#    followed by a colon, space, arbitrary string which is an argument and newline
+#    followed by a colon (":"), space (" "), arbitrary string which is an argument and newline ("\n")
 #
 # This function parses the request line from the server and returns a tuple
 # (field,value). If request has no parameters, value is None
