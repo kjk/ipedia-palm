@@ -32,7 +32,7 @@ MANAGEMENT_DB  = 'ipedia_manage'
 
 g_fDisableRegistrationCheck     = False
 g_unregisteredLookupsLimit      = 30
-g_unregisteredLookupsDailyLimit = 2   
+g_unregisteredLookupsDailyLimit = 2
 
 g_fDumpPayload = False
 
@@ -53,7 +53,7 @@ ARTICLE_COUNT_DELTA = 3000
 # such reg code (a reg code format we use for real clients is a 12-digit number)
 testValidRegCode    = "7432"
 testDisabledRegCode = "2347"
- 
+
 # testing only
 g_fForceUpgrade = False
 
@@ -154,7 +154,7 @@ def parseRequestLine(line):
     return (field,value)
 
 # given a device info as a string in our encoded form, return a dictionary
-# whose keys are tags (e.g. "PL", "SN", "PN") and value is a tuple: 
+# whose keys are tags (e.g. "PL", "SN", "PN") and value is a tuple:
 # (value as decoded hex string, value as original hex-encoded string)
 # Return None if device info is not in a (syntactically) correct format.
 # Here we don't check if tags are valid (known), just the syntax
@@ -204,7 +204,7 @@ def fValidDeviceInfo(deviceInfo):
 # If we know for sure that device id was unique, we issue previously assigned
 # cookie. This prevents using program indefinitely by just reinstalling it
 # after a limit for unregistered version has been reached.
-# Unique tags are: 
+# Unique tags are:
 #   PN (phone number)
 #   SN (serial number)
 #   HN (handspring serial number)
@@ -290,18 +290,23 @@ listLengthLimit = 200
 
 # given a search term, return a list of articles matching this term.
 # list can be empty (no matches)
-def findFullTextMatches(db, cursor, searchTerm):
+def findFullTextMatches(db, cursor, searchTerm, startOffset = None):
     words = searchTerm.split()
     queryStr = string.join(words, " +")
     queryStrEscaped = db.escape_string(queryStr)
     searchTermEscaped = db.escape_string(searchTerm)
     log(SEV_LOW,"Performing full text search for '%s'\n" % queryStr)
-    query = """SELECT id, title, match(title, body) AGAINST('%s') AS relevance FROM articles WHERE match(title, body) against('%s' in boolean mode) ORDER BY relevance DESC limit %d""" % (searchTermEscaped, queryStrEscaped, listLengthLimit)
+
+    limitStr = " LIMIT %d " % listLengthLimit
+    if startOffset is not None:
+        limitStr = " LIMIT 100 OFFSET %d " % startOffset
+
+    query = """SELECT id, title, match(title, body) AGAINST('%s') AS relevance FROM articles WHERE match(title, body) against('%s' in boolean mode) ORDER BY relevance DESC %s""" % (searchTermEscaped, queryStrEscaped, limitStr)
     cursor.execute(query)
     row = cursor.fetchone()
     if not row:
         log (SEV_LOW,"Performing non-boolean mode search for '%s'" % queryStr)
-        query = """SELECT id, title, match(title, body) AGAINST('%s') AS relevance FROM articles WHERE match(title, body) against('%s') ORDER BY relevance DESC limit %d""" % (searchTermEscaped, queryStrEscaped, listLengthLimit)
+        query = """SELECT id, title, match(title, body) AGAINST('%s') AS relevance FROM articles WHERE match(title, body) against('%s') ORDER BY relevance DESC %s""" % (searchTermEscaped, queryStrEscaped, limitStr)
         cursor.execute(query)
 
     titleList=[]
@@ -504,7 +509,7 @@ class iPediaProtocol(LineReceiver):
             raise
         return False
 
-    # Log all Get-Cookie requests    
+    # Log all Get-Cookie requests
     def logGetCookie(self,userId,deviceInfo,cookie):
         cursor=None
         try:
@@ -517,9 +522,9 @@ class iPediaProtocol(LineReceiver):
             cursor.close()
         except _mysql_exceptions.Error, ex:
             if cursor:
-                cursor.close()        
+                cursor.close()
             log(SEV_HI, arsutils.exceptionAsStr(ex))
-        
+
     # Log all attempts to verify registration code. We ignore all errors from here
     def logRegCodeToVerify(self,userId,regCode,fRegCodeValid):
         reg_code_valid_p = 'f'
@@ -536,7 +541,7 @@ class iPediaProtocol(LineReceiver):
             cursor.close()
         except _mysql_exceptions.Error, ex:
             if cursor:
-                cursor.close()        
+                cursor.close()
             log(SEV_HI, arsutils.exceptionAsStr(ex))
 
     def outputArticle(self, title, body, reverseLinks):
@@ -861,7 +866,7 @@ class iPediaProtocol(LineReceiver):
 
         self.logGetCookie(self.userId,deviceInfo,cookie)
         return None
-            
+
     # figure out user id and set self.userId
     # Possible cases:
     # a) we get registration code
@@ -962,7 +967,7 @@ class iPediaProtocol(LineReceiver):
         except Exception, ex:
             log(SEV_HI, arsutils.exceptionAsStr(ex))
             return self.finish(ServerErrors.serverFailure)
- 
+
         self.finish(None)
 
     def lineReceived(self, request):
@@ -978,7 +983,7 @@ class iPediaProtocol(LineReceiver):
                 return self.answer(ServerErrors.malformedRequest)
 
             if not iPediaFields.fClientField(fieldName):
-                return self.answer(ServerErrors.invalidRequest)                
+                return self.answer(ServerErrors.invalidRequest)
 
             if iPediaFields.fFieldHasArguments(fieldName):
                 if None == value:
@@ -1052,7 +1057,7 @@ def fDbDate(dbDate):
     if not dbDateRe.match(dbDate):
         return False
     return True
-        
+
 def fIpediaDb(dbName):
     """Return True if a given database name is a name of the database with Wikipedia
     articles"""
@@ -1105,7 +1110,7 @@ class iPediaTelnetProtocol(LineReceiver):
 
     listRe=re.compile(r'\s*list\s*', re.I)
     useDbRe=re.compile(r'\s*use\s+(\w+)\s*', re.I)
-    
+
     def __init__(self):
         self.delimiter='\n'
 
@@ -1139,7 +1144,7 @@ class iPediaTelnetProtocol(LineReceiver):
     def useDatabase(self, dbName):
         dbsInfo = None
         try:
-            dbInfos = getAllDbInfos(True)           
+            dbInfos = getAllDbInfos(True)
 
             dbInfo = getDbByName(dbName)
             if None == dbInfo:
@@ -1193,7 +1198,7 @@ class iPediaTelnetProtocol(LineReceiver):
 
 def usageAndExit():
     print "iPediaServer.py [-demon] [-verbose] [-usepsyco] [-listdbs] [-db name]"
-    sys.exit(0)        
+    sys.exit(0)
 
 def getLangFromDbName(dbName):
     # database names are in 2 styles:
@@ -1255,7 +1260,7 @@ def getLatestDbForLang(lang):
                     # those are string but they also sort correctly by date
                     latestDb = dbInfo
     return latestDb
-        
+
 def main():
     global g_fPsycoAvailable, g_acceptedLogSeverity, g_supportedLangs, g_fDisableRegistrationCheck
 
