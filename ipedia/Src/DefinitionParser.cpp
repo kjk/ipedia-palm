@@ -122,19 +122,16 @@ void DefinitionParser::applyCurrentFormatting(FormattedTextElement* element)
     element->setEffects(fontEffects);
 }
 
-namespace {
-
-    static const char_t entityReferenceStart='&';
-    static const char_t entityReferenceEnd=';';
-
-}    
+#define entityReferenceStart _T('&')
+#define entityReferenceEnd   _T(';')
 
 void DefinitionParser::decodeHTMLCharacterEntityRefs(String& text) const
 {
-    uint_t length=text.length();
-    uint_t index=0;
-    bool inEntity=false;
-    uint_t entityStart=0;
+    uint_t length = text.length();
+    uint_t index = 0;
+    bool inEntity = false;
+    uint_t entityStart = 0;
+
     while (index<length)
     {
         char_t chr=text[index];
@@ -148,7 +145,7 @@ void DefinitionParser::decodeHTMLCharacterEntityRefs(String& text) const
             if (chr==entityReferenceEnd)
             {
                 String entity(text, entityStart+1, index-entityStart-1);
-                if (!entity.empty() && entity[0]=='#')
+                if (!entity.empty() && entity[0] == _T('#'))
                 {
                     long numVal;
                     const char_t* begin=entity.c_str();
@@ -317,11 +314,6 @@ bool DefinitionParser::detectHTMLTag(uint_t end)
     return result;
 }
 
-#define imagePrefix "image:"
-#define mediaPrefix "media:"
-#define linkCloseText "]"
-#define linkPartSeparator "|"
-
 bool DefinitionParser::detectHyperlink(uint_t end)
 {
     bool result=false;
@@ -428,7 +420,7 @@ namespace {
 
     inline static bool isNewline(char_t chr)
     {
-        return chr=='\n';
+        return chr == _T('\n');
     }
 
 }
@@ -463,7 +455,10 @@ void DefinitionParser::parseText(uint_t end, ElementStyle style)
         //TODO
         char_t chr=textLine_[textPosition_];
         if (isNewline(chr))
-            chr=textLine_[textPosition_]=' ';
+        {
+            chr = _T(' ');
+            textLine_[textPosition_] = _T(' ');
+        }
             
         bool specialChar=false;
         lastElementEnd_=textPosition_;
@@ -603,15 +598,15 @@ void DefinitionParser::manageListNesting(const char_t* requestedNesting)
     char_t * newNesting = StringCopy2N(requestedNesting, newNestingDepth);
     if (NULL == newNesting)
         return;
-        
-    uint_t firstDiff=0;  // This will be index of first character that makes previous and current nesting descr. differ.
-    while (firstDiff<std::min(lastNestingDepth, newNestingDepth) && 
+
+    uint_t firstDiff = 0;  // This will be index of first character that makes previous and current nesting descr. differ.
+    while (firstDiff < std::min(lastNestingDepth, newNestingDepth) && 
         lastListNesting_[firstDiff]==newNesting[firstDiff])
     {
         firstDiff++;
     }
         
-    if (lastNestingDepth>0)
+    if (lastNestingDepth > 0)
     {
         for (uint_t i=lastNestingDepth; i>firstDiff; --i)
         {
@@ -623,20 +618,20 @@ void DefinitionParser::manageListNesting(const char_t* requestedNesting)
         }
     }
     
-    if (newNestingDepth>0)
+    if (newNestingDepth > 0)
     {
         bool continueList=false;
-        if (firstDiff==newNestingDepth) // Means we have just finished a sublist and next element will be another point in current list, not a sublist
+        if (firstDiff == newNestingDepth) // Means we have just finished a sublist and next element will be another point in current list, not a sublist
         {
             assert(firstDiff>0); 
             popParent();  
             --firstDiff;                
-            continueList=true;    // Mark that next created element should be continuation of existing list, not start of new one
+            continueList = true;    // Mark that next created element should be continuation of existing list, not start of new one
         }
         for (uint_t i=firstDiff; i<newNestingDepth; ++i)
         {
             //TODO: check
-            char_t elementType=newNesting[i];
+            char_t elementType = newNesting[i];
             ElementPtr element;
             if (numberedListChar==elementType)
             {
@@ -660,11 +655,11 @@ void DefinitionParser::manageListNesting(const char_t* requestedNesting)
                 element.reset(new ParagraphElement(true));
             appendElement(element.get());
             pushParent(element.release());
-            continueList=false;
+            continueList = false;
         }
     }
 
-    if (NULL == lastListNesting_)
+    if (NULL != lastListNesting_)
         free(lastListNesting_);
     lastListNesting_ = newNesting;
 }
@@ -680,7 +675,7 @@ DefinitionParser::LineType DefinitionParser::detectLineType(uint_t start, uint_t
     LineType lineType=textLine;
     if (0==openNowiki_)
     {
-        if (end==start || (end-start==1 && (*text_)[start]=='\r'))
+        if (end==start || (end-start==1 && (*text_)[start]==_T('\r')))
             lineType=emptyLine;
         else {
             switch ((*text_)[start])
@@ -712,7 +707,7 @@ DefinitionParser::LineType DefinitionParser::detectLineType(uint_t start, uint_t
 
 bool DefinitionParser::detectNextLine(uint_t textEnd, bool finish)
 {
-    String::size_type end=text_->find('\n', parsePosition_);
+    String::size_type end=text_->find(_T('\n'), parsePosition_);
     bool goOn=(text_->npos!=end && end<textEnd);
     if (finish || goOn)
     {
@@ -724,7 +719,7 @@ bool DefinitionParser::detectNextLine(uint_t textEnd, bool finish)
             goOn=false;
             while (lineEnd+1<textEnd || finish)
             {
-                end=text_->find('\n', lineEnd+1);
+                end=text_->find(_T('\n'), lineEnd+1);
                 if (!finish && (text_->npos==end || end>=textEnd))
                     break;
                 if (finish && lineEnd==textEnd)
