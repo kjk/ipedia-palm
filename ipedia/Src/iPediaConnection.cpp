@@ -165,7 +165,7 @@ Err iPediaConnection::notifyProgress()
 
 Err iPediaConnection::handleField(const String& name, const String& value)
 {
-    std::int32_t numValue;
+    long numValue;
     Err error=errNone;
     if (0==name.find(transactionIdField))
     {
