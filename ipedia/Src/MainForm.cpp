@@ -51,7 +51,7 @@ static char_t** ExtractLinksFromDefinition(const TextRenderer& renderer, int& st
     return strList;
 }
 
-MainForm::MainForm(iPediaApplication& app):
+PediaMainForm::PediaMainForm(iPediaApplication& app):
     iPediaForm(app, mainForm),
     renderingProgressReporter_(*this),
     displayMode_(showAbout),
@@ -84,7 +84,7 @@ MainForm::MainForm(iPediaApplication& app):
     setFocusControlId(termInputField);
 }
 
-void MainForm::attachControls() 
+void PediaMainForm::attachControls() 
 {
     iPediaForm::attachControls();
     
@@ -99,7 +99,7 @@ void MainForm::attachControls()
     infoRenderer_.setNavOrderOptions(TextRenderer::navOrderFirst);
 }
 
-bool MainForm::handleOpen()
+bool PediaMainForm::handleOpen()
 {
     bool fOk=iPediaForm::handleOpen();
     updateNavigationButtons();
@@ -109,12 +109,12 @@ bool MainForm::handleOpen()
     return fOk;
 }
 
-inline const LookupHistory& MainForm::getHistory() const
+inline const LookupHistory& PediaMainForm::getHistory() const
 {
     return static_cast<const iPediaApplication&>(application()).history();
 }
 
-void MainForm::resize(const ArsLexis::Rectangle& screenBounds)
+void PediaMainForm::resize(const ArsLexis::Rectangle& screenBounds)
 {
     Rectangle bounds(this->bounds());
     if (screenBounds==bounds)
@@ -135,7 +135,7 @@ void MainForm::resize(const ArsLexis::Rectangle& screenBounds)
     update();    
 }
 
-void MainForm::draw(UInt16 updateCode)
+void PediaMainForm::draw(UInt16 updateCode)
 {
     Graphics graphics(windowHandle());
     Rectangle rect(bounds());
@@ -160,14 +160,14 @@ void MainForm::draw(UInt16 updateCode)
 }
 
 
-void MainForm::moveHistory(bool forward)
+void PediaMainForm::moveHistory(bool forward)
 {
     LookupManager* lookupManager=app().getLookupManager(true);
     if (NULL != lookupManager && !lookupManager->lookupInProgress())
         lookupManager->moveHistory(forward);
 }
 
-void MainForm::handleControlSelect(const EventType& event)
+void PediaMainForm::handleControlSelect(const EventType& event)
 {
     LookupManager* lookupManager = app().getLookupManager();
     if (NULL != lookupManager && lookupManager->lookupInProgress())
@@ -196,7 +196,7 @@ void MainForm::handleControlSelect(const EventType& event)
     }
 }
 
-void MainForm::setControlsState(bool enabled)
+void PediaMainForm::setControlsState(bool enabled)
 {
 //    backButton_.setEnabled(enabled);
 //    forwardButton_.setEnabled(enabled);
@@ -210,7 +210,7 @@ void MainForm::setControlsState(bool enabled)
     }
 }
 
-void MainForm::handleLookupFinished(const EventType& event)
+void PediaMainForm::handleLookupFinished(const EventType& event)
 {
     setControlsState(true);
     const LookupFinishedEventData& data=reinterpret_cast<const LookupFinishedEventData&>(event.data);
@@ -262,7 +262,7 @@ void MainForm::handleLookupFinished(const EventType& event)
     }        
 }
 
-bool MainForm::handleEvent(EventType& event)
+bool PediaMainForm::handleEvent(EventType& event)
 {
     if (showArticle == displayMode_ && articleRenderer_.handleEventInForm(event))
         return true;
@@ -358,7 +358,7 @@ bool MainForm::handleEvent(EventType& event)
     return handled;
 }
 
-void MainForm::updateNavigationButtons()
+void PediaMainForm::updateNavigationButtons()
 {
     const LookupHistory& history=getHistory();
 
@@ -375,7 +375,7 @@ void MainForm::updateNavigationButtons()
         forwardButton_.setGraphics(forwardDisabledBitmap);
 }
 
-void MainForm::updateAfterLookup()
+void PediaMainForm::updateAfterLookup()
 {
     LookupManager* lookupManager = app().getLookupManager();
     assert(lookupManager!=0);
@@ -392,7 +392,7 @@ void MainForm::updateAfterLookup()
     updateNavigationButtons();
 }
 
-bool MainForm::handleKeyPress(const EventType& event)
+bool PediaMainForm::handleKeyPress(const EventType& event)
 {
     bool handled = false;
     if (fiveWayCenterPressed(&event))
@@ -411,12 +411,12 @@ bool MainForm::handleKeyPress(const EventType& event)
     return handled;
 }
 
-void MainForm::switchServer(char_t * server)
+void PediaMainForm::switchServer(char_t * server)
 {
     app().serverAddress = server;    
 }
 
-bool MainForm::handleMenuCommand(UInt16 itemId)
+bool PediaMainForm::handleMenuCommand(UInt16 itemId)
 {
     bool handled = false;
 
@@ -541,7 +541,7 @@ bool MainForm::handleMenuCommand(UInt16 itemId)
     return handled;
 }
 
-void MainForm::doHistory()
+void PediaMainForm::doHistory()
 {
     LookupManager* lookupManager=app().getLookupManager(true);
     if (NULL==lookupManager)
@@ -556,7 +556,7 @@ void MainForm::doHistory()
     doLookupSelectedTerm(sel);    
 }
 
-void MainForm::doLookupSelectedTerm(int selectedStr)
+void PediaMainForm::doLookupSelectedTerm(int selectedStr)
 {
     if (NOT_SELECTED==selectedStr)
         goto Exit;
@@ -573,7 +573,7 @@ Exit:
     app().strList = NULL;
 }
 
-void MainForm::doLinkedArticles()
+void PediaMainForm::doLinkedArticles()
 {
     // this only applies to articles, not about etc.
     if (showArticle != displayMode_)
@@ -586,7 +586,7 @@ void MainForm::doLinkedArticles()
     doLookupSelectedTerm(sel);    
 }
 
-void MainForm::doLinkingArticles()
+void PediaMainForm::doLinkingArticles()
 {
     // this only applies to articles, not about etc.
     if (showArticle != displayMode_)
@@ -609,7 +609,7 @@ void MainForm::doLinkingArticles()
 // this will be called either as a result of invoking menu item
 // or getAvailableLangs() query to the server (which we issue ourselves,
 // so it's kind of a recursion)
-void MainForm::changeDatabase()
+void PediaMainForm::changeDatabase()
 {
     String availableLangs = app().preferences().availableLangs;
     if (availableLangs.empty())
@@ -646,7 +646,7 @@ void MainForm::changeDatabase()
     doDbSelected(sel);
 }
 
-int MainForm::showStringListForm(char_t* strList[], int strListSize)
+int PediaMainForm::showStringListForm(char_t* strList[], int strListSize)
 {
     StringListForm* form = new StringListForm(app(), stringListForm, stringList, selectButton, cancelButton);
     form->initialize();
@@ -659,7 +659,7 @@ int MainForm::showStringListForm(char_t* strList[], int strListSize)
     return sel;    
 }
 
-void MainForm::doDbSelected(int selectedStr)
+void PediaMainForm::doDbSelected(int selectedStr)
 {
     if (NOT_SELECTED == selectedStr)
         goto Exit;
@@ -685,14 +685,14 @@ Exit:
     app().strList = NULL;
 }
 
-void MainForm::randomArticle()
+void PediaMainForm::randomArticle()
 {
     LookupManager* lookupManager=app().getLookupManager(true);
     if (lookupManager && !lookupManager->lookupInProgress())
         lookupManager->lookupRandomTerm();
 }
 
-void MainForm::copySelectionOrAllToClipboard()
+void PediaMainForm::copySelectionOrAllToClipboard()
 {
     TextRenderer* renderer = &infoRenderer_;
     if (showArticle == displayMode_)
@@ -704,7 +704,7 @@ void MainForm::copySelectionOrAllToClipboard()
     renderer->copySelectionOrAll();
 }
 
-bool MainForm::handleWindowEnter(const struct _WinEnterEventType& data)
+bool PediaMainForm::handleWindowEnter(const struct _WinEnterEventType& data)
 {
     const FormType* form = *this;
     if (data.enterWindow==static_cast<const void*>(form))
@@ -723,7 +723,7 @@ bool MainForm::handleWindowEnter(const struct _WinEnterEventType& data)
     return iPediaForm::handleWindowEnter(data);
 }
 
-void MainForm::handleToggleStressMode()
+void PediaMainForm::handleToggleStressMode()
 {
     if (app().inStressMode())
         app().toggleStressMode(false);
@@ -734,7 +734,7 @@ void MainForm::handleToggleStressMode()
     }        
 }
 
-void MainForm::search(bool fullText)
+void PediaMainForm::search(bool fullText)
 {
     const char* text = termInputField_.text();
     uint_t textLen;
@@ -755,7 +755,7 @@ void MainForm::search(bool fullText)
         lookupManager->search(term);
 }
 
-MainForm::RenderingProgressReporter::RenderingProgressReporter(MainForm& form):
+PediaMainForm::RenderingProgressReporter::RenderingProgressReporter(PediaMainForm& form):
     form_(form),
     ticksAtStart_(0),
     lastPercent_(-1),
@@ -768,7 +768,7 @@ MainForm::RenderingProgressReporter::RenderingProgressReporter(MainForm& form):
         
 #define IPEDIA_USES_TEXT_RENDERING_PROGRESS 0
 
-void MainForm::RenderingProgressReporter::reportProgress(uint_t percent) 
+void PediaMainForm::RenderingProgressReporter::reportProgress(uint_t percent) 
 {
     if (percent==lastPercent_)
         return;
@@ -834,44 +834,44 @@ void MainForm::RenderingProgressReporter::reportProgress(uint_t percent)
 static void wikipediaActionCallback(void *data)
 {
     assert(NULL!=data);
-    MainForm * mf = static_cast<MainForm*>(data);
-    assert(MainForm::showWikipedia != mf->displayMode());
-    mf->setDisplayMode(MainForm::showWikipedia);
+    PediaMainForm * mf = static_cast<PediaMainForm*>(data);
+    assert(PediaMainForm::showWikipedia != mf->displayMode());
+    mf->setDisplayMode(PediaMainForm::showWikipedia);
     mf->update();
 }
 
 static void tutorialActionCallback(void *data)
 {
     assert(NULL!=data);
-    MainForm * mf = static_cast<MainForm*>(data);
-    assert(MainForm::showTutorial != mf->displayMode());
-    mf->setDisplayMode(MainForm::showTutorial);
+    PediaMainForm * mf = static_cast<PediaMainForm*>(data);
+    assert(PediaMainForm::showTutorial != mf->displayMode());
+    mf->setDisplayMode(PediaMainForm::showTutorial);
     mf->update();
 }
 
 static void unregisteredActionCallback(void *data)
 {
     assert(NULL!=data);
-    MainForm * mf = static_cast<MainForm*>(data);
-    assert(MainForm::showRegister!=mf->displayMode());
-    mf->setDisplayMode(MainForm::showRegister);
+    PediaMainForm * mf = static_cast<PediaMainForm*>(data);
+    assert(PediaMainForm::showRegister!=mf->displayMode());
+    mf->setDisplayMode(PediaMainForm::showRegister);
     mf->update();
 }
 
 static void aboutActionCallback(void *data)
 {
     assert(NULL!=data);
-    MainForm * mf = static_cast<MainForm*>(data);
-    assert(MainForm::showAbout != mf->displayMode());
-    mf->setDisplayMode(MainForm::showAbout);
+    PediaMainForm * mf = static_cast<PediaMainForm*>(data);
+    assert(PediaMainForm::showAbout != mf->displayMode());
+    mf->setDisplayMode(PediaMainForm::showAbout);
     mf->update();
 }
 
 static void randomArticleActionCallback(void *data)
 {
     assert(NULL!=data);
-    MainForm * mf = static_cast<MainForm*>(data);
-    assert(MainForm::showTutorial == mf->displayMode());
+    PediaMainForm * mf = static_cast<PediaMainForm*>(data);
+    assert(PediaMainForm::showTutorial == mf->displayMode());
     sendEvent(iPediaApplication::appRandomWord);
 }
 
@@ -909,7 +909,7 @@ static void prepareArticleCountEl(GenericTextElement *articleCountElement, long 
 
 GenericTextElement *    articleCountElement;
 
-void MainForm::prepareAbout()
+void PediaMainForm::prepareAbout()
 {
     Definition::Elements_t  elems;
     FormattedTextElement *  text;
@@ -1010,7 +1010,7 @@ void MainForm::prepareAbout()
 }
 
 // TODO: make those on-demand only to save memory
-void MainForm::prepareTutorial()
+void PediaMainForm::prepareTutorial()
 {
     setTitle("iPedia - Tutorial");
     Definition::Elements_t elems;
@@ -1091,12 +1091,12 @@ void MainForm::prepareTutorial()
 static void registerActionCallback(void *data)
 {
     assert(NULL!=data);
-    MainForm * mf = static_cast<MainForm*>(data);   
+    PediaMainForm * mf = static_cast<PediaMainForm*>(data);   
     sendEvent(iPediaApplication::appRegisterEvent);
 }
 
 // TODO: make those on-demand only to save memory
-void MainForm::prepareHowToRegister()
+void PediaMainForm::prepareHowToRegister()
 {
     setTitle("iPedia - How to register");
     Definition::Elements_t elems;
@@ -1142,7 +1142,7 @@ void MainForm::prepareHowToRegister()
     infoRenderer_.replaceElements(elems);
 }
 
-void MainForm::prepareWikipedia()
+void PediaMainForm::prepareWikipedia()
 {
     setTitle("iPedia - Wikipedia");
     Definition::Elements_t elems;
@@ -1171,7 +1171,7 @@ void MainForm::prepareWikipedia()
     infoRenderer_.replaceElements(elems);
 }    
 
-void MainForm::setDisplayMode(MainForm::DisplayMode mode) 
+void PediaMainForm::setDisplayMode(PediaMainForm::DisplayMode mode) 
 {
     
     switch (mode) 
@@ -1216,5 +1216,5 @@ void MainForm::setDisplayMode(MainForm::DisplayMode mode)
             assert(false);          
     }
     displayMode_ = mode;
-       
+
 }

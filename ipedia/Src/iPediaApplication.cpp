@@ -164,7 +164,7 @@ Form* iPediaApplication::createForm(UInt16 formId)
     switch (formId)
     {
         case mainForm:
-            form = new MainForm(*this);
+            form = new PediaMainForm(*this);
             break;
             
         case registrationForm:

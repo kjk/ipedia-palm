@@ -158,7 +158,7 @@ void SearchResultsForm::handleControlSelect(const EventType& event)
         
         case cancelButton:
             {
-                MainForm* form=static_cast<MainForm*>(application().getOpenForm(mainForm));
+                PediaMainForm* form=static_cast<PediaMainForm*>(application().getOpenForm(mainForm));
                 assert(form);
                 form->update();
                 closePopup();
@@ -301,7 +301,7 @@ void SearchResultsForm::handleLookupFinished(const EventType& event)
     const LookupFinishedEventData& data=reinterpret_cast<const LookupFinishedEventData&>(event.data);
     if (data.outcomeArticleBody==data.outcome)
     {
-        MainForm* form=static_cast<MainForm*>(application().getOpenForm(mainForm));
+        PediaMainForm* form=static_cast<PediaMainForm*>(application().getOpenForm(mainForm));
         assert(form);
         if (form)
             form->setUpdateDefinitionOnEntry();

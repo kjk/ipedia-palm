@@ -11,7 +11,7 @@ class LookupHistory;
 class RenderingPreferences;
 
 
-class MainForm: public iPediaForm
+class PediaMainForm: public iPediaForm
 {
 
     ArsLexis::FormObject graffiti_;
@@ -64,7 +64,7 @@ class MainForm: public iPediaForm
     
     class RenderingProgressReporter: public Definition::RenderingProgressReporter
     {
-        MainForm& form_;
+        PediaMainForm& form_;
         UInt32 ticksAtStart_;
         uint_t lastPercent_;
         bool showProgress_:1;
@@ -73,7 +73,7 @@ class MainForm: public iPediaForm
         
     public:
         
-        RenderingProgressReporter(MainForm& form);
+        RenderingProgressReporter(PediaMainForm& form);
         
         virtual void reportProgress(uint_t percent);
 
@@ -120,7 +120,7 @@ protected:
     
 public:
 
-    MainForm(iPediaApplication& app);
+    PediaMainForm(iPediaApplication& app);
     
     enum DisplayMode
     {
