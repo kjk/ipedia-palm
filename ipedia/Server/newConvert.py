@@ -320,15 +320,20 @@ def convertArticles(sqlDump,dbName,articleLimit):
 
     convWriter.close()
 
+g_dbList = None
 # return a list of databases on the server
-def getDbList(conn):
-    cur = conn.cursor()
-    cur.execute("SHOW DATABASES;")
-    dbs = []
-    for row in cur.fetchall():
-        dbs.append(row[0])
-    cur.close()    
-    return dbs    
+def getDbList():
+    global g_dbList
+    conn = getRootConnection()
+    if None == g_dbList:
+        cur = conn.cursor()
+        cur.execute("SHOW DATABASES;")
+        dbs = []
+        for row in cur.fetchall():
+            dbs.append(row[0])
+        cur.close()    
+        g_dbList = dbs
+    return g_dbList
 
 genSchemaSql = """
 CREATE TABLE `articles` (
@@ -417,18 +422,21 @@ def createDataDb(conn):
     cur.close()
     print "Created '%s' database and granted perms to ipedia user" % MANAGEMENT_DB
 
+def recreateDataDb(fRecreate=False):
+    connRoot = getRootConnection()
+    if MANAGEMENT_DB not in getDbList():
+        createDataDb(connRoot)
+    else:
+        if fRecreate:
+            delDataDb(connRoot)
+            createDataDb(connRoot)
+        else:
+            print "Database '%s' exists" % MANAGEMENT_DB
+
 def createIpediaDb(sqlDumpName,dbName,fRecreateDb=False,fRecreateDataDb=False):
     connRoot = getRootConnection()
-    dbList = getDbList(connRoot)
-    fDbExists = False
-    fDataDbExists = False
-    for db in dbList:
-        if db==dbName:
-            fDbExists = True
-        if db==MANAGEMENT_DB:
-            fDataDbExists = True
-            print "Data database '%s' already exists" % MANAGEMENT_DB
-    if not fDbExists:
+
+    if dbName not in getDbList():
         createDb(connRoot,dbName)
     else:
         if fRecreateDb:
@@ -437,14 +445,7 @@ def createIpediaDb(sqlDumpName,dbName,fRecreateDb=False,fRecreateDataDb=False):
         else:
             print "Database '%s' already exists. Use -recreatedb flag in order to force recreation of the database" % dbName
             sys.exit(0)
-    if not fDataDbExists:
-        createDataDb(connRoot)
-    else:
-        if fRecreateDataDb:
-            delDataDb(connRoot)
-            createDataDb(connRoot)
-        else:
-            print "Database '%s' exists" % MANAGEMENT_DB
+
 
 def createFtIndex():
     print "starting to create full-text index"
@@ -468,8 +469,15 @@ if __name__=="__main__":
     fRecreateDataDb = arsutils.fDetectRemoveCmdFlag("-recreatedatadb")
     articleLimit = arsutils.getRemoveCmdArgInt("-limit")
 
+    # we always need to try to create it
+    recreateDataDb(fRecreateDataDb)
+    if fRecreateDataDb and len(sys.argv) == 1:
+        # no arguments allowed if we only try to recreate data db
+        sys.exit(0)
+
     if len(sys.argv) != 2:
         usageAndExit()
+
     sqlDump = sys.argv[1]
 
     dbName = getDbNameFromFileName(sqlDump)
