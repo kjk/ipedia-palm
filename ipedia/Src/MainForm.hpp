@@ -18,6 +18,7 @@ class MainForm: public iPediaForm
     GenericTextElement* articleCountElement_;
     bool forceAboutRecalculation_;    
     long articleCountSet_;
+    int  penUpsToEat_;
     
     const LookupHistory& getHistory() const;
     

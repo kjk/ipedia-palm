@@ -21,7 +21,8 @@ MainForm::MainForm(iPediaApplication& app):
     enableInputFieldAfterUpdate_(false),
     forceAboutRecalculation_(false),
     articleCountElement_(0),
-    articleCountSet_(-1)
+    articleCountSet_(-1),
+    penUpsToEat_(0)
 {
     articleCountSet_ = app.preferences().articleCount;
     article_.setRenderingProgressReporter(&renderingProgressReporter_);
@@ -459,6 +460,12 @@ bool MainForm::handleEvent(EventType& event)
             break;
         
         case penUpEvent:
+            if (penUpsToEat_ > 0)
+            {
+                --penUpsToEat_;
+                handled = true;
+                break;
+            }
             handleExtendSelection(event, true);
             break;
     
@@ -651,7 +658,7 @@ bool MainForm::handleMenuCommand(UInt16 itemId)
 
         case aboutMenuItem:
             handleAbout();
-            handled=true;
+            handled = true;
             break;
 
         case tutorialMenuItem:
@@ -692,6 +699,7 @@ bool MainForm::handleMenuCommand(UInt16 itemId)
         default:
             handled=iPediaForm::handleMenuCommand(itemId);
     }
+    penUpsToEat_ = 1;
     return handled;
 }
 
@@ -950,7 +958,7 @@ void MainForm::prepareAbout()
 
     elems.push_back(text=new FormattedTextElement("ArsLexis"));
     text->setJustification(DefinitionElement::justifyCenter);
-    text->setHyperlink("http://www.arslexis.com/pda/ipedia.html", hyperlinkExternal);
+    text->setHyperlink("http://www.arslexis.com/pda/palm.html", hyperlinkExternal);
 
     elems.push_back(new LineBreakElement(1,4));
     elems.push_back(text=new FormattedTextElement("Data \251 "));
@@ -1036,10 +1044,10 @@ void MainForm::prepareHowToRegister()
     FontEffects fxBold;
     fxBold.setWeight(FontEffects::weightBold);
 
-    elems.push_back(text=new FormattedTextElement("Unregistered version of iPedia has limits on how many articles can be viewed in one day (although you can view unlimited number of random articles)."));
+    elems.push_back(text=new FormattedTextElement("Unregistered version of iPedia limits how many articles can be viewed in one day (there are no limits on random articles.)"));
     elems.push_back(new LineBreakElement());
 
-    elems.push_back(text=new FormattedTextElement("In order to register iPedia you need to first purchase registration code at "));
+    elems.push_back(text=new FormattedTextElement("In order to register iPedia you need to purchase registration code at "));
     // TODO: different stuff for PalmGear/Handango
     elems.push_back(text=new FormattedTextElement("our website "));
     elems.push_back(text=new FormattedTextElement("http://www.arslexis.com"));
