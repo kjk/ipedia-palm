@@ -9,8 +9,6 @@
 #include "iPediaRenderingProgressReporter.hpp"
 
 class LookupHistory;
-class RenderingPreferences;
-
 
 class PediaMainForm: public iPediaForm
 {
@@ -31,12 +29,13 @@ class PediaMainForm: public iPediaForm
     int showStringListForm(char_t* strList[], int strListSize);
 
     const LookupHistory& getHistory() const;
-    
+
+#if 0    
     const RenderingPreferences& renderingPreferences() const
     {
         return static_cast<const iPediaApplication&>(application()).renderingPreferences();
     }
-    
+#endif
     void handleControlSelect(const EventType& data);
     
     bool handleKeyPress(const EventType& event);
@@ -81,7 +80,7 @@ class PediaMainForm: public iPediaForm
 
 protected:
 
-    void resize(const Rectangle& screenBounds);
+    void resize(const ArsRectangle& screenBounds);
     
     void draw(UInt16 updateCode = frmRedrawUpdateCode);
     

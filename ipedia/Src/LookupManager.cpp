@@ -7,7 +7,8 @@
 
 LookupManager::~LookupManager()
 {
-    std::for_each(lastDefinitionElements_.begin(), lastDefinitionElements_.end(), ObjectDeleter<DefinitionElement>());
+    if (NULL != lastDefinitionModel_)
+        delete lastDefinitionModel_;
 }
 
 namespace {

@@ -4,7 +4,6 @@
 #include "ipedia.h"
 #include <RichApplication.hpp>
 #include <StringListForm.hpp>
-#include "RenderingPreferences.hpp"
 #include <SysUtils.hpp>
 #include "iPediaHyperlinkHandler.hpp"
 
@@ -60,7 +59,7 @@ public:
 
     struct Preferences
     {
-        RenderingPreferences renderingPreferences;
+        // RenderingPreferences renderingPreferences;
 
         enum {cookieLength=32};
         ArsLexis::String cookie;
@@ -92,11 +91,12 @@ public:
         return preferences_;
     }
 
+#if 0
     const RenderingPreferences& renderingPreferences() const
     {
         return preferences().renderingPreferences;
     }
-
+#endif
     static const uint_t reservedLookupEventsCount=3;
 
     enum Event

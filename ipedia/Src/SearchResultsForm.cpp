@@ -78,8 +78,8 @@ SearchResultsForm::~SearchResultsForm()
 void SearchResultsForm::draw(UInt16 updateCode)
 {
     Graphics graphics;
-    Rectangle rect(bounds());
-    Rectangle progressArea(rect.x(), rect.height()-16, rect.width(), 16);
+    ArsRectangle rect(bounds());
+    ArsRectangle progressArea(rect.x(), rect.height()-16, rect.width(), 16);
     if (redrawAll==updateCode)
     {   
         if (visible())
@@ -99,9 +99,9 @@ bool SearchResultsForm::handleOpen()
     return handled;
 }
 
-void SearchResultsForm::resize(const Rectangle& screenBounds)
+void SearchResultsForm::resize(const ArsRectangle& screenBounds)
 {
-    Rectangle rect(bounds());
+    ArsRectangle rect(bounds());
     if (screenBounds!=rect)
     {
         setBounds(screenBounds);

@@ -494,7 +494,7 @@ status_t iPediaConnection::notifyFinished()
 
     if (NULL!=definitionParser_)
     {
-        std::swap(definitionParser_->elements(), lookupManager_.lastDefinitionElements());
+        //std::swap(definitionParser_->elements(), lookupManager_.lastDefinitionElements());
         lookupManager_.setLastFoundTerm(articleTitle_);
         lookupManager_.lastFoundLang_ = lookupManager_.lastSearchLang_;
         if (getRandom_)

@@ -33,7 +33,7 @@ class DefinitionParser: public FieldPayloadProtocolConnection::PayloadHandler
     
     /**
      * @internal
-     * Transforms current settings in open* variables into settings of @c FormattedTextElement.
+     * Transforms current settings in open* variables into settings of @c GenericTextElement.
      */
     void applyCurrentFormatting(GenericTextElement* element);
     

@@ -7,7 +7,7 @@
 #include <Text.hpp>
 #include <StringListForm.hpp>
 
-#include <FormattedTextElement.hpp>
+#include <GenericTextElement.hpp>
 #include <LineBreakElement.hpp>
 #include <ParagraphElement.hpp>
 
@@ -64,8 +64,10 @@ PediaMainForm::PediaMainForm(iPediaApplication& app):
     backButton_(*this),
     forwardButton_(*this),
     searchButton_(*this),
-    articleRenderer_(*this, app.preferences().renderingPreferences, &scrollBar_),
-    infoRenderer_(*this, app.preferences().renderingPreferences, &scrollBar_)
+    articleRenderer_(*this, &scrollBar_),
+    infoRenderer_(*this, &scrollBar_)
+    //articleRenderer_(*this, app.preferences().renderingPreferences, &scrollBar_),
+    //infoRenderer_(*this, app.preferences().renderingPreferences, &scrollBar_)
 {
     articleRenderer_.setRenderingProgressReporter(&renderingProgressReporter_);
     articleRenderer_.setHyperlinkHandler(&app.hyperlinkHandler());
@@ -111,9 +113,9 @@ inline const LookupHistory& PediaMainForm::getHistory() const
     return static_cast<const iPediaApplication&>(application()).history();
 }
 
-void PediaMainForm::resize(const Rectangle& screenBounds)
+void PediaMainForm::resize(const ArsRectangle& screenBounds)
 {
-    Rectangle bounds(this->bounds());
+    ArsRectangle bounds(this->bounds());
     if (screenBounds==bounds)
         return;
 
@@ -135,8 +137,8 @@ void PediaMainForm::resize(const Rectangle& screenBounds)
 void PediaMainForm::draw(UInt16 updateCode)
 {
     Graphics graphics(windowHandle());
-    Rectangle rect(bounds());
-    Rectangle progressArea(rect.x(), rect.height()-17, rect.width(), 17);
+    ArsRectangle rect(bounds());
+    ArsRectangle progressArea(rect.x(), rect.height()-17, rect.width(), 17);
     if (redrawAll == updateCode)
     {
         if (visible())
@@ -378,7 +380,7 @@ void PediaMainForm::updateAfterLookup()
     assert(lookupManager!=0);
     if (lookupManager)
     {
-        articleRenderer_.replaceElements(lookupManager->lastDefinitionElements());
+        articleRenderer_.setModel(lookupManager->lastDefinitionModel(), Definition::ownModelNot);
         setDisplayMode(showArticle);
         
         termInputField_.replace(lookupManager->lastSearchTerm());
@@ -832,9 +834,17 @@ GenericTextElement *    articleCountElement;
 
 void PediaMainForm::prepareAbout()
 {
-    Definition::Elements_t  elems;
-    FormattedTextElement *  text;
-    GenericTextElement *    articleCountElement;
+    DefinitionModel* model = new_nt DefinitionModel();   
+    if (NULL == model)   
+    {   
+       //application().alert(notEnoughMemoryAlert);   
+       return;   
+    }   
+     
+    Definition::Elements_t& elems = model->elements; 
+
+    GenericTextElement *  text;
+    GenericTextElement *  articleCountElement;
     setTitle("iPedia");
 
     FontEffects fxBold;
@@ -842,10 +852,9 @@ void PediaMainForm::prepareAbout()
 
     elems.push_back(new LineBreakElement(1,10));
 
-    elems.push_back(text=new FormattedTextElement("ArsLexis iPedia"));
+    elems.push_back(text=new GenericTextElement("ArsLexis iPedia"));
     text->setJustification(DefinitionElement::justifyCenter);
-    text->setStyle(styleHeader);
-    text->setEffects(fxBold);
+    text->setStyle(getStaticStyle(styleNameHeader));
 
     elems.push_back(new LineBreakElement(1,3));
 
@@ -858,48 +867,48 @@ void PediaMainForm::prepareAbout()
         " (debug)"
 #endif*/
     ;
-    elems.push_back(text=new FormattedTextElement(version));
+    elems.push_back(text=new GenericTextElement(version));
     text->setJustification(DefinitionElement::justifyCenter);
     elems.push_back(new LineBreakElement(1,4));
 
 #ifdef UNLOCKED
-    elems.push_back(text=new FormattedTextElement("Registered PalmSource version"));
+    elems.push_back(text=new GenericTextElement("Registered PalmSource version"));
     text->setJustification(DefinitionElement::justifyCenter);
     elems.push_back(new LineBreakElement(1,2));
 #else
     if (app().preferences().regCode.empty())
     {
-        elems.push_back(text=new FormattedTextElement("Unregistered ("));
+        elems.push_back(text=new GenericTextElement("Unregistered ("));
         text->setJustification(DefinitionElement::justifyCenter);
-        elems.push_back(text=new FormattedTextElement("how to register"));
+        elems.push_back(text=new GenericTextElement("how to register"));
         text->setJustification(DefinitionElement::justifyCenter);
         // url doesn't really matter, it's only to establish a hotspot
         text->setHyperlink("", hyperlinkTerm);
         text->setActionCallback( unregisteredActionCallback, static_cast<void*>(this) );
-        elems.push_back(text=new FormattedTextElement(")"));
+        elems.push_back(text=new GenericTextElement(")"));
         text->setJustification(DefinitionElement::justifyCenter);
         elems.push_back(new LineBreakElement(1,2));
     }
     else
     {
-        elems.push_back(text=new FormattedTextElement("Registered"));
+        elems.push_back(text=new GenericTextElement("Registered"));
         text->setJustification(DefinitionElement::justifyCenter);
         elems.push_back(new LineBreakElement(1,2));
     }
 #endif
 
-    elems.push_back(text=new FormattedTextElement("Software \251 "));
+    elems.push_back(text=new GenericTextElement("Software \251 "));
     text->setJustification(DefinitionElement::justifyCenter);
 
-    elems.push_back(text=new FormattedTextElement("ArsLexis"));
+    elems.push_back(text=new GenericTextElement("ArsLexis"));
     text->setJustification(DefinitionElement::justifyCenter);
     text->setHyperlink("http://www.arslexis.com/pda/palm.html", hyperlinkExternal);
 
     elems.push_back(new LineBreakElement(1,4));
-    elems.push_back(text=new FormattedTextElement("Data \251 "));
+    elems.push_back(text=new GenericTextElement("Data \251 "));
     text->setJustification(DefinitionElement::justifyCenter);
 
-    elems.push_back(text=new FormattedTextElement("WikiPedia"));
+    elems.push_back(text=new GenericTextElement("WikiPedia"));
     text->setJustification(DefinitionElement::justifyCenter);
     // url doesn't really matter, it's only to establish a hotspot
     text->setHyperlink("", hyperlinkTerm);
@@ -907,7 +916,7 @@ void PediaMainForm::prepareAbout()
 
     elems.push_back(new LineBreakElement(1,2));
 
-    articleCountElement = new FormattedTextElement(" ");
+    articleCountElement = new GenericTextElement(" ");
 
     if (-1 != app().preferences().articleCount)    
     {
@@ -918,95 +927,103 @@ void PediaMainForm::prepareAbout()
     articleCountElement->setJustification(DefinitionElement::justifyCenter);
 
     elems.push_back(new LineBreakElement(1, 2));
-    elems.push_back(text=new FormattedTextElement("Using iPedia: "));
+    elems.push_back(text=new GenericTextElement("Using iPedia: "));
     text->setJustification(DefinitionElement::justifyLeft);
 
-    elems.push_back(text=new FormattedTextElement("tutorial"));
+    elems.push_back(text=new GenericTextElement("tutorial"));
     text->setJustification(DefinitionElement::justifyLeft);
     // url doesn't really matter, it's only to establish a hotspot
     text->setHyperlink("", hyperlinkTerm);
     text->setActionCallback(tutorialActionCallback, this);
 
-    infoRenderer_.replaceElements(elems);    
+    //infoRenderer_.replaceElements(elems);
+    infoRenderer_.setModel(model, Definition::ownModel);
 }
 
 // TODO: make those on-demand only to save memory
 void PediaMainForm::prepareTutorial()
 {
+    DefinitionModel* model = new_nt DefinitionModel();   
+    if (NULL == model)   
+    {   
+       //application().alert(notEnoughMemoryAlert);   
+       return;   
+    }
+    Definition::Elements_t& elems = model->elements; 
     setTitle("iPedia - Tutorial");
-    Definition::Elements_t elems;
-    FormattedTextElement* text;
+    GenericTextElement* text;
 
     FontEffects fxBold;
     fxBold.setWeight(FontEffects::weightBold);
 
-    elems.push_back(text=new FormattedTextElement("Go back to main screen."));
+    elems.push_back(text=new GenericTextElement("Go back to main screen."));
     text->setJustification(DefinitionElement::justifyLeft);
     // url doesn't really matter, it's only to establish a hotspot
     text->setHyperlink("", hyperlinkTerm);
     text->setActionCallback( aboutActionCallback, static_cast<void*>(this) );
     elems.push_back(new LineBreakElement(4,3));
 
-    elems.push_back(text=new FormattedTextElement("iPedia is a wireless encyclopedia. Use it to get information and facts on just about anything."));
+    elems.push_back(text=new GenericTextElement("iPedia is a wireless encyclopedia. Use it to get information and facts on just about anything."));
     elems.push_back(new LineBreakElement(4,3));
 
-    elems.push_back(text=new FormattedTextElement("Finding an encyclopedia article."));
-    text->setEffects(fxBold);
-    elems.push_back(text=new FormattedTextElement(" Let's assume you want to read an encyclopedia article on Seattle. Enter 'Seattle' in the text field at the bottom of the screen and press 'Search' (or center button on Treo's 5-way navigator)."));
+    elems.push_back(text=new GenericTextElement("Finding an encyclopedia article."));
+//    text->setEffects(fxBold);
+    elems.push_back(text=new GenericTextElement(" Let's assume you want to read an encyclopedia article on Seattle. Enter 'Seattle' in the text field at the bottom of the screen and press 'Search' (or center button on Treo's 5-way navigator)."));
     text->setJustification(DefinitionElement::justifyLeft);
     elems.push_back(new LineBreakElement(4,3));
 
-    elems.push_back(text=new FormattedTextElement("Finding all articles with a given word."));
-    text->setEffects(fxBold);
-    elems.push_back(text=new FormattedTextElement(" Let's assume you want to find all articles that mention Seattle. Enter 'Seattle' in the text field and use 'Main/Extended search' menu item. In response you'll receive a list of articles that contain word 'Seattle'."));
+    elems.push_back(text=new GenericTextElement("Finding all articles with a given word."));
+//    text->setEffects(fxBold);
+    elems.push_back(text=new GenericTextElement(" Let's assume you want to find all articles that mention Seattle. Enter 'Seattle' in the text field and use 'Main/Extended search' menu item. In response you'll receive a list of articles that contain word 'Seattle'."));
     text->setJustification(DefinitionElement::justifyLeft);
     elems.push_back(new LineBreakElement(4,3));
 
-    elems.push_back(text=new FormattedTextElement("Refining the search."));
-    text->setEffects(fxBold);
-    elems.push_back(text=new FormattedTextElement(" If there are too many results, you can refine (narrow) the search results by adding additional terms e.g. type 'museum' and press 'Refine' button. You'll get a smaller list of articles that contain both 'Seattle' and 'museum'."));
+    elems.push_back(text=new GenericTextElement("Refining the search."));
+//    text->setEffects(fxBold);
+    elems.push_back(text=new GenericTextElement(" If there are too many results, you can refine (narrow) the search results by adding additional terms e.g. type 'museum' and press 'Refine' button. You'll get a smaller list of articles that contain both 'Seattle' and 'museum'."));
     text->setJustification(DefinitionElement::justifyLeft);
     elems.push_back(new LineBreakElement(4,3));
 
-    elems.push_back(text=new FormattedTextElement("Results of last extended search."));
-    text->setEffects(fxBold);
-    elems.push_back(text=new FormattedTextElement(" At any time you can get a list of results from last extended search by using menu item 'Main/Extended search results'."));
+    elems.push_back(text=new GenericTextElement("Results of last extended search."));
+//    text->setEffects(fxBold);
+    elems.push_back(text=new GenericTextElement(" At any time you can get a list of results from last extended search by using menu item 'Main/Extended search results'."));
     text->setJustification(DefinitionElement::justifyLeft);
     elems.push_back(new LineBreakElement(4,3));
 
-    elems.push_back(text=new FormattedTextElement("Random article."));
-    text->setEffects(fxBold);
-    elems.push_back(text=new FormattedTextElement(" You can use menu 'Main/Random article' (or "));
+    elems.push_back(text=new GenericTextElement("Random article."));
+//    text->setEffects(fxBold);
+    elems.push_back(text=new GenericTextElement(" You can use menu 'Main/Random article' (or "));
     text->setJustification(DefinitionElement::justifyLeft);
-    elems.push_back(text=new FormattedTextElement("click here"));
+    elems.push_back(text=new GenericTextElement("click here"));
     text->setJustification(DefinitionElement::justifyLeft);
     // url doesn't really matter, it's only to establish a hotspot
     text->setHyperlink("", hyperlinkTerm);
     text->setActionCallback( randomArticleActionCallback, static_cast<void*>(this) );
-    elems.push_back(text=new FormattedTextElement(") to get a random article."));
+    elems.push_back(text=new GenericTextElement(") to get a random article."));
     text->setJustification(DefinitionElement::justifyLeft);
     elems.push_back(new LineBreakElement(4,3));
 
-    elems.push_back(text=new FormattedTextElement("More information."));
-    text->setEffects(fxBold);
-    elems.push_back(text=new FormattedTextElement(" Please visit our website "));
+    elems.push_back(text=new GenericTextElement("More information."));
+//    text->setEffects(fxBold);
+    elems.push_back(text=new GenericTextElement(" Please visit our website "));
     text->setJustification(DefinitionElement::justifyLeft);
 
-    elems.push_back(text=new FormattedTextElement("arslexis.com"));
+    elems.push_back(text=new GenericTextElement("arslexis.com"));
     text->setHyperlink("http://www.arslexis.com/pda/palm.html", hyperlinkExternal);
     text->setJustification(DefinitionElement::justifyLeft);
 
-    elems.push_back(text=new FormattedTextElement(" for more information about iPedia."));
+    elems.push_back(text=new GenericTextElement(" for more information about iPedia."));
     text->setJustification(DefinitionElement::justifyLeft);
     elems.push_back(new LineBreakElement(4,3));
 
-    elems.push_back(text=new FormattedTextElement("Go back to main screen."));
+    elems.push_back(text=new GenericTextElement("Go back to main screen."));
     text->setJustification(DefinitionElement::justifyLeft);
     // url doesn't really matter, it's only to establish a hotspot
     text->setHyperlink("", hyperlinkTerm);
     text->setActionCallback(aboutActionCallback, this);
 
-    infoRenderer_.replaceElements(elems);
+    //infoRenderer_.replaceElements(elems);
+    infoRenderer_.setModel(model, Definition::ownModel);
 }
 
 static void registerActionCallback(void *data)
@@ -1019,77 +1036,91 @@ static void registerActionCallback(void *data)
 // TODO: make those on-demand only to save memory
 void PediaMainForm::prepareHowToRegister()
 {
+    DefinitionModel* model = new_nt DefinitionModel();   
+    if (NULL == model)   
+    {   
+       //application().alert(notEnoughMemoryAlert);   
+       return;   
+    }
+    Definition::Elements_t& elems = model->elements; 
     setTitle("iPedia - How to register");
-    Definition::Elements_t elems;
-    FormattedTextElement* text;
+    GenericTextElement* text;
 
     FontEffects fxBold;
     fxBold.setWeight(FontEffects::weightBold);
 
-    elems.push_back(text=new FormattedTextElement("Unregistered version of iPedia limits how many articles can be viewed in one day (there are no limits on random articles.)"));
+    elems.push_back(text=new GenericTextElement("Unregistered version of iPedia limits how many articles can be viewed in one day (there are no limits on random articles.)"));
     elems.push_back(new LineBreakElement());
 
-    elems.push_back(text=new FormattedTextElement("In order to register iPedia you need to purchase registration code at "));
+    elems.push_back(text=new GenericTextElement("In order to register iPedia you need to purchase registration code at "));
 
 // those 3 #defines should be mutually exclusive
 #ifdef PALMGEAR
-    elems.push_back(text=new FormattedTextElement("palmgear.com?67708"));
+    elems.push_back(text=new GenericTextElement("palmgear.com?67708"));
 #endif
 
 #ifdef HANDANGO
-    elems.push_back(text=new FormattedTextElement("handango.com/purchase, product id: 128991"));
+    elems.push_back(text=new GenericTextElement("handango.com/purchase, product id: 128991"));
 #endif
 
 #ifdef ARSLEXIS_VERSION
-    elems.push_back(text=new FormattedTextElement("our website "));
-    elems.push_back(text=new FormattedTextElement("http://www.arslexis.com"));
+    elems.push_back(text=new GenericTextElement("our website "));
+    elems.push_back(text=new GenericTextElement("http://www.arslexis.com"));
     text->setHyperlink("http://www.arslexis.com/pda/palm.html", hyperlinkExternal);
 #endif
     elems.push_back(new LineBreakElement());
 
-    elems.push_back(text=new FormattedTextElement("After obtaining registration code use menu item 'Options/Register' (or "));
-    elems.push_back(text=new FormattedTextElement("click here"));
+    elems.push_back(text=new GenericTextElement("After obtaining registration code use menu item 'Options/Register' (or "));
+    elems.push_back(text=new GenericTextElement("click here"));
     // url doesn't really matter, it's only to establish a hotspot
     text->setHyperlink("", hyperlinkTerm);
     text->setActionCallback( registerActionCallback, static_cast<void*>(this) );
-    elems.push_back(text=new FormattedTextElement(") to enter registration code. "));
+    elems.push_back(text=new GenericTextElement(") to enter registration code. "));
 
-    elems.push_back(text=new FormattedTextElement("Go back to main screen."));
+    elems.push_back(text=new GenericTextElement("Go back to main screen."));
     text->setJustification(DefinitionElement::justifyLeft);
     // url doesn't really matter, it's only to establish a hotspot
     text->setHyperlink("", hyperlinkTerm);
     text->setActionCallback(aboutActionCallback, this);
 
-    infoRenderer_.replaceElements(elems);
+    //infoRenderer_.replaceElements(elems);
+    infoRenderer_.setModel(model, Definition::ownModel);
 }
 
 void PediaMainForm::prepareWikipedia()
 {
+    DefinitionModel* model = new_nt DefinitionModel();   
+    if (NULL == model)   
+    {   
+       //application().alert(notEnoughMemoryAlert);   
+       return;   
+    }
+    Definition::Elements_t& elems = model->elements; 
     setTitle("iPedia - Wikipedia");
-    Definition::Elements_t elems;
-    FormattedTextElement* text;
+    GenericTextElement* text;
     FontEffects fxBold;
     fxBold.setWeight(FontEffects::weightBold);
 
-    elems.push_back(text=new FormattedTextElement("All the articles in iPedia come from WikiPedia project and are licensed under "));
-    elems.push_back(text=new FormattedTextElement("GNU Free Documentation License"));
+    elems.push_back(text=new GenericTextElement("All the articles in iPedia come from WikiPedia project and are licensed under "));
+    elems.push_back(text=new GenericTextElement("GNU Free Documentation License"));
     text->setHyperlink("http://www.gnu.org/copyleft/fdl.html", hyperlinkExternal);
-    elems.push_back(text=new FormattedTextElement("."));
+    elems.push_back(text=new GenericTextElement("."));
     elems.push_back(new LineBreakElement());
 
-    elems.push_back(text=new FormattedTextElement("To find out more about WikiPedia project, visit "));
-    elems.push_back(text=new FormattedTextElement("wikipedia.org"));
+    elems.push_back(text=new GenericTextElement("To find out more about WikiPedia project, visit "));
+    elems.push_back(text=new GenericTextElement("wikipedia.org"));
     text->setHyperlink("http://www.wikipedia.org", hyperlinkExternal);
-    elems.push_back(text=new FormattedTextElement(" website. "));
+    elems.push_back(text=new GenericTextElement(" website. "));
     elems.push_back(new LineBreakElement());
 
-    elems.push_back(text=new FormattedTextElement("Go back to main screen."));
+    elems.push_back(text=new GenericTextElement("Go back to main screen."));
     text->setJustification(DefinitionElement::justifyLeft);
     // url doesn't really matter, it's only to establish a hotspot
     text->setHyperlink("", hyperlinkTerm);
     text->setActionCallback(aboutActionCallback, this);
 
-    infoRenderer_.replaceElements(elems);
+    //infoRenderer_.replaceElements(elems);
+    infoRenderer_.setModel(model, Definition::ownModel);
 }    
 
 void PediaMainForm::setDisplayMode(PediaMainForm::DisplayMode mode) 

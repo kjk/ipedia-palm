@@ -217,28 +217,28 @@ bool iPediaApplication::handleApplicationEvent(EventType& event)
     return handled;
 }
 
-namespace {
-
-    enum PreferenceId 
-    {
-        cookiePrefId,
-        regCodePrefId,
-        serialNumberRegFlagPrefId, // unused
-        lastArticleCountPrefId,
-        databaseTimePrefId,
-        lookupHistoryFirstPrefId,
-        renderingPrefsFirstPrefId=lookupHistoryFirstPrefId+LookupHistory::reservedPrefIdCount,
-        
-        availableLangsPrefId = renderingPrefsFirstPrefId+RenderingPreferences::reservedPrefIdCount+1,
-        currentLangPrefId,
-        next = currentLangPrefId+1
-    };
-
-    // These globals will be removed by dead code elimination.
-    StaticAssert<(sizeof(uint_t) == sizeof(UInt16))> uint_t_the_same_size_as_UInt16;
-    StaticAssert<(sizeof(bool) == sizeof(Boolean))> bool_the_same_size_as_Boolean;
+// backward-compat
+#define reservedRenderingPrefIdCount 17
     
-}
+enum PreferenceId 
+{
+    cookiePrefId,
+    regCodePrefId,
+    serialNumberRegFlagPrefId, // unused
+    lastArticleCountPrefId,
+    databaseTimePrefId,
+    lookupHistoryFirstPrefId,
+    renderingPrefsFirstPrefId=lookupHistoryFirstPrefId+LookupHistory::reservedPrefIdCount,
+    
+    //availableLangsPrefId = renderingPrefsFirstPrefId+RenderingPreferences::reservedPrefIdCount+1,
+    availableLangsPrefId = renderingPrefsFirstPrefId+reservedRenderingPrefIdCount+1,
+    currentLangPrefId,
+    next = currentLangPrefId+1
+};
+
+// These globals will be removed by dead code elimination.
+StaticAssert<(sizeof(uint_t) == sizeof(UInt16))> uint_t_the_same_size_as_UInt16;
+StaticAssert<(sizeof(bool) == sizeof(Boolean))> bool_the_same_size_as_Boolean;
 
 void iPediaApplication::loadPreferences()
 {
@@ -270,7 +270,7 @@ void iPediaApplication::loadPreferences()
         prefs.databaseTime = text;
     }
 
-    error = prefs.renderingPreferences.serializeIn(*reader, renderingPrefsFirstPrefId);
+    // error = prefs.renderingPreferences.serializeIn(*reader, renderingPrefsFirstPrefId);
 
     if (errNone==(error=reader->ErrGetStr(availableLangsPrefId, &text)))
     {
@@ -303,8 +303,8 @@ void iPediaApplication::savePreferences()
         goto OnError;
     if (errNone!=(error=writer->ErrSetStr(databaseTimePrefId, preferences_.databaseTime.c_str())))
         goto OnError;
-    if (errNone!=(error=preferences_.renderingPreferences.serializeOut(*writer, renderingPrefsFirstPrefId)))
-        goto OnError;
+    //if (errNone!=(error=preferences_.renderingPreferences.serializeOut(*writer, renderingPrefsFirstPrefId)))
+    //    goto OnError;
     assert(0!=history_);
     if (errNone!=(error=history_->serializeOut(*writer, lookupHistoryFirstPrefId)))
         goto OnError;

@@ -4,9 +4,9 @@
 #include "LookupManager.hpp"
 #include "Text.hpp"
 
-void RegistrationForm::resize(const Rectangle& screenBounds)
+void RegistrationForm::resize(const ArsRectangle& screenBounds)
 {
-    Rectangle rect(2, screenBounds.height()-70, screenBounds.width()-4, 68);
+    ArsRectangle rect(2, screenBounds.height()-70, screenBounds.width()-4, 68);
     setBounds(rect);
     
     FormObject object(*this, regCodeFormField);

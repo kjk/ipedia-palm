@@ -63,7 +63,7 @@ class LookupManager: public LookupManagerBase<iPediaApplication::appLookupEventF
 {
     LookupHistory& history_;
 
-    Definition::Elements_t lastDefinitionElements_;
+    DefinitionModel* lastDefinitionModel_;
 
     String lastSearchTerm_;
     String lastFoundTerm_;
@@ -94,8 +94,8 @@ public:
     const String& lastExtendedSearchResults() const
     {return lastExtendedSearchResults_;}
     
-    Definition::Elements_t& lastDefinitionElements() 
-    {return lastDefinitionElements_;}
+    DefinitionModel* lastDefinitionModel() 
+    {return lastDefinitionModel_;}
     
     void search(const String& expression);
 

@@ -30,7 +30,7 @@ protected:
 
     bool handleOpen();
 
-    void resize(const Rectangle& screenBounds);
+    void resize(const ArsRectangle& screenBounds);
 
     bool handleMenuCommand(UInt16 menuItem);
 

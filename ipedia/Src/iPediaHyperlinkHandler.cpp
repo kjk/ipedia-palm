@@ -70,7 +70,7 @@ void iPediaHyperlinkHandler::handleHyperlink(Definition& definition, DefinitionE
     switch (props->type) 
     {
         case hyperlinkBookmark:
-            definition.goToBookmark(props->resource);
+            //definition.goToBookmark(props->resource);
             break;
     
         case hyperlinkExternal:

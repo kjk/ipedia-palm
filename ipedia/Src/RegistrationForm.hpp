@@ -14,7 +14,7 @@ class RegistrationForm: public iPediaForm
 
 protected:
 
-    void resize(const Rectangle& screenBounds);
+    void resize(const ArsRectangle& screenBounds);
 
     bool handleEvent(EventType& event);
 
