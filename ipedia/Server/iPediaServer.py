@@ -315,13 +315,24 @@ class iPediaProtocol(basic.LineReceiver):
         try:
             db=self.getManagementDatabase()
             cursor=db.cursor()
+
+            if not self.deviceInfoToken:
+                cursor.execute("""select device_info_token from cookies where id=%d""" % self.cookieId)
+                row=cursor.fetchone()
+                assert row!=None
+                self.deviceInfoToken=row[0]
+    
+            userName=arsutils.extractHotSyncName(self.deviceInfoToken)
+            if not userName:
+                userName="[no hotsync name]"
+            
             cursor.execute("""select id, cookie_id from registered_users where serial_number='%s'""" % db.escape_string(self.serialNumber))
             row=cursor.fetchone()
             if row:
                 currentCookieId=row[1]
                 if currentCookieId==None:
                     self.userId=row[0]
-                    cursor.execute("""update registered_users set cookie_id=%d where id=%d""" % (self.cookieId, self.userId))
+                    cursor.execute("""update registered_users set cookie_id=%d, user_name='%s' where id=%d""" % (self.cookieId, db.escape_string(userName), self.userId))
                 elif currentCookieId!=self.cookieId:
                     self.error=iPediaServerError.invalidAuthorization
                     cursor.close()

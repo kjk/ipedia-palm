@@ -229,3 +229,22 @@ def showTxtDiffArray(txtOneArray, txtTwoArray, fReformatLongLines=False):
     if g_DiffTool == DIFF_WINMERGE:
         diffWithWinMerge(origTmpName,convertedTmpName)
 
+def extractHotSyncName(deviceInfo):
+    print "extractHotSyncName: ", deviceInfo
+    assert deviceInfo!=None
+    tokens=deviceInfo.split(":")
+    name=None
+    for token in tokens:
+        print "token: ", token
+        if token.startswith("HS"):
+            token=token[2:]
+            txt=""
+            while len(token)>=2:
+                c=chr(int(token[:2], 16))
+                token=token[2:]
+                txt=txt+c
+            name=txt
+            print "name: ", name
+            break
+    return name
+    
