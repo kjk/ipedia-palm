@@ -9,6 +9,7 @@
 #   -get term : get and display a definition of term
 #   -getrandom
 #   -articlecount
+#   -ping : does a ping request (to test if the server is alive)
 import sys, re, socket, random, pickle, time, arsutils
 
 # server string must be of form "name:port"
@@ -285,9 +286,12 @@ def doRandomPerf(count):
 
 def doPing():
     print "sending PING to the server"
-    pingResponse = getReqResponse("%s\n" % PING)
+    req = buildCommonRequestPart()
+    req += "\n"
+    #pingResponse = getReqResponse("%s\n" % PING)
+    pingResponse = getReqResponse(req)
     print "got '%s' from the server" % pingResponse.strip()
-    assert pingResponse.strip() == "PONG"
+    #assert pingResponse.strip() == "PONG"
 
 def usageAndExit():
     print "client.py [-showtiming] [-perfrandom N] [-getrandom] [-get term] [-articlecount] [-dbtime] [-ping]"
