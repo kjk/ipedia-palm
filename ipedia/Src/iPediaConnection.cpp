@@ -217,7 +217,7 @@ ArsLexis::status_t iPediaConnection::open()
     error=socket().setLinger(linger);
     if (error)
     {
-        log().debug()<<"setOption() returned error while setting linger: "<<error;
+        //log().debug()<<"setOption() returned error while setting linger: "<<error;
         error=errNone;
     }
 #endif        
@@ -474,7 +474,7 @@ ArsLexis::status_t iPediaConnection::notifyFinished()
 
 void iPediaConnection::handleError(ArsLexis::status_t error)
 {
-    log().error()<<_T("handleError(): error code ")<<error;
+    //log().error()<<_T("handleError(): error code ")<<error;
     LookupFinishedEventData data(LookupFinishedEventData::outcomeError, error);
     ArsLexis::sendEvent(LookupManager::lookupFinishedEvent, data);
     SimpleSocketConnection::handleError(error);

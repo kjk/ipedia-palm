@@ -37,6 +37,7 @@ DefinitionParser::DefinitionParser():
     text_(0),
     parsePosition_(0),
     lineEnd_(0),
+    lastListNesting_(NULL),
     lastElementStart_(0),
     lastElementEnd_(0),
     unnamedLinksCount_(0),
@@ -734,20 +735,21 @@ void DefinitionParser::parseTextLine()
     parseText(lineEnd_, styleDefault);                
 }
 
-status_t DefinitionParser::handleIncrement(const String& text, ulong_t& length, bool finish)
+status_t DefinitionParser::handleIncrement(const char_t * text, ulong_t& length, bool finish)
 {
-    status_t error=errNone;
+    status_t error = errNone;
     ErrTry {
-        text_=&text;
-        parsePosition_=0;
-        lineEnd_=0;
-        bool goOn=false;
+        String strText(text);
+        text_ = &strText;
+        parsePosition_ = 0;
+        lineEnd_ = 0;
+        bool goOn = false;
         do 
         {
 #ifndef NDEBUG    
-            const char_t* text=text_->data()+parsePosition_;
+            const char_t* text = text_->data()+parsePosition_;
 #endif        
-            goOn=detectNextLine(length, finish);
+            goOn = detectNextLine(length, finish);
             if (goOn || finish)
             {
                 if (lineAllowsContinuation(previousLineType_) && textLine!=lineType_)

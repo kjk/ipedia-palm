@@ -38,12 +38,12 @@ iPediaApplication::iPediaApplication():
 {
 #ifdef INTERNAL_BUILD
 # ifndef NDEBUG    
-    log().addSink(new MemoLogSink(), Logger::logError);
+    //log().addSink(new MemoLogSink(), Logger::logError);
     //log().addSink(new MemoLogSink(), Logger::logDebug);
     //log().addSink(new HostFileLogSink("\\var\\log\\iPedia.log"), Logger::logEverything);
     //log().addSink(new DebuggerLogSink(), Logger::logWarning);
 # else
-    log().addSink(new MemoLogSink(), Logger::logError);
+    //log().addSink(new MemoLogSink(), Logger::logError);
 # endif
 #endif
 }

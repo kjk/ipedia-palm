@@ -99,11 +99,6 @@ class PediaMainForm: public iPediaForm
 
 protected:
 
-    mutable ArsLexis::ChildLogger log_;
-
-    ArsLexis::Logger& log() const
-    {return log_;}
-
     void resize(const ArsLexis::Rectangle& screenBounds);
     
     void draw(UInt16 updateCode = frmRedrawUpdateCode);

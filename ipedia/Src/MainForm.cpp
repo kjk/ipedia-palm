@@ -59,7 +59,6 @@ PediaMainForm::PediaMainForm(iPediaApplication& app):
     updateDefinitionOnEntry_(false),
     enableInputFieldAfterUpdate_(false),
     penUpsToEat_(0),
-    log_(_T("MainForm")),
     ignoreEvents_(false),
     graffiti_(*this),
     termInputField_(*this),

@@ -31,7 +31,7 @@ class iPediaConnection: public ArsLexis::FieldPayloadProtocolConnection
         SearchResultsHandler()
         {}
         
-        ArsLexis::status_t handleIncrement(const ArsLexis::String& text, ulong_t& length, bool finish)
+        ArsLexis::status_t handleIncrement(const ArsLexis::char_t* text, ulong_t& length, bool finish)
         {
             if (finish)
                 searchResults_.assign(text, 0, length);
@@ -58,7 +58,7 @@ class iPediaConnection: public ArsLexis::FieldPayloadProtocolConnection
         ReverseLinksResultsHandler()
         {}
         
-        ArsLexis::status_t handleIncrement(const ArsLexis::String& text, ulong_t& length, bool finish)
+        ArsLexis::status_t handleIncrement(const ArsLexis::char_t * text, ulong_t& length, bool finish)
         {
             if (finish)
                 reverseLinksResults_.assign(text, 0, length);
