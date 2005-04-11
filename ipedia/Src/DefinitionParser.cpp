@@ -111,9 +111,13 @@ void DefinitionParser::applyCurrentFormatting(TextElement* element)
         
     if (openStrong_ || openVeryStrong_)
         style->bold = style->yes;
-
+#ifdef _PALM_OS
     if (openSmall_)
         style->small = style->yes;
+#else
+    if (openSmall_)
+        style->isSmall = style->yes;
+#endif
 
     if (openStrikeout_)
         style->strike = style->yes;

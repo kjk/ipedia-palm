@@ -190,7 +190,8 @@ status_t iPediaConnection::prepareRequest()
 
     // get article count from the server when during first request or after a day
     // (because on smartphone applications rarely quit)
-    bool fNeedsToGetArticleCount = false;
+    bool fNeedsToGetArticleCount;
+	fNeedsToGetArticleCount = false;
 
     if (!app.fArticleCountChecked || !newDbLangCode_.empty())
     {
@@ -228,7 +229,8 @@ status_t iPediaConnection::prepareRequest()
     ulong_t len = DynStrLen(request);
     setRequestOwn(DynStrReleaseStr(request), len); 
 #else
-    char *newReq = Utf16ToStr(DynStrGetCStr(request), DynStrLen(request));
+    char* newReq;
+	newReq = Utf16ToStr(DynStrGetCStr(request), DynStrLen(request));
     if (NULL == newReq)
         goto Error;
     setRequestOwn(newReq, strlen(newReq)); 
