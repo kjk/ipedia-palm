@@ -109,22 +109,27 @@ void DefinitionParser::applyCurrentFormatting(TextElement* element)
     if (openEmphasize_)
         style->italic = style->yes;
         
+#ifdef _PALM_OS
     if (openStrong_ || openVeryStrong_)
         style->bold = style->yes;
-#ifdef _PALM_OS
-    if (openSmall_)
-        style->small = style->yes;
 #else
-    if (openSmall_)
-        style->isSmall = style->yes;
+	if (openStrong_)
+		style->fontWeight = style->fontWeightBold;
+	if (openVeryStrong_)
+		style->fontWeight = style->fontWeightBlack;
 #endif
 
     if (openStrikeout_)
         style->strike = style->yes;
         
+#ifdef _PALM_OS
     if (openUnderline_)
         style->underline = solidUnderline;
-        
+#else
+    if (openUnderline_)
+        style->underline = style->yes;
+#endif
+	        
     if (openSubscript_)
         style->subscript = style->yes;
         
