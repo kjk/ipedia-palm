@@ -1269,6 +1269,10 @@ def main():
         fDemon = arsutils.fDetectRemoveCmdFlag("-daemon")
 
     fNoCheck = arsutils.fDetectRemoveCmdFlag("-nolimits")
+
+    if not fNoCheck:
+        fNoCheck = arsutils.fDetectRemoveCmdFlag("-disableregcheck")
+
     if fNoCheck:
         g_fDisableRegistrationCheck = True
 
@@ -1311,7 +1315,7 @@ def main():
         if None == dbInfo:
             print "No database for lang '%s'" % lang
         else:
-            print "Using db '%s' for lang '%s'" % (dbInfo.dbName, lang)
+            print "Using db '%s' for lang '%s', %d articles" % (dbInfo.dbName, lang, int(dbInfo.articlesCount))
 
     if None != enDb:
         # TODO: add selecting the db

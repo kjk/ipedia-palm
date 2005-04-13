@@ -32,6 +32,8 @@ g_machine = ""
 
 g_latestDatabases = []
 
+g_fPrintToStdout = False
+
 if sys.platform == "linux2":
     # this is our rackshack server
     g_workingDir = "/ipedia/wikipedia"
@@ -56,7 +58,7 @@ else:
         g_machine = "DVD"
     if "DVD2"==os.getenv("COMPUTERNAME"):
         # this must be my desktop machine
-        g_workingDir = "c:\\wikipedia\\"
+        g_workingDir = "f:\\wikipedia\\"
         # this will only work when I'm connected to nwlink.com
         MAILHOST = "mail.nwlink.com"
         FROM = "kjk@nwlink.com"
@@ -73,11 +75,9 @@ assert None != g_workingDir
 
 g_logFileName = os.path.join(g_workingDir,"log.txt")
 
-g_reEnName = re.compile('archives/en/(\d+)_cur_table.sql.bz2', re.I)
-g_reFrName = re.compile('archives/fr/(\d+)_cur_table.sql.bz2', re.I)
-g_reDeName = re.compile('archives/de/(\d+)_cur_table.sql.bz2', re.I)
+#g_reName = re.compile('(\d+)_cur_table.sql.bz2', re.I)
 
-g_reName = re.compile('(\d+)_cur_table.sql.bz2', re.I)
+g_reName = re.compile('(\d+)_cur_table.sql.gz', re.I)
 
 g_enUrlToDownload = None
 g_deUrlToDownload = None
@@ -104,6 +104,8 @@ def logEvent(txtToLog):
     fo = openLogFileIfNotOpen()
     fo.write("  " + txtToLog + "\n")
     fo.flush()
+    if g_fPrintToStdout:
+        print txtToLog
 
 def matchUrlInTxt(txt, regExp):
     match=regExp.search(txt)
@@ -122,26 +124,14 @@ def matchUrlsInTxt(txt, regExp, lang):
             return urls
 
         fileName = txt[match.start():match.end()]
-        fileUrl = 'http://download.wikimedia.org/archives/%s/%s' % (lang, fileName)
+        fileUrl = 'http://download.wikimedia.org/wikipedia/%s/%s' % (lang, fileName)
         urls.append(fileUrl)
         txt = txt[match.end()+1:]
-
-def findEnFileUrlInStr(txt):
-    global g_reEnName
-    return matchUrlInTxt(txt, g_reEnName)
-
-def findFrFileUrlInStr(txt):
-    global g_reFrName
-    return matchUrlInTxt(txt, g_reFrName)
-
-def findDeFileUrlInStr(txt):
-    global g_reDeName
-    return matchUrlInTxt(txt, g_reDeName)
 
 def getCurrentFileUrlForLang(lang):
     global g_reName
     assert lang in ["en", "fr", "de"]
-    url = "http://download.wikimedia.org/archives/%s/" % lang
+    url = "http://download.wikimedia.org/wikipedia/%s/" % lang
     #print "Trying to download %s" % url
     try:
         f = urllib2.urlopen(url)
@@ -242,7 +232,9 @@ def downloadUrl(url):
 
     print "url = %s" % url
     print "fileNameGzipped = %s" % fileNameGzipped
-    sts = subprocess.call(['wget', '-q', '-c', url, '--output-document', fileNameGzipped], shell=True)
+    cmdArgs = "-q -c %s --output-document %s" % (url, fileNameGzipped)
+    print "wget %s" % cmdArgs
+    sts = subprocess.call(["wget", "-q", "-c", url, "--output-document", fileNameGzipped])
     if sts != 0:
         logEvent("didn't launch wget properly")
         return
@@ -334,6 +326,11 @@ def mailLog():
     server.quit()
  
 if __name__=="__main__":
+
+    if len(sys.argv) > 1 and "-debug" == sys.argv[1]:
+        print "doing debug"
+        g_fPrintToStdout = True
+
     if g_fPsycoAvailable:
         print "using psyco"
         psyco.full()

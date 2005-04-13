@@ -239,7 +239,6 @@ def getDbNameFromFileName(sqlFileName):
 # over-write. It's ok for redirects but for real articles we need to investigate
 # how often that happens and decide what to do about that
 def convertArticles(sqlDump, articleLimit):
-
     count = 0
     redirects = {}
     articleTitles = {}

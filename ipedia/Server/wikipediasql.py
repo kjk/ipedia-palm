@@ -339,7 +339,7 @@ class ArticleCacheWriter:
         self.foTxt.close()
         self.foIdx.close()
 
-BEG_TXT = "INSERT INTO cur VALUES "
+BEG_TXT = "INSERT INTO `cur` VALUES "
 
 TOKEN_NONE = 0
 TOKEN_LEFT_BRACE = 1
@@ -506,7 +506,7 @@ class SQLTokenizer:
         #else:
         #    print "%s" % getTokenName(token)
         if token == TOKEN_NONE:
-            self.dumpBeforeAfterBuf()
+            self.dumpBeforeAfterBuf(c)
         assert token != TOKEN_NONE
         return token
 
