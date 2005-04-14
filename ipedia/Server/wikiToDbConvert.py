@@ -215,7 +215,7 @@ class ConvertedArticleRedirect:
     def getNamespace(self): return self.ns
     
 g_supportedLanguages = ["en", "fr", "de"]
-g_utf8Languages = ["fr", "de"]
+g_utf8Languages = ["en", "fr", "de"]
 
 def getDbNameFromFileName(sqlFileName):
     base = os.path.basename(sqlFileName)

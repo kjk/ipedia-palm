@@ -28,6 +28,11 @@ def fIsBzipFile(inFileName):
         return True
     return False
 
+def fIsGzipFile(inFileName):
+    if len(inFileName)>3 and ".gz" == inFileName[-3:]:
+        return True
+    return False
+
 def fDetectRemoveCmdFlag(flag):
     fFlagPresent = False
     try:

@@ -218,22 +218,11 @@ def downloadUrl(url):
 
     # don't remove '-q' option! if it's removed, the download hangs at 2.30 MB
     # (for whatever wicked reason)
-    #p = process.ProcessOpen(['wget', '-q', '-c', url, '--output-document', fileNameGzipped])
 
-    #res_stdout = p.stdout.read()                                     
-    #res_stderr = p.stderr.read()
-    #status = p.wait()   # .wait() returns the child's exit status
-
-    #print "status = %d" % status
-
-    #if -1 != res_stderr.find("is not recognized"):
-    #    logEvent("didn't launch wget properly")
-    #    return
-
-    print "url = %s" % url
-    print "fileNameGzipped = %s" % fileNameGzipped
-    cmdArgs = "-q -c %s --output-document %s" % (url, fileNameGzipped)
-    print "wget %s" % cmdArgs
+    #print "url = %s" % url
+    #print "fileNameGzipped = %s" % fileNameGzipped
+    #cmdArgs = "-q -c %s --output-document %s" % (url, fileNameGzipped)
+    #print "wget %s" % cmdArgs
     sts = subprocess.call(["wget", "-q", "-c", url, "--output-document", fileNameGzipped])
     if sts != 0:
         logEvent("didn't launch wget properly")
@@ -267,7 +256,7 @@ def convertDb(sqlDumpFileName):
         dbName = wikiToDbConvert.getDbNameFromFileName(sqlDumpFileName)
 
         if dbName in wikiToDbConvert.getDbList():
-            logEvent("db %s already exists" % dbName)
+            logEvent("db '%s' already exists" % dbName)
             return
 
         logEvent("started creating db %s" % dbName)

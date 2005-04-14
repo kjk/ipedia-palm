@@ -6,8 +6,8 @@
 #   WikipediaArticle object representing articles
 
 from __future__ import generators   # for 2.2 compatibility
-import sys,os,string,re,bz2,md5
-import arsutils,articleconvert
+import sys, os, string, re, bz2, gzip, md5
+import arsutils, articleconvert, wikiToDbConvert, entities
 
 NS_MAIN = 0
 
@@ -99,7 +99,6 @@ def utf8ToLatin1(text):
 
 class WikipediaArticleFromSql:
     def __init__(self, row, isUtf8 = False):
-        import entities
         self.row = row
         assert not fInvalidRedirect(row)
         self.md5Hash = None
@@ -148,6 +147,11 @@ def getBaseFileName(fileName):
     if len(fileName)>sufLen and suf == fileName[-sufLen:]:
         fileName = fileName[:-sufLen]
         #print "new file name is %s" % fileName
+    else:
+        suf = ".gz"
+        sufLen = len(suf)
+        if len(fileName)>sufLen and suf == fileName[-sufLen:]:
+            fileName = fileName[:-sufLen]
 
     suf = ".sql"
     sufLen = len(suf)
@@ -155,7 +159,7 @@ def getBaseFileName(fileName):
         fileName = fileName[:-sufLen]
         #print "new file name is %s" % fileName
     else:
-        print "%s is not a valid input file. Must be a *.sql or *.sql.bz2 file"
+        print "%s is not a valid input file. Must be a *.sql or *.sql.bz2 or *.sql.gz file" % fileName
         sys.exit(0)
     return fileName
 
@@ -365,6 +369,8 @@ class SQLTokenizer:
     def __init__(self,fileName):
         if arsutils.fIsBzipFile(fileName):
             self.fo = bz2.BZ2File(fileName,"rb", 9)
+        elif arsutils.fIsGzipFile(fileName):
+            self.fo = gzip.GzipFile(fileName, "rb", 9)
         else:
             self.fo = open(fileName)
         self.buf = None
@@ -565,7 +571,7 @@ def iterConvertedArticles(sqlFileName):
     return    
 
 
-# an iterator that given a *.sql or *.sql.bz2 wikipedia dump file
+# an iterator that given a *.sql or *.sql.bz2 or *.sql.gz wikipedia dump file
 # returns WikpediaArticle instances representing one wikipedia article
 # If fUseCache is True, then uses (if exists) or creates *.txt cache files
 #TODO: split this into smaller functions. However, don't know how to do it
@@ -589,14 +595,13 @@ def iterWikipediaArticles(sqlFileName, limit=None, fUseCache=False, fRecreateCac
     lang = os.path.basename(sqlFileName)[:2]
     print "database dump language: ", lang
     isUtf8 = False
-    import wikiToDbConvert
     
     if lang in wikiToDbConvert.g_utf8Languages:
         isUtf8 = True
 
     if isUtf8:
         print "performing UTF-8 to Latin-1 conversion"
-    
+
     if fReallyUseCache:
         fileName = getIdxFileName(sqlFileName)
         print "getting articles from cache %s" % fileName
