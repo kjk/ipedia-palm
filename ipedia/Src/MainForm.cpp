@@ -380,7 +380,7 @@ void PediaMainForm::updateAfterLookup()
     assert(lookupManager!=0);
     if (lookupManager)
     {
-        articleRenderer_.setModel(lookupManager->lastDefinitionModel(), Definition::ownModelNot);
+        articleRenderer_.setModel(lookupManager->lastDefinitionModel, Definition::ownModelNot);
         setDisplayMode(showArticle);
         
         termInputField_.replace(lookupManager->lastSearchTerm());

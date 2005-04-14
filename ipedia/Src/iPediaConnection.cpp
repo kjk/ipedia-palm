@@ -7,8 +7,6 @@
 #include "LookupManager.hpp"
 #include <ipedia.h>
 
-using ArsLexis::status_t;
-
 iPediaConnection::iPediaConnection(LookupManager& lookupManager):
     FieldPayloadProtocolConnection(lookupManager.connectionManager()),
     lookupManager_(lookupManager),
@@ -26,6 +24,7 @@ iPediaConnection::iPediaConnection(LookupManager& lookupManager):
     fGetAvailableLangs_(false),
     isSwitchLangRequest_(false)
 {
+	setTransferTimeout(15000); // Timeout after 15 seconds of inactivity
 }
 
 iPediaConnection::~iPediaConnection()
@@ -75,12 +74,12 @@ static DynStr *DynStrAddField(DynStr *dstr, const char_t *fieldName, const char_
 
     if (NULL == fieldValue)
     {
-        if (NULL == DynStrAppendCharP(dstr, _T(":")))
+        if (NULL == DynStrAppendChar(dstr, _T(':')))
             return NULL;
     }
     else
     {
-        if (NULL == DynStrAppendCharP(dstr, _T(": ")))
+        if (NULL == DynStrAppendCharPBuf(dstr, _T(": "), 2))
             return NULL;
 
         if (NULL == DynStrAppendCharP(dstr, fieldValue))
@@ -496,7 +495,12 @@ status_t iPediaConnection::notifyFinished()
 
     if (NULL!=definitionParser_)
     {
-        //std::swap(definitionParser_->elements(), lookupManager_.lastDefinitionElements());
+		DefinitionModel* model = definitionParser_->createModel();
+		if (NULL == model)
+			return memErrNotEnoughSpace;
+
+		PassOwnership(model, lookupManager_.lastDefinitionModel);		
+		
         lookupManager_.setLastFoundTerm(articleTitle_);
         lookupManager_.lastFoundLang_ = lookupManager_.lastSearchLang_;
         if (getRandom_)

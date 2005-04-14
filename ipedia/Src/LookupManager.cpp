@@ -7,8 +7,7 @@
 
 LookupManager::~LookupManager()
 {
-    if (NULL != lastDefinitionModel_)
-        delete lastDefinitionModel_;
+	delete lastDefinitionModel;
 }
 
 namespace {
@@ -38,7 +37,8 @@ using ArsLexis::status_t;
 
 LookupManager::LookupManager(LookupHistory& history):
     history_(history),
-    historyChange_(historyMoveForward)
+    historyChange_(historyMoveForward),
+	lastDefinitionModel(NULL)
 {
     iPediaApplication& app = iPediaApplication::instance();
     lastFoundLang_ = lastSearchLang_ = app.preferences().currentLang;
