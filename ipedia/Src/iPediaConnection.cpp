@@ -24,7 +24,11 @@ iPediaConnection::iPediaConnection(LookupManager& lookupManager):
     fGetAvailableLangs_(false),
     isSwitchLangRequest_(false)
 {
-	setTransferTimeout(15000); // Timeout after 15 seconds of inactivity
+#ifdef _PALM_OS
+    setTransferTimeout(SysTicksPerSecond() * 15);
+#elif defined(_WIN32)
+    setTransferTimeout(15000); // Timeout after 15 seconds of inactivity
+#endif
 }
 
 iPediaConnection::~iPediaConnection()
