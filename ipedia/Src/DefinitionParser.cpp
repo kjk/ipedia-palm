@@ -99,7 +99,11 @@ void DefinitionParser::applyCurrentFormatting(TextElement* element)
     DefinitionStyle* style = new_nt DefinitionStyle();
     if (NULL == style)
         return;
+
+#ifdef _PALM_OS
     style->reset();
+#endif
+
     const DefinitionStyle* def = getStaticStyle(styleIndexDefault);
     if (NULL != currentStyle_ && def != currentStyle_)
         *style |= *currentStyle_;
@@ -135,6 +139,16 @@ void DefinitionParser::applyCurrentFormatting(TextElement* element)
         
     if (openSuperscript_)
         style->superscript = style->yes;
+
+	if (openSmall_)
+		style->small = style->yes;
+
+#ifdef _WIN32
+	
+	if (this->openTypewriter_)
+		style->fontFamily = style->fontFamilyMonospace;
+
+#endif
 
 }
 
