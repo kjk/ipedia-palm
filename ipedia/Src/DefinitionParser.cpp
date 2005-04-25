@@ -520,7 +520,7 @@ TextElement* DefinitionParser::createTextElement(const String& text, String::siz
         hyperlinkIsTerm = true;
 #else
     if (hyperlinkTerm == hyperlinkType_)
-        hyperlinkIsTerm;
+        hyperlinkIsTerm = true;
 #endif    
     if (insideHyperlink_ && hyperlinkIsTerm)
     {

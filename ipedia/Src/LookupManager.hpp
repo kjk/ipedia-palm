@@ -96,13 +96,13 @@ public:
     
     void search(const String& expression);
 
-    void lookupTerm(const String& term, const String& lang = String());
+    void lookupTerm(const String& term, const String& lang);
 
     void lookupRandomTerm();
 
-    bool lastSearchTermDifferent(const String& term, const String& lang = String());
+    bool lastSearchTermDifferent(const String& term, const String& lang);
 
-    bool lookupIfDifferent(const String& term, const String& lang = String());
+    bool lookupIfDifferent(const String& term, const String& lang);
 
     void moveHistory(bool forward=false);
     
