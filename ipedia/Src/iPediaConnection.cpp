@@ -164,8 +164,10 @@ status_t iPediaConnection::prepareRequest()
     if (!term_.empty())
     {
         if (performFullTextSearch_)
+        {
             if (NULL == DynStrAddField(request, searchField, term_.c_str()))
                 goto Error;
+        }
         else
         {
             if (NULL == DynStrAddField(request, getArticleField, term_.c_str()))
