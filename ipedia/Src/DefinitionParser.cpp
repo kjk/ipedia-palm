@@ -104,7 +104,7 @@ void DefinitionParser::applyCurrentFormatting(TextElement* element)
     style->reset();
 #endif
 
-    const DefinitionStyle* def = getStaticStyle(styleIndexDefault);
+    const DefinitionStyle* def = StyleGetStaticStyle(styleIndexDefault);
     if (NULL != currentStyle_ && def != currentStyle_)
         *style |= *currentStyle_;
         
@@ -792,7 +792,7 @@ void DefinitionParser::parseTextLine()
         appendElement(para.get());
         pushParent(para.release());
     }
-    parseText(lineEnd_, getStaticStyle(styleIndexDefault));                
+    parseText(lineEnd_, StyleGetStaticStyle(styleIndexDefault));                
 }
 
 status_t DefinitionParser::handleIncrement(const char_t * text, ulong_t& length, bool finish)
@@ -886,7 +886,7 @@ void DefinitionParser::parseHeaderLine()
     ParagraphPtr para(new ParagraphElement());
     appendElement(para.get());
     pushParent(para.release());
-    parseText(lineEnd, getStaticStyle(styleNameHeader));
+    parseText(lineEnd, StyleGetStaticStyle(styleNameHeader));
     if (!lineAllowsContinuation(headerLine))
         popParent();
 }
@@ -908,7 +908,7 @@ void DefinitionParser::parseListElementLine()
     parsePosition_ = start;
     while (parsePosition_ < lineEnd_ && isSpace((*text_)[parsePosition_]))
         ++parsePosition_;
-    parseText(lineEnd_, getStaticStyle(styleIndexDefault));
+    parseText(lineEnd_, StyleGetStaticStyle(styleIndexDefault));
 }
 
 void DefinitionParser::parseDefinitionListLine()
@@ -921,7 +921,7 @@ void DefinitionParser::parseDefinitionListLine()
     ParagraphPtr para(new ParagraphElement());
     appendElement(para.get());
     pushParent(para.release());
-    parseText(lineEnd, getStaticStyle(styleIndexDefault));
+    parseText(lineEnd, StyleGetStaticStyle(styleIndexDefault));
     if (!lineAllowsContinuation(definitionListLine))
         popParent();
 }

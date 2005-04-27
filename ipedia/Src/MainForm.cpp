@@ -854,7 +854,7 @@ void PediaMainForm::prepareAbout()
 
     elems.push_back(text=new TextElement("ArsLexis iPedia"));
     text->setJustification(DefinitionElement::justifyCenter);
-    text->setStyle(getStaticStyle(styleNameHeader));
+    text->setStyle(StyleGetStaticStyle(styleNameHeader));
 
     elems.push_back(new LineBreakElement(1,3));
 
