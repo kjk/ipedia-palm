@@ -3,7 +3,7 @@
 
 // This file defines iPedia-specific static style identifiers
 
-//#define styleNameBold           "bold"
+#define styleNameBold           "bold"
 //#define styleNameLarge          "large"
 //#define styleNameBlue           "blue"
 //#define styleNameGray           "gray"

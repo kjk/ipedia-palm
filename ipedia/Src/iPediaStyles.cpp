@@ -14,6 +14,7 @@ static const StaticStyleEntry staticStyleTable[] =
     {styleNameDefault, {BLACK, WHITE, stdFont, FALSE, FALSE, FALSE, FALSE, FALSE, FALSE, noUnderline}},
     {styleNameHyperlink, {COLOR_UI_FORM_FRAME, COLOR_NOT_DEF, FONT_NOT_DEF, NOT_DEF, NOT_DEF, NOT_DEF, NOT_DEF, NOT_DEF, NOT_DEF, grayUnderline}},
 
+    COLOR_BOLD(styleNameHeader, COLOR_UI_FORM_FRAME),
 /*
     COLOR(styleNameBlack,BLACK),
     COLOR(styleNameBlue,BLUE),
@@ -23,7 +24,6 @@ static const StaticStyleEntry staticStyleTable[] =
     COLOR_BOLD(styleNameBoldRed,RED),
     COLOR(styleNameGray,GRAY),
     COLOR(styleNameGreen,GREEN),
-    COLOR_BOLD(styleNameHeader, COLOR_UI_FORM_FRAME),
     COLOR_AND_FONT(styleNameLarge, COLOR_NOT_DEF, largeFont),
     COLOR_AND_FONT(styleNameLargeBlue, BLUE, largeFont),
     COLOR_AND_FONT_BOLD(styleNamePageTitle, COLOR_UI_MENU_SELECTED_FILL, largeFont),
