@@ -798,8 +798,10 @@ void DefinitionParser::parseTextLine()
 status_t DefinitionParser::handleIncrement(const char_t * text, ulong_t& length, bool finish)
 {
     status_t error = errNone;
+#if !defined(_MSC_VER) || (_MSC_VER < 1400)
     ErrTry {
-        String strText(text);
+#endif
+		String strText(text);
         text_ = &strText;
         parsePosition_ = 0;
         lineEnd_ = 0;
@@ -867,12 +869,14 @@ status_t DefinitionParser::handleIncrement(const char_t * text, ulong_t& length,
         }
         if (!finish)
             length = parsePosition_;
+#if !defined(_MSC_VER) || (_MSC_VER < 1400)
     }
     ErrCatch (ex) {
         clear();
         error = ex;
     } ErrEndCatch
-    return error;
+#endif
+	return error;
 }
 
 //! @todo Add header indexing
