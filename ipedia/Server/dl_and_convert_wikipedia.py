@@ -51,7 +51,7 @@ else:
         g_machine = "KJKLAP1"
     if "DVD"==os.getenv("COMPUTERNAME"):
         # this must be my desktop machine
-        g_workingDir = "f:\\wikipedia\\"
+        g_workingDir = "g:\\wikipedia\\"
         # this will only work when I'm connected to nwlink.com
         MAILHOST = "mail.nwlink.com"
         FROM = "kjk@nwlink.com"
@@ -296,7 +296,7 @@ def mailLog():
         return
 
     # TODO: find a way to mail it anyway
-    if "DVD2"==os.getenv("COMPUTERNAME"):
+    if os.getenv("COMPUTERNAME") in ["DVD", "DVD2"]:
         return
 
     curDate = time.strftime( "%Y-%m-%d", time.localtime() )
