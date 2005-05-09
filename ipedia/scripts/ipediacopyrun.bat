@@ -67,7 +67,3 @@ plink -pw %PWD% %USER%@ipedia.arslexis.com cd /home/%USER%/src; python2.4 killip
 @popd
 
 :EOF
-
-plink -pw me04gor ipedia@ipedia.arslexis.com cd /home/ipedia; rm -rf src-prev; mv src src-prev; mkdir src
-cd C:\kjk\src\mine\ipedia\Server
-pscp -pw me04gor *.py ..\tools\*.py ..\tools\reg_codes.csv ipedia@ipedia.arslexis.com:/home/ipedia/src
