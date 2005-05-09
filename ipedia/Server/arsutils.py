@@ -557,3 +557,22 @@ def daemonize (stdin='/dev/null', stdout='/dev/null', stderr='/dev/null'):
     os.dup2(so.fileno(), sys.stdout.fileno())
     os.dup2(se.fileno(), sys.stderr.fileno())
 
+def pids(program, arg0):
+    '''Return a list of [process id, owner] for all processes that are running
+    "program".  Relies on a particular output format for ps a little
+    too much.'''
+
+    result = []
+    f = os.popen('ps aux', 'r')
+    for l in f.readlines():
+        fields = string.split(l)
+        processName = fields[10]
+        processName = processName.split("/")[-1]
+        if processName == program:
+            processArg0 = fields[11]
+            if processArg0 == arg0:
+                owner = fields[0] # name of the Unix user who owns this program
+                #print "found: %s %s owned by %s" % (processName, processArg0, owner)
+                result.append([int(fields[1]), owner])
+    return result
+
