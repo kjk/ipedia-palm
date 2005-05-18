@@ -3,6 +3,7 @@
 @rem set settings based on computer name
 @if %computername%==DVD goto SetDVD
 @if %computername%==DVD2 goto SetDVD
+@if %computername%==TLAP goto SetDVD
 @if %computername%==KJKLAP1 goto SetDVD
 
 @echo "Don't know the setup for computer %computername%"

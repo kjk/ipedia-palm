@@ -42,13 +42,13 @@ if sys.platform == "linux2":
     g_machine = "ipedia.arslexis.com"
 else:
     # this must be windows
-    if "KJKLAP1"==os.getenv("COMPUTERNAME"):
+    if os.getenv("COMPUTERNAME") in ["KJKLAP", "TLAP"]:
         # this must be my laptop
         g_workingDir = "c:\\wikipedia\\"
         # this will only work when I'm connected to nwlink.com
         MAILHOST = "mail.nwlink.com"
         FROM = "kjk@nwlink.com"
-        g_machine = "KJKLAP1"
+        g_machine = os.getenv("COMPUTERNAME")
     if "DVD"==os.getenv("COMPUTERNAME"):
         # this must be my desktop machine
         g_workingDir = "g:\\wikipedia\\"
@@ -296,7 +296,7 @@ def mailLog():
         return
 
     # TODO: find a way to mail it anyway
-    if os.getenv("COMPUTERNAME") in ["DVD", "DVD2"]:
+    if os.getenv("COMPUTERNAME") in ["DVD", "DVD2", "TLAP"]:
         return
 
     curDate = time.strftime( "%Y-%m-%d", time.localtime() )
