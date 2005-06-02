@@ -1324,16 +1324,12 @@ def main():
     if fDemon:
         arsutils.daemonize('/dev/null','/tmp/ipedia.log','/tmp/ipedia.log')
 
+    telnetPort = 9303 # a random number
+    runTelnetServer(telnetPort, iPediaTelnetProtocol)
     port = 9000
     runServer(port, iPediaProtocol)
-
-    # TODO: restore the telnet interface
-    # either use another thread for runServer or add ability to runServer
-    # to listen on multiple (port, protocol)
-    #factory = iPediaFactory()
-    #reactor.listenTCP(9000, factory)
-    #reactor.listenTCP(9001, iPediaTelnetFactory(factory))
-    #reactor.run()
+    while True:
+        time.sleep(10)
 
 if __name__ == "__main__":
     main()

@@ -51,7 +51,7 @@ class _Transport:
             self.receiver.logException(ex)
 
 class LineReceiver:
-    
+
     def __init__(self):
         self.delimiter = '\n'
 
@@ -60,7 +60,7 @@ class LineReceiver:
 
     def lineReceived(self, request):
         pass
-        
+
     def processConnection(self):
         try:
             request = ""
@@ -70,7 +70,7 @@ class LineReceiver:
                 if not chunk:
                     break
                 request += chunk
-                
+
                 while True:
                     pos = request.find(self.delimiter, start)
                     if -1 == pos:
@@ -82,13 +82,13 @@ class LineReceiver:
                         return
                     if start == len(request):
                         break
-                    
+
             if (not self.transport.closed) and (start != len(request)):
                 line = request[start:]
                 self.lineReceived(line)
         except Exception, ex:
             self.logException(ex)
-            
+
 def runClientThread(plugClass):
     global requestsQueue
     threadId = get_ident()
@@ -101,7 +101,7 @@ def runClientThread(plugClass):
         if not plug.transport.closed:
             plug.transport.loseConnection()
 
-                    
+
 MAX_WORKER_THREADS_COUNT = 50
 
 def runServer(port, plugClass):
@@ -132,5 +132,43 @@ def runServer(port, plugClass):
                 # keyboard interruption (Ctrl-C)
                 pass
     finally:
-        serverSocket.close()    
+        serverSocket.close()
+
+def processTelnetConnection(clientSocketAddress, plugClass):
+    #print "started processing telnet connection"
+    plug = plugClass()
+    plug.transport = _Transport(clientSocketAddress, plug)
+    plug.processConnection()
+    if not plug.transport.closed:
+        plug.transport.loseConnection()
+    #print "finished processing telnet connection"
+
+def telnetServerThread(port, plugClass):
+    serverSocket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    # set timeout so that we can use ctrl-c to stop the server
+    try:
+        serverSocket.settimeout(2.0)
+    except:
+        # not available in python2.2, but that's ok
+        pass
+    try:
+        serverSocket.bind(('', port))
+        serverSocket.listen(socket.SOMAXCONN)
+        print "started telnet server on port %d" % port
+
+        while True:
+            try:
+                clientSocketAddress = serverSocket.accept()
+                processTelnetConnection(clientSocketAddress, plugClass)
+            except socket.timeout:
+                # it's ok, we just want this so that we can check for
+                # keyboard interruption (Ctrl-C)
+                pass
+    finally:
+        serverSocket.close()
+
+
+# this spawns a separate thread to list for telnet interface/commands
+def runTelnetServer(port, plugClass):
+    start_new_thread(telnetServerThread, tuple([port, plugClass]))
 

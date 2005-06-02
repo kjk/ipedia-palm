@@ -7,7 +7,7 @@
 import sys, string, re, socket, random, arsutils
 
 # server string must be of form "name:port"
-g_serverList = ["localhost:9001", "ipedia.arslexis.com:9001"]
+g_serverList = ["localhost:9303", "ipedia.arslexis.com:9303"]
 
 g_defaultServerNo = 1 # index within g_serverList
 
@@ -30,7 +30,7 @@ def getReqResponse(req):
     sock.sendall(req)
     sock.shutdown(1)
     #print "Sent all"
-    response = socket_readAll(sock)    
+    response = socket_readAll(sock)
     #print "Received:", response
     sock.close()
     return response
@@ -119,16 +119,16 @@ if __name__=="__main__":
     print "using server %s" % g_serverList[g_defaultServerNo]
     readAndDisplayListOfDatabases()
     while True:
-        input = raw_input("Enter db number to use or 0 to exit: ")
+        input = raw_input("Enter db number to use or q to exit: ")
         num = None
+        if 'q' == input:
+            break
         try:
             num = int(input)
         except:
             print "Invalid input: must be a number"
         if None == num:
             continue
-        if 0 == num:
-            break
 
         dbInfo = findDbByNum(num)
         if None == dbInfo:
