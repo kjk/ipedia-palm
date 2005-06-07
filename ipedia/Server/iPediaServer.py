@@ -1322,7 +1322,7 @@ def main():
         pass
 
     if fDemon:
-        arsutils.daemonize('/dev/null','/tmp/ipedia.log','/tmp/ipedia.log')
+        arsutils.daemonize('/dev/null','/ipedia/ipedia.log','/ipedia/ipedia.log')
 
     telnetPort = 9303 # a random number
     runTelnetServer(telnetPort, iPediaTelnetProtocol)
