@@ -7,7 +7,7 @@
 #  - codes can be for handango, palmgear and esellerate
 #  - codes should be unique and random and not easy to find
 #  - generate *.sql file that we can import into ipedia_manage to install those regcodes
-#  - generate *.txt file with codes ready to be uploaded to esellerate/pg/handango
+#  - generate *.txt file with codes ready to be uploaded to esellerate/pg/handango/mobireach
 #
 # How it works.
 #
@@ -20,9 +20,12 @@
 # with the following fields:
 # regcode, purpose, when
 #   'when' is the time it was generated in the "YYYY-MM-DD hh:mm" format
-#   'purpose' describes to whom it was assigned (i.e. 'pg' for PalmGear,
-#             'h' for handango, 'es' for eSellerate
-# and custom strings for special reg codes)
+#   'purpose' describes to whom it was assigned:
+#     - 'pg' for PalmGear,
+#     - 'h' for handango
+#     - 'es' for eSellerate
+#     - 'mr' for mobireach.com
+#   and custom strings for special reg codes
 # Reg codes from this file can be imported via import_reg_codes.py script.
 #
 # We also generate a *.txt file with serial numbers ready to be uploaded to
@@ -49,12 +52,14 @@
 #     - 'es' for eSellerate
 #     - 'sn' for smartphone.net
 #     - 'pog' for PocketGear.com
+#     - 'mb' for mobireach.com
 #
 #
 # History:
 #  2004-04-15  created
 #  2004-06-20  more work done
 #  2004-08-22  support for smartphone.net
+#  2005-06-20  added mobireach.com
 
 import sys,os,random,time,string,StringIO
 
@@ -107,8 +112,11 @@ MIN_H_CODES = 100
 # minimum number of per-file codes for smartphone.net
 MIN_SN_CODES = 100
 
-# generic minium of per-file codes for pocketgear.net
+# generic minimum of per-file codes for pocketgear.net
 MIN_POG_CODES = 100
+
+# generic minimum of per-file codes for mobireach.com
+MIN_MR_CODES = 100
 
 # given argument name in argName, tries to return argument value
 # in command line args and removes those entries from sys.argv
@@ -184,6 +192,8 @@ def getPocketGearFileName():
     return getUniqueDatedFileName("pog-")
 def getSmartphoneFileName():
     return getUniqueDatedFileName("sn-")
+def getMobiReachFileName():
+    return getUniqueDatedFileName("mr-")
 
 # we need to read previous csv data in order to avoid generating duplicate codes
 def readPreviousCodes():
@@ -339,6 +349,16 @@ def createPalmGearFile(codes):
         fo.write( "%s\r\n" % code )
     fo.close()
 
+# codes separated by commas (',')
+def createMobiReachFile(codes):
+    fileName = getMobiReachFileName()
+    assert not fFileExists(fileName)
+    assert len(codes) >= MIN_MR_CODES
+    fo = open(fileName, "wb")
+    codesTxt = string.join(codes.keys(), ",")
+    fo.write(codesTxt + "\r\n")
+    fo.close()
+
 def main():
     specialName = getRemoveCmdArg("-special")
     if None == specialName:
@@ -356,8 +376,8 @@ def main():
         if len(sys.argv) != 3:
             usageAndExit()
         purpose = sys.argv[1]
-        if purpose not in ["pg", "h", "hsm", "hppc", "es", "sn", "pog"]:
-            print 'purpose cannot be %s. Must be "pg", "h", "hsm", "hppc", "es", "sn" or "pog"' % purpose
+        if purpose not in ["pg", "h", "hsm", "hppc", "es", "sn", "pog", "mr"]:
+            print 'purpose cannot be %s. Must be "pg", "h", "hsm", "hppc", "es", "sn" or "pog", "mr"' % purpose
             usageAndExit()
         regCodesCount = int(sys.argv[2])
 
@@ -387,6 +407,11 @@ def main():
                 print "When generating PocketGear.com codes, the minium number of codes is %d" % MIN_POG_CODES
                 usageAndExit()
 
+        if "mr" == purpose:
+            if regCodesCount < MIN_MR_CODES:
+                print "When generating MobiReach.com codes, the minium number of codes is %d" % MIN_MR_CODES
+                usageAndExit()
+
     print "reading previous codes"
     prevCodes = readPreviousCodes()
     print "read %d old codes" % len(prevCodes)
@@ -410,6 +435,9 @@ def main():
             createSmartphoneFile(newCodes)
         if "pog" == purpose:
             createPocketGearFile(newCodes)
+        if "mr" == purpose:
+            createMobiReachFile(newCodes)
+
     print "generated %d new codes" % len(newCodes)
     
     saveNewCodesToCsv(newCodes)
