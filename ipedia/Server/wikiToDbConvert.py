@@ -502,6 +502,7 @@ usersSql = """CREATE TABLE users (
 ) TYPE=MyISAM;"""
 
 requestLogSql = """CREATE TABLE request_log (
+    request_id       INT NOT NULL AUTO_INCREMENT,
     user_id          INT(10) NOT NULL REFERENCES users(user_id),
     client_ip        VARCHAR(24) NOT NULL,
     log_date         TIMESTAMP(14) NOT NULL,
@@ -517,6 +518,8 @@ requestLogSql = """CREATE TABLE request_log (
     -- if not NULL, there was an error processing the request and this is the 
     -- error number
     error            INT(10) NULL
+
+    PRIMARY_KEY(request_id)
 ) TYPE=MyISAM;"""
 
 getCookieLogSql = """CREATE TABLE get_cookie_log (
