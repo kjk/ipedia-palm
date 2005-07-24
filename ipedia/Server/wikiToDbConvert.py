@@ -523,6 +523,7 @@ requestLogSql = """CREATE TABLE request_log (
 ) TYPE=MyISAM;"""
 
 getCookieLogSql = """CREATE TABLE get_cookie_log (
+    log_id          INT NOT NULL AUTO_INCREMENT,
     user_id         INT(10) NOT NULL REFERENCES users(user_id),
     client_ip       VARCHAR(24) NOT NULL,
     log_date        TIMESTAMP(14) NOT NULL,
@@ -531,6 +532,7 @@ getCookieLogSql = """CREATE TABLE get_cookie_log (
 ) TYPE=MyISAM;"""
 
 verifyRegCodeLogSql = """CREATE TABLE verify_reg_code_log (
+    request_id       INT NOT NULL AUTO_INCREMENT,
     user_id         INT(10) NOT NULL REFERENCES users(user_id),
     client_ip       VARCHAR(24) NOT NULL,
     log_date        TIMESTAMP(14) NOT NULL,
