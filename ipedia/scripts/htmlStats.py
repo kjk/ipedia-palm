@@ -79,6 +79,9 @@ class UserStats:
         self.userId = userId
         self.reqCount = 0
         self.failedReqCount = 0
+        self.randomReqCount = 0
+        self.searchReqCount = 0
+        self.extendedReqCount = 0
         self.uniqueDays = 0
         self.fRegistered = isUserRegistered(userId)
 
@@ -102,6 +105,17 @@ def getUserStats():
         user.reqCount += 1
         if None != req[RL_ERROR]:
             user.failedReqCount += 1
+
+        reqType = req[RL_REQUEST_TYPE]
+        if "r" == reqType:
+            user.randomReqCount += 1
+        elif "s" == reqType:
+            user.searchReqCount += 1
+        elif "e" == reqType:
+            user.extendedReqCount += 1
+        else:
+            print "unknown req type '%s'" % reqType
+            assert False
 
     g_userStats = userStats
     return g_userStats
@@ -212,10 +226,33 @@ class ReqDailyStats:
         self.total = 0
         self.failed = 0
         self.uniqueUsers = []
-        self.newUsers = []
 
 def sortDailyStatsPred(el1, el2):
     return cmp(el2[0], el1[0])
+
+# hash which has a day in format "yyyy-mm-dd" as a key and the number of
+# new registered users on this day as a value
+g_newUsersData = None
+
+# for a given day (in format "yyyy-mm-dd") return number of new user
+# (users who started using the program on that day)
+def getNewUsersForDay(dayTxt):
+    global g_newUsersData
+    if None == g_newUsersData:
+        g_newUsersData = {}
+        for user in getUsersData():
+            userRegDay = user[USERS_COOKIE_ISSUE_DATE]
+            if None == userRegDay:
+                continue
+            userRegDayTxt = "%04d-%02d-%02d" % (userRegDay.year, userRegDay.month, userRegDay.day)
+            if g_newUsersData.has_key(userRegDayTxt):
+                g_newUsersData[userRegDayTxt] = g_newUsersData[userRegDayTxt] + 1
+            else:
+                g_newUsersData[userRegDayTxt] = 1
+    if g_newUsersData.has_key(dayTxt):
+        return g_newUsersData[dayTxt]
+    else:
+        return 0
 
 # creates stats about requests per day. Returns a hash where the key
 # is the data and the value is ReqDailyStats object with stats for this
@@ -252,14 +289,15 @@ def dailyStatsHtml():
     dailyStats.sort(sortDailyStatsPred)
     res = []
     res.append("<table>")
-    res.append(htmlRow(("<b>date</b>", "<b>total</b>", "<b>failed</b>", "<b>users</b>")))
+    res.append(htmlRow(("<b>date</b>", "<b>total</b>", "<b>failed</b>", "<b>users</b>", "<b>new users</b>")))
     for stat in dailyStats:
         dateTxt = stat[0]
         dateLinkTxt = link("day/%s" % dateTxt, dateTxt)
         totalTxt = str(stat[1].total)
         failedTxt = str(stat[1].failed)
         uniqueUsersCount = len(stat[1].uniqueUsers)
-        res.append(htmlRow((dateLinkTxt, totalTxt, failedTxt, str(uniqueUsersCount))))
+        newUsers = getNewUsersForDay(dateTxt)
+        res.append(htmlRow((dateLinkTxt, totalTxt, failedTxt, str(uniqueUsersCount), str(newUsers))))
     res.append("</table>")
     return string.join(res, "\n")
 
