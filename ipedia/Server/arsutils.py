@@ -349,10 +349,10 @@ def getDeviceNameByOcOd(oc, od):
             name = "Treo 300"
         elif od=='H101':
             name = "Treo 600"
-        elif od=='H102':
-            name = "Treo 650 (?)"
         elif od=='H201':
             name = "Treo 600 Simulator"
+        elif od=='H102':
+            name = "Treo 650"
         elif od=='H202':
             name = "Treo 650 Simulator"
     elif "sony"==oc:
@@ -436,6 +436,8 @@ def getDeviceNameByOcOd(oc, od):
             name = "Tungsten T3"
         elif od=='TnT5':
             name = "Tungsten T5"
+        elif od=='TunX':
+            name = "LifeDrive"
     return name
     
 def decodeDi(devInfo):

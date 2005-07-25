@@ -9,8 +9,6 @@ from downloadStats import *
 # TODO:
 # - daily stats
 # - in users:
-#  * number of registered users
-#  * number of requests per registered user
 #  * multi-column
 #  * separate stats for registered users
 #  * for registered users: number of days between trying the app and registering the app
@@ -19,6 +17,7 @@ from downloadStats import *
 # - stats for a given user (all his requests, sorted by date, newest at the top)
 # - in home:
 #  * multi-column
+#  * add random/search/full-text search stats
 
 PORT = 1974
 
@@ -39,6 +38,10 @@ g_userStats = None
 # InfoMan. It's an array of 2-element tuples. First element is the
 # count of devices, second is 
 g_deviceStats = None
+
+# g_registrationData is a hash table where a key is date and the value is a list
+# of users that registered at that day
+g_registrationData = None
 
 # g_requestsPerDay has info about number of requests per day.
 g_requestsPerDay = None
@@ -103,13 +106,26 @@ def getUserStats():
     g_userStats = userStats
     return g_userStats
 
+# given an array of UserStats objects, returns a tuple:
+# - number of registered users
+# - number of requests per registered user
+def getRegisteredInfo(userStats):
+    registered = [user for user in userStats.values() if user.fRegistered]
+    registeredCount = len(registered)
+    totalCount = 0
+    for user in registered:
+        totalCount += user.getTotalReqCount()
+    return (registeredCount, totalCount / registeredCount)
+
 def usersStatsHtml():
     userStats = getUserStats()
+
+    (registeredCount, reqsPerRegistered) = getRegisteredInfo(userStats)
 
     userCount = len(userStats)
     reqCount = len(getRequestsData())
     reqPerUser = float(reqCount) / float(userCount)
-    res = ["Users: %d, requests: %d, Requests/user: %.2f<br>" % (userCount, reqCount, reqPerUser)]
+    res = ["Users: %d, registered: %d, requests: %d, Requests/user: %.2f, Requests/registered: %.2f<br>" % (userCount, registeredCount, reqCount, reqPerUser, reqsPerRegistered)]
 
     userIds = userStats.keys()
     userIds.sort()
@@ -196,6 +212,7 @@ class ReqDailyStats:
         self.total = 0
         self.failed = 0
         self.uniqueUsers = []
+        self.newUsers = []
 
 def sortDailyStatsPred(el1, el2):
     return cmp(el2[0], el1[0])
