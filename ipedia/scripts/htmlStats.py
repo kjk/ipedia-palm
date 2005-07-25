@@ -3,15 +3,29 @@
 # Usage: launch htmlStats.py via htmlStats.bat and visit
 #        http://localhost:PORT/ in your favourite web browser
 import sys, random, string, cgi, random, BaseHTTPServer
-import arsutils
+import arsutils, ServerErrors
 from downloadStats import *
 
 # TODO:
+# - daily stats
+# - in users:
+#  * number of registered users
+#  * number of requests per registered user
+#  * multi-column
+#  * separate stats for registered users
+#  * for registered users: number of days between trying the app and registering the app
+#  * hyperlink to user id
+# - fix recognition of devices
+# - stats for a given user (all his requests, sorted by date, newest at the top)
+# - in home:
+#  * multi-column
 
 PORT = 1974
 
 # True if we should ignore lookupLimitReached errors
 g_filterLookupLimitErrors = True
+
+g_lookupLimitErrors = 0
 
 g_users = None
 g_requests = None
@@ -60,13 +74,13 @@ def isUserRegistered(userId):
 class UserStats:
     def __init__(self, userId):
         self.userId = userId
-        self.freeReqCount = 0
-        self.nonFreeReqCount = 0
+        self.reqCount = 0
+        self.failedReqCount = 0
         self.uniqueDays = 0
         self.fRegistered = isUserRegistered(userId)
 
     def getTotalReqCount(self): 
-        return self.freeReqCount + self.nonFreeReqCount
+        return self.reqCount
 
 # Creates statistics about number of requests per user. Returns
 # a hash where the key is user id and the value is UserStats object.
@@ -82,10 +96,9 @@ def getUserStats():
             userStats[userId] = UserStats(userId)
         user = userStats[userId]
 
-        if 'f' == req[RL_FREE_P]:
-            user.freeReqCount += 1
-        else:
-            user.nonFreeReqCount += 1
+        user.reqCount += 1
+        if None != req[RL_ERROR]:
+            user.failedReqCount += 1
 
     g_userStats = userStats
     return g_userStats
@@ -102,7 +115,7 @@ def usersStatsHtml():
     userIds.sort()
 
     res.append("<table>")
-    res.append(htmlRow(["<b>user id<b>", "<b>total<b>", "<b>free<b>", "<b>non-free<b>"]))
+    res.append(htmlRow(["<b>user id<b>", "<b>total<b>", "<b>failed<b>"]))
     for userId in userIds:
         user = userStats[userId]
         if user.fRegistered:
@@ -110,7 +123,7 @@ def usersStatsHtml():
             userIdTxt = "<b>%d</b>" % userId
         else:
             userIdTxt = str(userId)
-        res.append(htmlRow((userIdTxt, str(user.getTotalReqCount()), str(user.nonFreeReqCount), str(user.freeReqCount))))
+        res.append(htmlRow((userIdTxt, str(user.getTotalReqCount()), str(user.failedReqCount))))
     res.append("</table>")
     return string.join(res, "\n")
 
@@ -181,7 +194,7 @@ def deviceStatsHtml():
 class ReqDailyStats:
     def __init__(self):
         self.total = 0
-        self.free = 0
+        self.failed = 0
         self.uniqueUsers = []
 
 def sortDailyStatsPred(el1, el2):
@@ -198,18 +211,19 @@ def getDailyStats():
     for req in getRequestsData():
         userId = req[RL_USER_ID]
         reqDate = req[RL_LOG_DATE]
+        reqError = req[RL_ERROR]
+        fFailed = False
+        if None != reqError:
+            fFailed = True
         reqDateTxt = "%04d-%02d-%02d" % (reqDate.year, reqDate.month, reqDate.day)
-        freeReq = True
-        if 'f' == req[RL_FREE_P]:
-            freeReq = False
         if requestsPerDay.has_key(reqDateTxt):
             stats = requestsPerDay[reqDateTxt]
         else:
             stats = ReqDailyStats()
             requestsPerDay[reqDateTxt] = stats
         stats.total = stats.total + 1
-        if freeReq:
-            stats.free = stats.free + 1
+        if fFailed:
+            stats.failed += 1
         if not userId in stats.uniqueUsers:
             stats.uniqueUsers.append(userId)
     g_requestsPerDay = requestsPerDay
@@ -221,16 +235,14 @@ def dailyStatsHtml():
     dailyStats.sort(sortDailyStatsPred)
     res = []
     res.append("<table>")
-    res.append(htmlRow(("<b>date</b>", "<b>total</b>", "<b>free<b>", "<b>users</b>")))
+    res.append(htmlRow(("<b>date</b>", "<b>total</b>", "<b>failed</b>", "<b>users</b>")))
     for stat in dailyStats:
         dateTxt = stat[0]
         dateLinkTxt = link("day/%s" % dateTxt, dateTxt)
         totalTxt = str(stat[1].total)
-        freeTxt = str(stat[1].free)
-        freePercent = (stat[1].free*100)/stat[1].total
-        freePercentTxt = "%.0f%%" % freePercent
+        failedTxt = str(stat[1].failed)
         uniqueUsersCount = len(stat[1].uniqueUsers)
-        res.append(htmlRow((dateLinkTxt, totalTxt, "%s (%s)" % (freeTxt, freePercentTxt), str(uniqueUsersCount))))
+        res.append(htmlRow((dateLinkTxt, totalTxt, failedTxt, str(uniqueUsersCount))))
     res.append("</table>")
     return string.join(res, "\n")
 
@@ -239,45 +251,47 @@ def dayStatsHtml(day):
 
 # those must be in sync with \server\ServerErrors.py
 g_errorCodeToName = ["errorUnknown", 
-    "serverFailure", 
+    "serverFailure",
     "unsupportedDevice",
-    "no error with error code 3"
+    "invalidRegCode",
     "malformedRequest",
     "lookupLimitReached",
-    "invalidProtocolVersion",
-    "requestArgumentMissing",
+    "invalidRequest",
     "unexpectedRequestArgument",
+    "requestArgumentMissing",
+    "invalidProtocolVersion",
     "invalidCookie",
     "userDisabled",
-    "invalidRegCode",
     "forceUpgrade",
-    "invalidRequest",
-    "moduleTemporarilyDown",
-    "regCodeExpired" ]
+    "langNotAvailable"
+   ]
+
+def getErrorCodeName(errorCode):
+    global g_errorCodeToName
+    return g_errorCodeToName[errorCode]
 
 # creates stats about all failed requests. Returns a tuple:
+# creates stats about all failed requests. Returns a list of failed requests
 # - a list of failed requests
 # - number of requests failed because of lookupLimitReachedError 
-def getFailedRequestsStats():
-    global g_filterLookupLimitErrors, g_failedReqs, g_lookupLimitErrors
+def getFailedRequestsStats(filterLookupLimitErrors):
+    global g_failedReqs, g_lookupLimitErrors
     if None != g_failedReqs:
         return (g_failedReqs, g_lookupLimitErrors)
     totalErrors = 0 # not including lookupLimitReached
-    lookupLimitErrors = 0
     failedReqs = []
     for req in getRequestsData():
         errorCode = req[RL_ERROR]
         if None == errorCode:
             continue
-        if g_filterLookupLimitErrors and ServerErrors.lookupLimitReached == errorCode:
-            lookupLimitErrors += 1
+        if ServerErrors.lookupLimitReached == int(errorCode):
+            g_lookupLimitErrors += 1
             continue
         failedReqs.append(req)
     # since requests are already sorted by id/date, the reverse order
     # makes the most recent ones at the top
     failedReqs.reverse()
     g_failedReqs = failedReqs
-    g_lookupLimitErrors = lookupLimitErrors
     return (g_failedReqs, g_lookupLimitErrors)
 
     for req in failedReqs:
@@ -285,23 +299,25 @@ def getFailedRequestsStats():
         reqDateTxt = "%04d-%02d-%02d" % (reqDate.year, reqDate.month, reqDate.day)
         errorCode = req[RL_ERROR]
         errorCode = int(str(errorCode))
-        reqTxt = req[RL_REQUEST]
+        reqTxt = req[RL_SEARCH_DATA]
         res.append( "%s %2d %s " % (reqDateTxt, errorCode, reqTxt))
     return string.join(res, "<br>\n")
 
 def failedStatsHtml():
-    (failedReqs, lookupLimitErrors) = getFailedRequestsStats()
+    global g_filterLookupLimitErrors
+    (failedReqs, lookupLimitErrors) = getFailedRequestsStats(g_filterLookupLimitErrors)
     totalErrors = len(failedReqs)
+
     res = ["Total errors: %d, Lookup limit errors: %d" % (totalErrors, lookupLimitErrors)]
     res.append("<table>")
     res.append(htmlRow(("<b>date</b>", "<b>error</b>", "<b>query<b>")))
     for req in failedReqs:
         reqDate = req[RL_LOG_DATE]
         reqDateTxt = "%04d-%02d-%02d" % (reqDate.year, reqDate.month, reqDate.day)
-        errorCode = req[RL_ERROR]
-        errorCode = int(str(errorCode))
-        reqTxt = req[RL_REQUEST]
-        res.append(htmlRow((reqDateTxt, str(errorCode), (reqTxt, "left"))))
+        errorCode = int(str(req[RL_ERROR]))
+        errorCodeTxt = getErrorCodeName(errorCode)
+        reqTxt = req[RL_SEARCH_DATA]
+        res.append(htmlRow((reqDateTxt, "%d (%s)" % (errorCode, errorCodeTxt), (reqTxt, "left"))))
     res.append("</table>")
     return string.join(res, "\n")
 
