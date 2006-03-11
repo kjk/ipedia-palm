@@ -460,11 +460,10 @@ approx_refs[16412]='"'
 approx_refs[16413]='"'
 approx_refs[16422]='...'
 
-
 numEntityRe=re.compile(r'&#(\d+);')
 entityRefRe=re.compile(r'&(\w+);')
 
-def convertNamedEntities(term, text):
+def convertNamedEntities(text):
     matches=[]
     for iter in entityRefRe.finditer(text):
         matches.append(iter)
@@ -477,18 +476,20 @@ def convertNamedEntities(term, text):
             text=text[:match.start()]+'/'+name+'/'+text[match.end():]
     return text;
 
-def convertNumberedEntities(term, text):
+def convertNumberedEntities(text):
     matches=[]
     for iter in numEntityRe.finditer(text):
         matches.append(iter)
     matches.reverse()
     for match in matches:
         num=int(match.group(1))
-        if num>255:
+        if 160 == num: # nbsp i.e. ' '
+            text = text[:match.start()] + " " + text[match.end():]
+        elif num > 255:
             if approx_refs.has_key(num):
-                text=text[:match.start()]+approx_refs[num]+text[match.end():]
+                text = text[:match.start()]+approx_refs[num]+text[match.end():]
             elif greek_refs.has_key(num):
-                text=text[:match.start()]+'/'+greek_refs[num]+'/'+text[match.end():]
+                text = text[:match.start()]+'/'+greek_refs[num]+'/'+text[match.end():]
             else:
                 # don't change the text
                 pass
@@ -499,7 +500,7 @@ def convertNumberedEntities(term, text):
 # This function uses .normalize function only available in python 2.3
 # our converter needs to work on 2.2 so we use a simplified
 # convertNumberedEntities version
-def convertNumberedEntities23(term, text):
+def convertNumberedEntities23(text):
     matches=[]
     for iter in numEntityRe.finditer(text):
         matches.append(iter)
@@ -522,21 +523,17 @@ def convertNumberedEntities23(term, text):
                     elif greek_refs.has_key(num):
                         text=text[:match.start()]+'/'+greek_refs[num]+'/'+text[match.end():]
             except ValueError:
-                print "Wide unicode character (%d) in definition for term: %s." % (num, term)
+                print "Wide unicode character (%d) in definition for text: %s." % (num, text)
         else:
             text=text[:match.start()]+chr(num)+text[match.end():]
     return text
 
-def convertEntities(text, term = None):
-    if term is None:
-        term = text
-    text = convertNamedEntities(term, text)
-    text = convertNumberedEntities(term, text)
+def convertEntities(text):
+    text = convertNamedEntities(text)
+    text = convertNumberedEntities(text)
     return text
 
-def convertEntities23(text, term = None):
-    if term is None:
-        term = text
-    text = convertNamedEntities(term, text)
-    text = convertNumberedEntities23(term, text)
+def convertEntities23(text):
+    text = convertNamedEntities(text)
+    text = convertNumberedEntities23(text)
     return text
